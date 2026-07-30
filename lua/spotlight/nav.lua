@@ -18,6 +18,7 @@
 --- unrelated PID two lines down. Off any match, all spotlights are in scope.
 
 local config = require("spotlight.config")
+local lib = require("spotlight.util.lib")
 local pattern = require("spotlight.core.pattern")
 local registry = require("spotlight.core.registry")
 
@@ -73,6 +74,9 @@ local function nav_pattern()
   if config.get("nav.scope") == "auto" then
     local here = M.under_cursor()
     if here then
+      -- "Auto narrowed to one spotlight" vs "searched them all" is the whole
+      -- behavioral difference of `]k`, and it is invisible from the outside.
+      lib.debug("nav: auto scope narrowed to the spotlight under the cursor", { text = here.text })
       return here.pattern
     end
   end
@@ -80,6 +84,7 @@ local function nav_pattern()
   for i, item in ipairs(items) do
     pats[i] = item.pattern
   end
+  lib.debug("nav: searching all spotlights", { count = #pats })
   return pattern.alternation(pats)
 end
 

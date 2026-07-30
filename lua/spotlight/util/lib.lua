@@ -44,6 +44,70 @@ function M.notify(msg, level)
   vim.notify(("[spotlight] %s"):format(msg), level)
 end
 
+--- Cached `lib.nvim.logger` instance (`false` once probed absent, so the check
+--- is never retried).
+---@type table|false|nil
+local _logger = nil
+
+--- Resolve (and cache) the `lib.nvim.logger` instance, or `false` if absent.
+---@return table|false
+local function logger()
+  if _logger ~= nil then
+    return _logger
+  end
+  local lib = try_require("lib.nvim.logger")
+  if lib and type(lib.new) == "function" then
+    local ok, inst = pcall(lib.new, { name = "spotlight" })
+    _logger = (ok and type(inst) == "table") and inst or false
+  else
+    _logger = false
+  end
+  return _logger
+end
+
+--- Debug-log `msg` (plus optional structured `ctx`) at spotlight's decision
+--- points, when `debug` is enabled in the config.
+---
+--- The interesting question in this plugin is never "what does the code do" but
+--- "why did nothing light up" — which token did the resolver actually pick, was
+--- the pattern applied to this window or skipped as ineligible, did the snapshot
+--- filter drop the spotlight before writing. Those are exactly the points that
+--- log here, so a report can be answered from the log rather than from guessing.
+---
+--- Reads the config lazily rather than taking an `enabled` argument, so a call
+--- site does not have to thread the flag through. The common case (debug off)
+--- costs one table lookup.
+---
+--- Bridges to `lib.nvim.logger` (one cached "spotlight" instance, inspectable
+--- with `:LibLogger`) when available; falls back to `vim.notify` at DEBUG level,
+--- since there is no native substitute for a structured logger but debug output
+--- should still be visible rather than silently dropped.
+---@param msg string
+---@param ctx table|nil
+---@return nil
+function M.debug(msg, ctx)
+  -- Required lazily: spotlight.config requires nothing from this module, but
+  -- requiring it at the top here would still make the dependency circular-looking
+  -- to a reader and pointless to resolve at load time.
+  local ok, config = pcall(require, "spotlight.config")
+  if not ok or config.get("debug") ~= true then
+    return
+  end
+  local log = logger()
+  if log then
+    pcall(log.debug, msg, ctx)
+    return
+  end
+  local text = ctx and ("%s %s"):format(msg, vim.inspect(ctx)) or msg
+  vim.notify(("[spotlight] %s"):format(text), vim.log.levels.DEBUG)
+end
+
+--- Whether `lib.nvim.logger` is available (for `:checkhealth` reporting).
+---@return boolean
+function M.has_logger()
+  return logger() ~= false
+end
+
 --- Set a keymap. Uses `lib.nvim.map` if available, else `vim.keymap.set`.
 ---@param mode string|string[]
 ---@param lhs string

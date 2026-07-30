@@ -23,6 +23,8 @@
 --- called when the list opens: match *counts* cannot be maintained live without
 --- reintroducing exactly the O(file size) scan that picking `matchadd()` avoided.
 
+local lib = require("spotlight.util.lib")
+
 local M = {}
 
 --- `winid -> { [spotlight id] = match id }`.
@@ -80,6 +82,12 @@ local function add(win, item, priority)
     return vim.fn.matchadd(item.hl, item.pattern, priority)
   end)
   if not ok or type(id) ~= "number" or id <= 0 then
+    -- The one way a spotlight can silently fail to appear: Vim rejected the
+    -- pattern, or the window went away between the eligibility check and here.
+    lib.debug(
+      "match: matchadd failed",
+      { win = win, spotlight = item.id, pattern = item.pattern, err = not ok and tostring(id) or nil }
+    )
     return
   end
   ledger[win] = per_win or {}
@@ -93,6 +101,7 @@ end
 ---@return nil
 function M.apply_window(win, items, priority)
   if not eligible(win) then
+    lib.debug("match: window skipped as ineligible (floating or invalid)", { win = win })
     return
   end
   for _, item in ipairs(items) do

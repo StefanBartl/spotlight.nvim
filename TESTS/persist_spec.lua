@@ -1,4 +1,4 @@
--- docs/TESTS/persist_spec.lua
+-- TESTS/persist_spec.lua
 -- Persistence, and specifically the exception semantics the concept left open:
 -- an exception on a file suppresses the spotlights *created in* that file, and
 -- nothing else. Also covers the config layer's validation, which degrades bad

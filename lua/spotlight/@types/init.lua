@@ -62,6 +62,7 @@
 ---@field persist Spotlight.PersistOpts
 ---@field keymaps Spotlight.KeymapOpts
 ---@field notify boolean # Report added/removed/cleared spotlights via `lib.nvim.notify`.
+---@field debug boolean # Structured debug logging at the decision points, via `lib.nvim.logger`.
 
 --- Palette colors. Each entry sets **both** `bg` and `fg` so contrast is
 --- guaranteed in light and dark themes alike, rather than inheriting an
@@ -113,3 +114,8 @@
 ---@field quickfix string|false        # Send all matching lines to the quickfix list.
 ---@field next string|false            # Jump to the next occurrence.
 ---@field prev string|false            # Jump to the previous occurrence.
+
+-- Annotations only — no runtime values. `require("spotlight.@types")` exists so
+-- lua_ls loads this file when it resolves the require, which is what makes the
+-- classes above visible in the modules that use them.
+return {}

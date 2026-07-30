@@ -1,4 +1,4 @@
--- docs/TESTS/harness.lua
+-- TESTS/harness.lua
 -- Minimal assertion harness. No plenary, no busted: the suite runs in a plain
 -- `nvim --headless -u NONE`, so the only dependency is Neovim itself and CI does
 -- not have to install a test framework to lint one plugin.

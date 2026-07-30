@@ -1,4 +1,4 @@
--- docs/TESTS/registry_spec.lua
+-- TESTS/registry_spec.lua
 -- The registry: toggle semantics, palette round-robin, the `match.max` guard,
 -- the snapshot/restore round trip, and that matchadd() actually lands in every
 -- window (the property that makes a window-local mechanism behave globally).

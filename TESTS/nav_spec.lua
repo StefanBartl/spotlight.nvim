@@ -1,4 +1,4 @@
--- docs/TESTS/nav_spec.lua
+-- TESTS/nav_spec.lua
 -- Navigation and the two whole-buffer operations (counting, quickfix), including
 -- the `nav.scope = "auto"` narrowing that makes `]k` follow the token under the
 -- cursor rather than hopping between unrelated spotlights.

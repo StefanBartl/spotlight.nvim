@@ -17,6 +17,7 @@ local LIB_MODULES = {
   { module = "lib.nvim.store.project", purpose = "per-project persistence", required = false },
   { module = "lib.nvim.debounce", purpose = "coalesced state saves", required = false },
   { module = "lib.nvim.notify", purpose = "namespaced notifications", required = false },
+  { module = "lib.nvim.logger", purpose = "structured debug logs (spotlight.debug)", required = false },
   { module = "lib.nvim.map", purpose = "keymap registration", required = false },
   { module = "lib.nvim.autocmd", purpose = "guarded autocommands", required = false },
   { module = "lib.nvim.ui.hl", purpose = "highlight definition", required = false },
@@ -104,6 +105,17 @@ function M.check()
       config.get("cursor.fallback_cword") and "on" or "off"
     )
   )
+
+  -- Debug logging (resolver outcome, ledger apply/skip, snapshot filter, nav scope).
+  if config.get("debug") == true then
+    if require("spotlight.util.lib").has_logger() then
+      ok("debug: on, lib.nvim.logger available (structured logs, inspect with :LibLogger)")
+    else
+      info("debug: on, lib.nvim.logger not found — falling back to vim.notify at DEBUG level")
+    end
+  else
+    info("debug: off (set `debug = true` to log the resolver, ledger, persistence and nav decisions)")
+  end
 
   local keymaps = config.get("keymaps")
   if keymaps.preset then

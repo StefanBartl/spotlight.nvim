@@ -102,12 +102,17 @@ function M.save_now()
     return false, "lib.nvim.store.project unavailable"
   end
 
-  local kept = {}
+  local kept, dropped = {}, {}
   for _, item in ipairs(registry.snapshot()) do
     if M.persists(item.origin) then
       kept[#kept + 1] = item
+    else
+      dropped[#dropped + 1] = item.text
     end
   end
+  -- What the exception model actually did, which is the part users report as
+  -- "my spotlights did not come back".
+  lib.debug("persist: snapshot filtered", { kept = #kept, dropped = dropped, default = config.get("persist.default") })
 
   -- Nothing worth keeping: drop the file rather than leaving an empty snapshot
   -- behind, so a cleared session does not restore an empty list over whatever
@@ -158,6 +163,7 @@ function M.load()
   end
   local ok, data = pcall(s.load, STORE_KEY)
   if not ok or type(data) ~= "table" then
+    lib.debug("persist: nothing to load", { key = STORE_KEY, root = path.root(), ok = ok })
     return 0
   end
 
@@ -182,7 +188,15 @@ function M.load()
       allowed[#allowed + 1] = item
     end
   end
-  return registry.restore(allowed)
+  local restored = registry.restore(allowed)
+  lib.debug("persist: loaded", {
+    root = path.root(),
+    stored = #data.spotlights,
+    allowed = #allowed,
+    restored = restored,
+    exceptions = vim.tbl_count(exceptions),
+  })
+  return restored
 end
 
 --- Set the persistence decision for one file.

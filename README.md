@@ -43,6 +43,7 @@ project, with a per-file opt-out.
 - [Persistence](#persistence)
 - [Colors](#colors)
 - [Health](#health)
+- [Debugging](#debugging)
 - [Architecture](#architecture)
 - [Roadmap](#roadmap)
 
@@ -89,6 +90,7 @@ whole-buffer scan that choosing `matchadd()` avoided.
 | **Per-file opt-out**   | `:Spotlight persist off` for a file whose tokens should not be written to disk.                   |
 | **Case pinned**        | `\C` baked into the pattern, so a spotlight does not change meaning when you toggle `'ignorecase'`. |
 | **`:checkhealth`**     | Per-module `lib.nvim` status, `'termguicolors'`, config validation results, live state.           |
+| **Debug switch**       | `debug = true` logs the four decisions that answer "why did nothing light up", via `lib.nvim.logger`. |
 
 Everything is reachable three ways: a preset keymap, a `:Spotlight` subcommand,
 and a plain function on the `spotlight` module.
@@ -358,6 +360,7 @@ require("spotlight").setup({
   },
 
   notify = true,              -- report added/removed/cleared spotlights
+  debug = false,              -- structured logs at the decision points (see below)
 })
 ```
 
@@ -473,6 +476,31 @@ root, and every per-file persistence override.
 
 ---
 
+## Debugging
+
+```lua
+require("spotlight").setup({ debug = true })
+```
+
+The only question this plugin ever really gets asked is *"why did nothing light
+up"*, so `debug = true` logs exactly the four decisions that answer it:
+
+- **which resolver pattern won**, with its index — a surprising token almost
+  always means a broader pattern sits ahead of the specific one you expected;
+- **which windows the ledger applied to or skipped**, and any `matchadd()` Vim
+  rejected — the one way a spotlight can silently fail to appear;
+- **what the snapshot filter kept and dropped**, which is the answer to "my
+  spotlights did not come back";
+- **whether navigation narrowed to one spotlight or searched them all** — the
+  entire behavioral difference of `]k`, and invisible from the outside.
+
+Routed through `lib.nvim.logger` (one `spotlight` instance, inspectable with
+`:LibLogger`), falling back to `vim.notify` at DEBUG level when that is not
+installed. With `debug = false` a log call costs one table lookup.
+
+
+---
+
 ## Architecture
 
 ```
@@ -499,7 +527,7 @@ lua/spotlight/
     autocmds.lua        window fill, ColorScheme, load/flush
     which_key.lua       optional group label
   util/
-    lib.lua             guarded lib.nvim bridge with native fallbacks
+    lib.lua             guarded lib.nvim bridge (notify/map/autocmd/hl/debounce/logger)
     path.lua            project-relative file keys (cross-platform)
   health.lua
   @types/init.lua
@@ -515,7 +543,7 @@ forward slashes and compared case-insensitively on Windows, where `C:\Repos\x`
 and `c:\repos\x` are the same file and would otherwise produce two different
 exception keys.
 
-Tests: [`docs/TESTS/`](docs/TESTS/README.md) — 135 assertions, plain headless
+Tests: [`TESTS/`](TESTS/README.md) — 135 assertions, plain headless
 Neovim, no test framework to install.
 
 ---

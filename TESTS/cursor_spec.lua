@@ -1,4 +1,4 @@
--- docs/TESTS/cursor_spec.lua
+-- TESTS/cursor_spec.lua
 -- The token resolver: the structured-token patterns that `<cword>` cannot see,
 -- priority ordering between overlapping patterns, and the shape-based word/literal
 -- classification that decides whether the built regex gets word boundaries.

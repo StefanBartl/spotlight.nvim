@@ -9,7 +9,7 @@ check one plugin.
 From the plugin root, with `lib.nvim` checked out as a sibling directory:
 
 ```bash
-nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile docs/TESTS/run.lua" -c "qa!"
+nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
 ```
 
 `run.lua` prints `N passed, M failed`, lists every failure, and exits non-zero

@@ -139,6 +139,15 @@ local DEFAULTS = {
   },
 
   notify = true,
+
+  -- Structured debug logging at the plugin's decision points: which token the
+  -- resolver picked and why, which windows the ledger applied to or skipped,
+  -- what the snapshot filter kept, which pattern navigation searched with.
+  --
+  -- Those are the answers to "why did nothing light up", which is the only
+  -- question this plugin ever really gets asked. Routed through
+  -- `lib.nvim.logger` (inspectable with `:LibLogger`) when available.
+  debug = false,
 }
 
 return DEFAULTS

@@ -1,4 +1,4 @@
--- docs/TESTS/commands_spec.lua
+-- TESTS/commands_spec.lua
 -- The public surface: that setup() wires everything, that :Spotlight and every
 -- one of its routes exists and works, and that the preset keymaps land on the
 -- configured keys (and only on the ones not disabled with `false`).

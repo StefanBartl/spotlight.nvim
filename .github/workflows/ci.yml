@@ -18,7 +18,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
-          args: --check lua plugin docs/TESTS
+          args: --check lua plugin TESTS
 
   luacheck:
     name: luacheck (lint)
@@ -35,7 +35,7 @@ jobs:
           luaVersion: "5.4"
       - uses: leafo/gh-actions-luarocks@v4
       - run: luarocks install luacheck
-      - run: luacheck lua plugin docs/TESTS
+      - run: luacheck lua plugin TESTS
 
   tests:
     name: tests (headless nvim)
@@ -47,7 +47,7 @@ jobs:
       # lib.nvim is a real runtime dependency (usercmd.composer for the
       # :Spotlight verb, store.project for persistence, ui.kit.select for the
       # list) — checked out as a sibling so `rtp+=../lib.nvim` matches the
-      # local dev convention documented in docs/TESTS/README.md.
+      # local dev convention documented in TESTS/README.md.
       - uses: actions/checkout@v4
         with:
           repository: StefanBartl/lib.nvim
@@ -56,6 +56,6 @@ jobs:
         with:
           neovim: true
           version: stable
-      - name: Run docs/TESTS suite
+      - name: Run TESTS suite
         working-directory: spotlight.nvim
-        run: nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile docs/TESTS/run.lua" -c "qa!"
+        run: nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"

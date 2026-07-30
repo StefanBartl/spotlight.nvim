@@ -20,6 +20,7 @@
 require("spotlight.@types")
 
 local config = require("spotlight.config")
+local lib = require("spotlight.util.lib")
 
 local M = {}
 
@@ -83,9 +84,13 @@ function M.token(bufnr)
   end
 
   local opts = config.get("cursor")
-  for _, pat in ipairs(opts.patterns) do
+  for i, pat in ipairs(opts.patterns) do
     local text = match_spanning(line, col0, pat)
     if text and text ~= "" then
+      -- Which pattern won is the single most useful debug fact here: a
+      -- surprising token almost always means a broader pattern sits ahead of
+      -- the specific one the user expected.
+      lib.debug("cursor: resolved by pattern", { index = i, pattern = pat, text = text, kind = kind_of(text) })
       return { text = text, kind = kind_of(text) }
     end
   end
@@ -93,9 +98,11 @@ function M.token(bufnr)
   if opts.fallback_cword then
     local cword = vim.fn.expand("<cword>")
     if type(cword) == "string" and cword ~= "" then
+      lib.debug("cursor: no pattern matched, fell back to <cword>", { text = cword, kind = kind_of(cword) })
       return { text = cword, kind = kind_of(cword) }
     end
   end
+  lib.debug("cursor: nothing resolved", { col = col0, patterns_tried = #opts.patterns })
   return nil
 end
 

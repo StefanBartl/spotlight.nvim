@@ -25,9 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Plain Lua 5.4, not LuaJIT: luacheck only needs *an* interpreter to run
+      # on, and which dialect it lints for is set by `std = "luajit"` in
+      # .luacheckrc — independent of the host. Pinning a LuaJIT build here buys
+      # nothing and breaks when that exact tarball disappears upstream (the
+      # commonly copied "luajit-2.1.0-beta3" now 404s).
       - uses: leafo/gh-actions-lua@v10
         with:
-          luaVersion: "luajit-2.1.0-beta3"
+          luaVersion: "5.4"
       - uses: leafo/gh-actions-luarocks@v4
       - run: luarocks install luacheck
       - run: luacheck lua plugin docs/TESTS

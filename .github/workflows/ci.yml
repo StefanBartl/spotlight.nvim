@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  stylua:
+    name: stylua (format check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua plugin docs/TESTS
+
+  luacheck:
+    name: luacheck (lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "luajit-2.1.0-beta3"
+      - uses: leafo/gh-actions-luarocks@v4
+      - run: luarocks install luacheck
+      - run: luacheck lua plugin docs/TESTS
+
+  tests:
+    name: tests (headless nvim)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: spotlight.nvim
+      # lib.nvim is a real runtime dependency (usercmd.composer for the
+      # :Spotlight verb, store.project for persistence, ui.kit.select for the
+      # list) — checked out as a sibling so `rtp+=../lib.nvim` matches the
+      # local dev convention documented in docs/TESTS/README.md.
+      - uses: actions/checkout@v4
+        with:
+          repository: StefanBartl/lib.nvim
+          path: lib.nvim
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: Run docs/TESTS suite
+        working-directory: spotlight.nvim
+        run: nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile docs/TESTS/run.lua" -c "qa!"

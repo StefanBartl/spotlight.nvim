@@ -1,0 +1,117 @@
+# spotlight.nvim — Binding Cheatsheet
+
+Machine-readable overview of every keymap, user command, autocommand and
+highlight group defined by `spotlight.nvim`. This file is documentation only and
+mirrors the source of truth in `lua/spotlight/bindings/`. Any change there must
+be reflected here.
+
+Every mapping binds directly onto a facade action (`require("spotlight").<action>`)
+— there is no `<Plug>` indirection. which-key, when installed, only labels the
+preset's leader prefix as a group; it does not register the individual keys.
+
+## Keymaps
+
+Bound only when `keymaps.preset = true` (the default). Each `lhs` is its own
+config value under `keymaps.*`; setting one to `false` drops just that mapping.
+
+| lhs | mode | action | config key | desc |
+| --- | --- | --- | --- | --- |
+| `<leader>mk` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on the token under the cursor |
+| `<leader>mk` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on the exact visual selection |
+| `<leader>mK` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
+| `<leader>m<C-k>` | n | `clear` | `keymaps.clear` | Remove every spotlight |
+| `<leader>mq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
+| `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence |
+| `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence |
+
+**No `lhs` above is a prefix of another.** This is deliberate: a mapping that is
+also the prefix of a longer one costs a `'timeoutlen'` pause on *every* press,
+which is why clear-all is `<leader>m<C-k>` rather than `<leader>mkc`.
+
+Collision-checked against the existing `<leader>m*` group in the author's config
+(`<leader>man`, `<leader>ms`, `<leader>mc`, `<leader>mn*`, `<leader>ml*`,
+`<leader>mv*`) and against `]`/`[` motions (`]q`, `]l`, `]d`, `]w`).
+
+## User commands
+
+One verb, built with `lib.nvim.usercmd.composer` — `<Tab>` completion, argument
+typing and validation come from the route tree.
+
+| Command | Args | Range | Action | Desc |
+| --- | --- | --- | --- | --- |
+| `:Spotlight` | — | no | `toggle` | Default route: toggle the token under the cursor |
+| `:Spotlight toggle` | `[text]` | yes | `toggle` / `add` / `remove` | Cursor token, `'<,'>` range selection, or explicit `text` |
+| `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
+| `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
+| `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
+| `:Spotlight list` | `[jump\|remove]` | no | `list` / `list_remove` | Open the list; `remove` deletes on select |
+| `:Spotlight next` | — | no | `next` | Jump to the next occurrence |
+| `:Spotlight prev` | — | no | `prev` | Jump to the previous occurrence |
+| `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines → quickfix (all, or just `text`'s) |
+| `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
+| `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
+
+Every keymap action has a command and vice versa: no feature exists only on a key.
+
+## Autocommands
+
+All idempotent — their augroups are cleared on every `setup()`. There is
+deliberately **no `TextChanged` and no `CursorMoved`** handler anywhere: a
+pattern-based highlight needs no invalidation when the text moves, and that is
+the whole reason `matchadd()` was chosen over extmarks.
+
+| Group | Event(s) | Pattern | Purpose |
+| --- | --- | --- | --- |
+| `spotlight_windows` | `WinNew`, `BufWinEnter`, `TabNewEntered` | `*` | Apply every active spotlight to windows that have none yet. `matchadd()` is window-local, so this is what makes the marking look global. All three are needed: `WinNew` for a `:split`, `BufWinEnter` for a buffer shown in an existing window, `TabNewEntered` for a tab created with its window already in place. Deferred one tick, because on `WinNew` the new window is not yet current. |
+| `spotlight_windows` | `WinClosed` | `*` | Drop the closed window's ledger entry. The matches died with the window, so `matchdelete()` on those ids would only fail. |
+| `spotlight_highlights` | `ColorScheme` | `*` | Redefine `Spotlight1..8`. A colorscheme clears highlight groups it does not know about. Gated by `palette.reapply_on_colorscheme`. |
+| `spotlight_highlights` | `OptionSet` | `background` | Switch between `palette.colors` and `palette.colors_light`. |
+| `spotlight_persist` | `VimEnter` | `*` | Load the persisted snapshot, once. Not called directly from `setup()`: a session or `:cd` plugin may not have settled the project root yet, and the store is keyed by it. Gated by `persist.enable`. |
+| `spotlight_persist` | `VimLeavePre` | `*` | Flush a pending debounced save, so the last toggle before `:qa` is not the one lost. Gated by `persist.enable`. |
+
+## Highlight groups
+
+Defined by `setup()` and re-defined on `ColorScheme` / `OptionSet background`.
+Configure them via `palette.colors` / `palette.colors_light` — redefining a group
+yourself would be overwritten by the next `ColorScheme`.
+
+| Group | Dark bg/fg | Light bg/fg | Note |
+| --- | --- | --- | --- |
+| `Spotlight1` | `#ffd75f` / `#1c1c1c` | `#b58900` / `#ffffff` | yellow |
+| `Spotlight2` | `#87d7ff` / `#1c1c1c` | `#268bd2` / `#ffffff` | cyan |
+| `Spotlight3` | `#ff87d7` / `#1c1c1c` | `#d33682` / `#ffffff` | pink |
+| `Spotlight4` | `#a8e22e` / `#1c1c1c` | `#587a00` / `#ffffff` | green |
+| `Spotlight5` | `#ffaf5f` / `#1c1c1c` | `#cb4b16` / `#ffffff` | orange |
+| `Spotlight6` | `#b48eff` / `#ffffff` | `#6c4bb6` / `#ffffff` | purple |
+| `Spotlight7` | `#5fd7af` / `#1c1c1c` | `#2aa198` / `#ffffff` | teal |
+| `Spotlight8` | `#ff5f5f` / `#ffffff` | `#dc322f` / `#ffffff` | red |
+
+Each sets both `bg` **and** `fg` (plus `bold`, per `palette.bold`), so contrast
+is guaranteed in either theme rather than inherited from the colorscheme.
+
+## Facade actions
+
+Every action, for binding your own keys with `keymaps.preset = false`.
+
+| Function | Mode | Returns | Desc |
+| --- | --- | --- | --- |
+| `require("spotlight").toggle()` | n | `boolean` | Toggle the resolved token under the cursor |
+| `require("spotlight").toggle_selection()` | x | `boolean` | Toggle the exact visual selection (literal) |
+| `require("spotlight").add(text)` | any | `boolean` | Add a spotlight for a literal string |
+| `require("spotlight").remove(text)` | any | `boolean` | Remove by exact text |
+| `require("spotlight").clear()` | any | `boolean` | Remove every spotlight |
+| `require("spotlight").list()` | n | `nil` | Open the list; selection jumps |
+| `require("spotlight").list_remove()` | n | `nil` | Open the list; selection removes |
+| `require("spotlight").next()` | n | `boolean` | Next occurrence |
+| `require("spotlight").prev()` | n | `boolean` | Previous occurrence |
+| `require("spotlight").quickfix(text?)` | n | `boolean` | Matching lines → quickfix |
+| `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
+| `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
+| `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |
+| `require("spotlight").spotlights()` | any | `Spotlight.Item[]` | The live registry |
+
+## Global variables
+
+| Variable | Purpose |
+| --- | --- |
+| `vim.g.loaded_spotlight` | Load guard. Set it to `1` before the plugin is sourced to disable it entirely. |

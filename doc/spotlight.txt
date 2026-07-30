@@ -1,0 +1,464 @@
+*spotlight.txt*             Persistent multi-token highlighting for Neovim logs
+
+==============================================================================
+CONTENTS                                                   *spotlight-contents*
+
+  1. Introduction ............................. |spotlight-introduction|
+  2. Why matchadd() ........................... |spotlight-matchadd|
+  3. Setup .................................... |spotlight-setup|
+  4. Keymaps .................................. |spotlight-keymaps|
+  5. Commands ................................. |spotlight-commands|
+  6. Configuration ............................ |spotlight-config|
+  7. Token resolution ......................... |spotlight-cursor|
+  8. Navigation ............................... |spotlight-nav|
+  9. The list ................................. |spotlight-list|
+ 10. Quickfix filter .......................... |spotlight-quickfix|
+ 11. Persistence .............................. |spotlight-persist|
+ 12. Colors ................................... |spotlight-colors|
+ 13. Lua API .................................. |spotlight-api|
+ 14. Health ................................... |spotlight-health|
+ 15. lib.nvim integration ..................... |spotlight-lib|
+
+==============================================================================
+1. INTRODUCTION                                        *spotlight-introduction*
+
+spotlight.nvim highlights any number of tokens at once, in colors you can tell
+apart, permanently: the highlighting survives searches, scrolling, window
+switches and `:split`, and it is restored the next time you open the project.
+
+The use case it is built for is reading a log. You find a request id, a PID, an
+IP or an error code, and you want every other occurrence visible immediately —
+several of them at the same time.
+
+What Neovim offers on its own does not cover it:
+
+  - `*` and 'hlsearch' handle one token, and collide with your real search.
+  - |matchadd()| is the right primitive but is window-local: a `:split` shows
+    the same buffer with no highlights.
+  - |:match| has three slots, no list, and no persistence.
+
+Requires Neovim 0.9+ and "StefanBartl/lib.nvim". No Treesitter. No
+|TextChanged| or |CursorMoved| autocommand — see |spotlight-matchadd|.
+
+==============================================================================
+2. WHY MATCHADD()                                          *spotlight-matchadd*
+
+The decision the plugin is built around, and the reason it stays usable on a
+log too big to open in anything else.
+
+Extmarks store *positions*. Setting them means scanning the buffer: O(file
+size) on every add, and again on every text change. On a 200 MB log that is not
+a slow path, it is an unusable one.
+
+|matchadd()| stores the *pattern* and hands it to Vim's renderer, which
+evaluates it in C over the visible lines only. Cost is proportional to the
+window, not to the file, and a text change needs no invalidation at all,
+because nothing position-shaped was ever stored.
+
+The price is that a match is window-local, so the plugin keeps a ledger
+(window -> { spotlight id -> match id }) and fills new windows from three
+autocommands (|WinNew|, |BufWinEnter|, |TabNewEntered|). That is the whole
+trade.
+
+Two consequences are visible in the interface:
+
+  - Match counts are computed only when the list is opened (|spotlight-list|),
+    never maintained. Keeping them current would reintroduce the whole-buffer
+    scan that this choice avoids.
+  - The quickfix filter (|spotlight-quickfix|) is an explicit command rather
+    than something continuous, for the same reason.
+
+==============================================================================
+3. SETUP                                                      *spotlight-setup*
+
+                                                           *spotlight.setup()*
+>lua
+    require("spotlight").setup()
+<
+No arguments needed: the defaults are the intended everyday configuration.
+setup() merges your options over them, defines the |Spotlight1| ... palette
+groups, registers the |:Spotlight| command and the autocommands, and — unless
+`keymaps.preset` is false — binds the preset keys.
+
+With lazy.nvim:
+>lua
+    {
+      "StefanBartl/spotlight.nvim",
+      dependencies = { "StefanBartl/lib.nvim" },
+      event = "VeryLazy",
+      config = function()
+        require("spotlight").setup()
+      end,
+    }
+<
+`ft` is not a useful gate: logs arrive with every filetype, and often with none.
+
+setup() is safe to call once. Invalid config values are degraded to their
+defaults rather than raising, and reported by |:checkhealth| — one bad line
+should not stop the plugin from loading.
+
+==============================================================================
+4. KEYMAPS                                                  *spotlight-keymaps*
+
+Bound when `keymaps.preset` is true (the default):
+
+    <leader>mk       n  toggle a spotlight on the token under the cursor
+    <leader>mk       x  toggle a spotlight on the exact selection
+    <leader>mK       n  open the spotlight list
+    <leader>m<C-k>   n  remove every spotlight
+    <leader>mq       n  matching lines -> quickfix
+    ]k               n  next occurrence
+    [k               n  previous occurrence
+
+None of these is a prefix of another, deliberately: a mapping that is also the
+prefix of a longer one costs a 'timeoutlen' pause on every press. That is why
+clear-all is `<leader>m<C-k>` rather than `<leader>mkc`.
+
+Each key is its own config value. Setting one to `false` frees that lhs while
+keeping the rest of the preset:
+>lua
+    require("spotlight").setup({
+      keymaps = {
+        toggle = "<leader>hh",
+        next = false,          -- leave ]k alone
+      },
+    })
+<
+Or bind the actions yourself — they are plain functions (|spotlight-api|):
+>lua
+    require("spotlight").setup({ keymaps = { preset = false } })
+    vim.keymap.set("n", "<leader>hh", require("spotlight").toggle)
+<
+which-key is a soft dependency. When installed, the preset's leader prefix is
+labelled as a "Spotlight" group; per-key descriptions come from each mapping's
+own `desc`, so nothing else is registered.
+
+==============================================================================
+5. COMMANDS                                                *spotlight-commands*
+
+                                                                  *:Spotlight*
+One verb with <Tab>-completed subcommands, built on lib.nvim's user-command
+composer — completion, argument validation and the generated docs all come from
+the same route tree.
+
+    :Spotlight                     toggle the token under the cursor
+    :Spotlight toggle [text]       toggle the cursor token, a range selection,
+                                   or the explicit {text}
+    :Spotlight add {text}          add a spotlight for the literal {text}
+    :Spotlight remove {text}       remove the spotlight matching {text}
+    :Spotlight clear               remove every spotlight
+    :Spotlight list [jump|remove]  open the list; "remove" deletes on select
+    :Spotlight next                jump to the next occurrence
+    :Spotlight prev                jump to the previous occurrence
+    :Spotlight qf [text]           matching lines -> quickfix
+    :Spotlight persist {state}     on | off | default | status
+    :Spotlight refresh             redefine the palette, re-apply everything
+
+`:'<,'>Spotlight toggle` works from a visual selection: the selection is read
+from the '< and '> marks, which become valid exactly when a `:` command runs.
+
+Every keymap action has a command, and vice versa. There is no feature that
+exists only on a key.
+
+==============================================================================
+6. CONFIGURATION                                             *spotlight-config*
+
+Defaults shown. Every key is typed (`Spotlight.Config` in
+lua/spotlight/@types/), so lua_ls completes and checks the table.
+>lua
+    require("spotlight").setup({
+      palette = {
+        colors = { { bg = "#ffd75f", fg = "#1c1c1c" }, ... },  -- dark themes
+        colors_light = { { bg = "#b58900", fg = "#ffffff" }, ... },
+        bold = true,
+        reapply_on_colorscheme = true,
+      },
+      match = {
+        priority = 10,            -- matchadd() priority; >0 is above 'hlsearch'
+        ignore_case = false,      -- false pins \C into the pattern
+        word_boundaries = true,   -- \<...\> around all-word-character tokens
+        max = 64,
+      },
+      cursor = {
+        patterns = { ... },       -- Lua patterns, highest priority first
+        fallback_cword = true,
+      },
+      nav = {
+        scope = "auto",           -- "auto" | "all"
+        wrap = true,
+        center = true,
+      },
+      list = {
+        count = true,
+        count_max_lines = 200000,
+        swatch = "  ",
+      },
+      quickfix = {
+        open = true,
+        title = "Spotlight",
+      },
+      persist = {
+        enable = true,
+        default = true,
+        debounce_ms = 500,
+      },
+      keymaps = {
+        preset = true,
+        toggle = "<leader>mk",
+        list = "<leader>mK",
+        clear = "<leader>m<C-k>",
+        quickfix = "<leader>mq",
+        next = "]k",
+        prev = "[k",
+      },
+      notify = true,
+    })
+<
+Arrays are replaced wholesale rather than merged, so you can genuinely shrink
+`cursor.patterns` or `palette.colors` instead of only extending them.
+
+`match.ignore_case = false` writes `\C` into every pattern. This is deliberate:
+a spotlight then keeps matching the same text after you toggle 'ignorecase' or
+'smartcase', instead of silently changing meaning between sessions. Logs are
+case-sensitive data.
+
+==============================================================================
+7. TOKEN RESOLUTION                                          *spotlight-cursor*
+
+`<cword>` is the obvious answer and the wrong one here: it splits on
+'iskeyword', so 550e8400-e29b-41d4-a716-446655440000 is five words,
+192.168.1.1 is four and 0x1f4a is two. The tokens worth tracking in a log are
+precisely the ones it cannot see.
+
+Instead, `cursor.patterns` is a list of Lua patterns in priority order. Each is
+searched across the whole cursor line, and the first pattern with a match that
+*spans the cursor column* wins. The defaults cover, in order: UUID, ISO 8601
+timestamp, bare clock time, IPv4 with port, IPv4, hex literal, long hex blob
+(git sha / trace id), user@host, dotted identifier, number, generic token
+including dashes. `<cword>` is the last resort.
+
+Order matters and is yours to control: a broad pattern placed early shadows
+every specific one after it. Patterns Lua rejects are dropped at setup() and
+reported by |:checkhealth| rather than throwing later, from inside an unrelated
+keystroke.
+
+                                                       *spotlight-boundaries*
+Whether the generated regex gets word boundaries follows the token's own
+*shape*, not which pattern produced it:
+
+  - A token made only of word characters gets `\<` and `\>` — so `error` does
+    not light up inside `errors`.
+  - Anything else cannot have them. `\<192.168.1.1\>` matches nothing, because
+    `\<` asserts a word start and `1` after `.` is not one.
+
+Deriving this from the shape rather than from the matching pattern is what keeps
+`match.word_boundaries` meaningful — tying it to pattern ordering would make the
+broad generic-token entry shadow `<cword>` and leave the boundary case
+unreachable.
+
+A visual selection and `:Spotlight add` are always literal: selecting `err` out
+of `error` is an explicit request to match that substring, and adding boundaries
+would produce a spotlight that highlights nothing.
+
+==============================================================================
+8. NAVIGATION                                                   *spotlight-nav*
+
+`]k` and `[k` jump one occurrence, using |search()| — so a jump costs the
+distance travelled, not the size of the file. The search register and 'hlsearch'
+are left untouched; spotlights are a parallel marking system.
+
+With `nav.scope = "auto"` (the default), a cursor sitting inside one spotlight's
+match navigates *that* spotlight only: pressing `]k` on a request id means
+"follow this id", not "land on the next unrelated PID two lines down". Off any
+match, every spotlight is in scope, searched as one alternation.
+
+`nav.scope = "all"` always uses every spotlight.
+
+`nav.wrap = false` stops at the end of the buffer instead of wrapping.
+`nav.center = false` skips the |zz| after a jump.
+
+==============================================================================
+9. THE LIST                                                    *spotlight-list*
+
+`<leader>mK` or `:Spotlight list` opens a chooser with one row per spotlight:
+
+    <color swatch>  <token>                       <match count>
+
+Selecting a row jumps to that spotlight's first occurrence in the current
+buffer. `:Spotlight list remove` opens the same list with selection bound to
+removal instead.
+
+The swatch is painted in the spotlight's own |Spotlight1| ... group, via
+lib.nvim.ui.kit.select's rich items, so there is no rendering code in this
+plugin.
+
+Match counts are computed when the list opens, and only then — the one O(buffer)
+operation here (see |spotlight-matchadd|). Above `list.count_max_lines` (default
+200000) the scan is skipped and the count shows `?`; that is meaningfully
+different from `0` and the title says so. Set `list.count = false` to skip
+counting entirely.
+
+The list deliberately does not honour a `vim.ui.select` override
+(telescope-ui-select, fzf-lua, dressing): a foreign picker only understands
+plain strings, so delegating would drop the per-row colors that are the point.
+
+==============================================================================
+10. QUICKFIX FILTER                                        *spotlight-quickfix*
+
+`<leader>mq` or `:Spotlight qf` puts every line of the current buffer that
+matches a spotlight into the quickfix list — "show me only the lines with this
+request id". With `:Spotlight qf {text}`, only that one spotlight's lines.
+
+A line matched by several spotlights appears once: the question is which lines,
+not which highlights.
+
+`quickfix.open = true` (the default) runs |:copen| and then hands focus back to
+the window you ran it from, so the filtered list sits alongside the log. Running
+it from inside the quickfix window is refused rather than filtering the list
+into itself.
+
+The spotlight colors render inside the quickfix window too — it is an ordinary
+window as far as the ledger is concerned.
+
+==============================================================================
+11. PERSISTENCE                                             *spotlight-persist*
+
+State lives in lib.nvim.store.project under the key `spotlight/state`, keyed by
+*git root* — so it works when you open the project from a subdirectory, and
+follows the checkout to another machine. Writes are debounced (a burst of
+toggles is one logical change) and flushed on |VimLeavePre|, so the last toggle
+before `:qa` is never the one lost. Loading happens once, on |VimEnter| — not
+directly from setup(), because a session or `:cd` plugin may not have settled
+the project root yet.
+
+Two independent switches cover both directions:
+>lua
+    persist = { default = true }   -- opt-out (default): everything persists
+    persist = { default = false }  -- opt-in: nothing persists unless said so
+<
+Per file:
+>vim
+    :Spotlight persist off      " this file: do not persist
+    :Spotlight persist on       " this file: do persist
+    :Spotlight persist default  " drop the override, follow the global default
+    :Spotlight persist status   " what applies here, and why
+<
+The override is recorded against the project-relative file path, not the buffer
+number, so it survives closing and reopening the file.
+
+                                                         *spotlight-exception*
+What a per-file exception suppresses, precisely: spotlights are session-global
+while an exception names a file, so this needs stating.
+
+An exception suppresses the spotlights that were *created while looking at*
+that file. Each spotlight records its origin once, when you make it.
+
+It does not mean "spotlights that appear in this file". That is not
+implementable and not well-defined: knowing where a token appears would mean
+scanning every file in the project on every save — the exact cost this plugin
+exists to avoid — and the answer would change every time a log rotates.
+
+So a spotlight created in worker.log stays persisted even if the same string
+also occurs in an excluded secrets.log. That matches the use case: "this
+customer log is full of tokens I do not want written to my cache directory" is a
+statement about where the tokens came from.
+
+The exception list itself is always persisted, including for excluded files.
+Otherwise `:Spotlight persist off` would not survive a restart.
+
+Spotlights are filtered against the current rules on load as well as on save, so
+flipping `persist.default` in your config takes effect immediately rather than
+only for spotlights created afterwards.
+
+==============================================================================
+12. COLORS                                                   *spotlight-colors*
+
+                *Spotlight1* *Spotlight2* *Spotlight3* *Spotlight4*
+                *Spotlight5* *Spotlight6* *Spotlight7* *Spotlight8*
+
+Eight highlight groups, each with an explicit `bg` *and* `fg`. Setting only a
+background is the usual mistake: the foreground then comes from whatever the
+colorscheme left there, which is how a readable marker becomes yellow-on-yellow
+after `:colorscheme`. Both channels are pinned, so contrast is a property of the
+plugin rather than of the theme.
+
+Two arrays exist — `palette.colors` for dark themes, `palette.colors_light` for
+light — and changing 'background' switches between them. The groups are
+redefined on |ColorScheme|, because a colorscheme clears groups it does not know
+about; that also means redefining `SpotlightN` yourself afterwards will be
+overwritten. Configure the colors through setup() instead.
+
+Slot allocation is round-robin from the last one handed out, skipping slots
+still in use while any are free. Plain round-robin would hand out a color
+already on screen while three others sit unused, and two identically colored
+spotlights are exactly the confusion the palette exists to prevent.
+
+'termguicolors' should be on. Without it the hex values are approximated to the
+terminal's 256-color cube and slots get harder to tell apart; |:checkhealth|
+warns about this.
+
+==============================================================================
+13. LUA API                                                     *spotlight-api*
+
+Every action is a plain function on the `spotlight` module, so it can be bound
+to any key or called from your own code:
+>lua
+    local spotlight = require("spotlight")
+
+    spotlight.toggle()             -- token under the cursor
+    spotlight.toggle_selection()   -- current visual selection (visual mode)
+    spotlight.add(text)            -- literal text
+    spotlight.remove(text)         -- by exact text
+    spotlight.clear()              -- all
+    spotlight.list()               -- the list, selection jumps
+    spotlight.list_remove()        -- the list, selection removes
+    spotlight.next()               -- next occurrence
+    spotlight.prev()               -- previous occurrence
+    spotlight.quickfix(text|nil)   -- matching lines -> quickfix
+    spotlight.persist_set(bool|nil)-- per-file override for the current file
+    spotlight.persist_status()     -- report it
+    spotlight.refresh()            -- redefine palette, re-apply everything
+    spotlight.spotlights()         -- the live Spotlight.Item[] list
+<
+Each returns a boolean saying whether anything happened, and reports its own
+outcome (suppress those messages with `notify = false`).
+
+`spotlight.refresh()` is also the escape hatch if another plugin has cleared the
+current window's matches with `clearmatches()`.
+
+==============================================================================
+14. HEALTH                                                   *spotlight-health*
+>vim
+    :checkhealth spotlight
+<
+Reports the Neovim version; 'termguicolors'; each lib.nvim module separately
+with what it is used for (a missing usercmd.composer and a missing debounce are
+very different problems); every config value that failed validation and what it
+fell back to; the resolved match/cursor/keymap settings; and the live state —
+active spotlights with their slots, how many windows carry matches, the project
+root, and every per-file persistence override.
+
+==============================================================================
+15. LIB.NVIM INTEGRATION                                        *spotlight-lib*
+
+"StefanBartl/lib.nvim" is a required dependency. Two modules are hard
+requirements:
+
+    lib.nvim.usercmd.composer   the :Spotlight verb
+    lib.nvim.ui.kit.select      the spotlight list (rich items)
+
+The rest are used when present and fall back to a native equivalent otherwise,
+so a partial install degrades a message or a keymap registration rather than
+breaking a feature:
+
+    lib.nvim.store.project      per-project persistence
+    lib.nvim.debounce           coalesced state saves
+    lib.nvim.notify             namespaced notifications
+    lib.nvim.map                keymap registration
+    lib.nvim.autocmd            guarded autocommands
+    lib.nvim.ui.hl              highlight definition
+    lib.nvim.cross.platform     Windows path-case detection
+
+|:checkhealth| lists each one with its status.
+
+vim:tw=78:ts=8:ft=help:norl:

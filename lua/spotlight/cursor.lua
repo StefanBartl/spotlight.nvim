@@ -84,6 +84,24 @@ function M.token(bufnr)
   end
 
   local opts = config.get("cursor")
+
+  -- Bail out of the pattern scan on a pathological line before doing any of it.
+  -- The scan is O(line) per pattern and a user-supplied Lua pattern may
+  -- backtrack; a minified single-line JSON log makes that product large enough
+  -- to hang the editor on a keypress. `<cword>` is bounded by the token rather
+  -- than the line, so it still answers usefully here.
+  if #line > opts.max_line_len then
+    lib.debug("cursor: line over cursor.max_line_len, skipping the pattern scan", {
+      len = #line,
+      limit = opts.max_line_len,
+    })
+    local cword = vim.fn.expand("<cword>")
+    if opts.fallback_cword and type(cword) == "string" and cword ~= "" then
+      return { text = cword, kind = kind_of(cword) }
+    end
+    return nil
+  end
+
   for i, pat in ipairs(opts.patterns) do
     local text = match_spanning(line, col0, pat)
     if text and text ~= "" then
@@ -139,6 +157,13 @@ function M.selection()
   local text = line:sub(scol, math.min(ecol, #line))
   if text == "" then
     return nil, "empty selection"
+  end
+  -- Checked here as well as in the registry, so the message names the actual
+  -- cause: a `v$` on a minified single-line file selects the whole file, and
+  -- "selection is 4.2 MB" is a more useful answer than a generic refusal.
+  local max_len = config.get("match.max_text_len")
+  if #text > max_len then
+    return nil, ("selection is %d bytes, over the %d-byte limit (match.max_text_len)"):format(#text, max_len)
   end
   -- Always literal, never shape-classified like `M.token`: selecting `err` out
   -- of `error` is an explicit request to match that substring, and adding word

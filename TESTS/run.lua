@@ -16,6 +16,7 @@ local SPECS = {
   "registry_spec",
   "nav_spec",
   "persist_spec",
+  "hardening_spec",
   "commands_spec",
 }
 

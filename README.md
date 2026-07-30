@@ -44,6 +44,7 @@ project, with a per-file opt-out.
 - [Colors](#colors)
 - [Health](#health)
 - [Debugging](#debugging)
+- [Security model](#security-model)
 - [Architecture](#architecture)
 - [Roadmap](#roadmap)
 
@@ -316,6 +317,7 @@ require("spotlight").setup({
     ignore_case = false,      -- false pins \C, so 'ignorecase' cannot change a spotlight
     word_boundaries = true,   -- \<...\> around all-word-character tokens only
     max = 64,                 -- refuse to add more than this many at once
+    max_text_len = 512,       -- longest token accepted, in bytes (see Security model)
   },
 
   cursor = {
@@ -324,6 +326,7 @@ require("spotlight").setup({
     -- every specific one after it. See config/DEFAULTS.lua for the full list.
     patterns = { --[[ uuid, ISO timestamp, clock, ipv4[:port], 0x…, sha, user@host, a.b.c, number, token ]] },
     fallback_cword = true,
+    max_line_len = 8192,      -- above this, skip the scan and use <cword> (see Security model)
   },
 
   nav = {
@@ -341,6 +344,7 @@ require("spotlight").setup({
   quickfix = {
     open = true,              -- :copen after filling (focus returns to your buffer)
     title = "Spotlight",
+    max_entries = 10000,      -- stop after this many matching lines (see Security model)
   },
 
   persist = {
@@ -498,6 +502,54 @@ Routed through `lib.nvim.logger` (one `spotlight` instance, inspectable with
 `:LibLogger`), falling back to `vim.notify` at DEBUG level when that is not
 installed. With `debug = false` a log call costs one table lookup.
 
+
+---
+
+## Security model
+
+Not a claim of hardness — a plugin that highlights text is not a security
+boundary — but a statement of what is and is not trusted, so the guards below
+have a reason rather than a vibe.
+
+**Nothing is executed, nothing is fetched, nothing is written outside the cache.**
+No shell-outs, no `io.*`, no jobs, no network. The only three `vim.cmd` calls are
+the fixed literals `normal! zz` and `copen`, with nothing interpolated. The only
+file written is the state snapshot, through `lib.nvim.store.project`.
+
+**Regexes cannot backtrack pathologically.** Every pattern handed to Vim is built
+by `core/pattern.lua` as `\C\V` plus escaped literal text — no quantifiers, no
+groups, no alternation *inside* a branch. So no input, however crafted, can
+produce catastrophic backtracking. `\V` (very nomagic) also reduces escaping to a
+single character, the backslash, which is why the escape is one substitution
+rather than a character class that could fall out of sync with Vim's magic rules.
+
+**The snapshot is treated as external input.** It is JSON in the cache directory:
+writable by anything running as this user, and hand-editable. So every field is
+re-validated on load — type, non-empty, length cap, dedup, count cap, palette slot
+clamped into range. Crucially the **regex is rebuilt from `text`**, never read from
+the file, so a crafted snapshot cannot inject a pattern.
+
+**Bounded inputs.** Three limits exist specifically because the size is not the
+plugin's to control:
+
+| Guard | Default | Unbounded input it covers |
+| --- | --- | --- |
+| `match.max_text_len` | 512 | A `v$` on a minified single-line file, or a snapshot field — either would otherwise reach `matchadd()` as a multi-megabyte pattern re-evaluated on every redraw. |
+| `cursor.max_line_len` | 8192 | A minified single-line JSON log. The resolver scan is O(line) *per pattern* and a user-supplied Lua pattern may backtrack; above the limit the scan is skipped and `<cword>` answers instead. |
+| `quickfix.max_entries` | 10000 | A common token in a large log. Unlike counting, filtering *produces* memory — one entry per matching line, each holding the full line text. Truncation is reported, in the notification and in the list title. |
+
+**Exception keys are data, never paths.** A persisted key like `../../../etc/passwd`
+is stored and compared as an opaque table key and JSON field. The plugin opens no
+files of its own, so there is nothing for a traversal to traverse.
+
+**Config values are sanitized, not trusted.** Invalid colors and unparseable Lua
+patterns are dropped, numbers are range-checked, and `list.swatch` has newlines
+stripped — it is written into a chooser buffer line, where `nvim_buf_set_lines`
+treats an embedded newline as a hard error rather than as two lines.
+
+**No privilege, no elevation, no secrets handled.** Note that spotlighted tokens
+*are* persisted to the cache directory by default — if you are reading a log full
+of credentials, `:Spotlight persist off` is the switch that keeps them out of it.
 
 ---
 

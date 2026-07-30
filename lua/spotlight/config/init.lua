@@ -130,6 +130,40 @@ local function normalize_numbers(o)
     o.persist.debounce_ms = DEFAULTS.persist.debounce_ms
     M.issues[#M.issues + 1] = "persist.debounce_ms must be a non-negative number — using the default"
   end
+  if type(o.match.max_text_len) ~= "number" or o.match.max_text_len < 1 then
+    o.match.max_text_len = DEFAULTS.match.max_text_len
+    M.issues[#M.issues + 1] = "match.max_text_len must be a positive number — using the default"
+  end
+  if type(o.cursor.max_line_len) ~= "number" or o.cursor.max_line_len < 1 then
+    o.cursor.max_line_len = DEFAULTS.cursor.max_line_len
+    M.issues[#M.issues + 1] = "cursor.max_line_len must be a positive number — using the default"
+  end
+  if type(o.quickfix.max_entries) ~= "number" or o.quickfix.max_entries < 1 then
+    o.quickfix.max_entries = DEFAULTS.quickfix.max_entries
+    M.issues[#M.issues + 1] = "quickfix.max_entries must be a positive number — using the default"
+  end
+end
+
+--- Strip newlines from `list.swatch`.
+---
+--- The swatch is written straight into the chooser's buffer as part of a line, and
+--- `nvim_buf_set_lines` treats an embedded newline as a hard error, not as two
+--- lines — so a `"\n"` in this string would turn opening the list into a stack
+--- trace. Sanitized rather than rejected: the intent (some visible filler) is
+--- clear and recoverable.
+---@param o Spotlight.Config
+---@return nil
+local function normalize_swatch(o)
+  if type(o.list.swatch) ~= "string" then
+    o.list.swatch = DEFAULTS.list.swatch
+    M.issues[#M.issues + 1] = "list.swatch must be a string — using the default"
+    return
+  end
+  local clean = o.list.swatch:gsub("[\r\n]", " ")
+  if clean ~= o.list.swatch then
+    M.issues[#M.issues + 1] = "list.swatch contained a newline — replaced with a space (it is written into a buffer line)"
+    o.list.swatch = clean
+  end
 end
 
 --- Normalize `nav.scope` to a value `spotlight.nav` understands.
@@ -153,6 +187,7 @@ function M.setup(opts)
   normalize_cursor_patterns(M.options)
   normalize_numbers(M.options)
   normalize_nav(M.options)
+  normalize_swatch(M.options)
 end
 
 --- Read a value by dot-path, e.g. `get("match.priority")`.

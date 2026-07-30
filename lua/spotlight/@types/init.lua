@@ -82,10 +82,12 @@
 ---@field ignore_case boolean  # false pins `\C` (case-sensitive) regardless of 'ignorecase'.
 ---@field word_boundaries boolean # Wrap `word`-kind tokens in `\<`/`\>`.
 ---@field max integer          # Refuse to add more than this many spotlights at once.
+---@field max_text_len integer # Longest token accepted, in bytes. Bounds the pattern handed to `matchadd()`.
 
 ---@class Spotlight.CursorOpts
 ---@field patterns string[] # Lua patterns, highest priority first; first one whose match spans the cursor wins.
 ---@field fallback_cword boolean # Fall back to `<cword>` when no pattern matches.
+---@field max_line_len integer # Above this line length, skip the pattern scan and use `<cword>` directly.
 
 ---@class Spotlight.NavOpts
 ---@field scope Spotlight.NavScope # "auto": the spotlight under the cursor if there is one, else all.
@@ -100,6 +102,7 @@
 ---@class Spotlight.QuickfixOpts
 ---@field open boolean  # `:copen` after filling the list.
 ---@field title string  # Quickfix list title.
+---@field max_entries integer # Stop after this many matching lines; the title says it was truncated.
 
 ---@class Spotlight.PersistOpts
 ---@field enable boolean   # Master switch for the whole persistence layer.

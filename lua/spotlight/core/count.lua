@@ -72,10 +72,24 @@ end
 --- and a line is reported once even if several spotlights hit it — the question
 --- being answered is "show me the lines involving this request id", not "show me
 --- each highlight".
+--- Unlike `M.count`, this *produces* memory proportional to the number of hits —
+--- one entry per matching line, each holding that line's full text. On a large
+--- log where the token is common, that is most of the file. So the result is
+--- capped at `max_entries` and the caller is told it was truncated, rather than
+--- silently building a list the size of the buffer.
 ---@param bufnr integer
 ---@param patterns string[]
+---@param max_entries integer|nil # Defaults to `quickfix.max_entries`.
 ---@return table[] items # `{ bufnr, lnum, col, text }`, quickfix shaped.
-function M.matching_lines(bufnr, patterns)
+---@return boolean truncated # True when the cap was reached and scanning stopped.
+function M.matching_lines(bufnr, patterns, max_entries)
+  -- Falls back to the configured cap rather than to "unbounded" if a caller
+  -- omits it: a guard whose absence silently removes the guard is worse than no
+  -- guard at all, since it fails only on the large inputs it existed for.
+  if type(max_entries) ~= "number" or max_entries < 1 then
+    max_entries = require("spotlight.config").get("quickfix.max_entries")
+  end
+
   ---@type vim.regex[]
   local regexes = {}
   for _, p in ipairs(patterns) do
@@ -86,7 +100,7 @@ function M.matching_lines(bufnr, patterns)
   end
   local out = {}
   if #regexes == 0 then
-    return out
+    return out, false
   end
 
   local total = vim.api.nvim_buf_line_count(bufnr)
@@ -102,6 +116,11 @@ function M.matching_lines(bufnr, patterns)
         end
       end
       if first then
+        if #out >= max_entries then
+          -- Stop scanning, not just appending: the remaining work is pure cost
+          -- once the answer is already known to be truncated.
+          return out, true
+        end
         out[#out + 1] = {
           bufnr = bufnr,
           lnum = start + i,
@@ -111,7 +130,7 @@ function M.matching_lines(bufnr, patterns)
       end
     end
   end
-  return out
+  return out, false
 end
 
 return M

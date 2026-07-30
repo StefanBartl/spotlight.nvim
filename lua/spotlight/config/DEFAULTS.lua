@@ -63,6 +63,13 @@ local DEFAULTS = {
     -- hundreds of patterns would be felt. Eight is the palette size; the cap
     -- sits well above it so reuse of a slot is normal, exhaustion is not.
     max = 64,
+    -- Longest token accepted. Nothing worth spotlighting in a log is longer
+    -- than this, and without a bound the length is attacker-controlled in two
+    -- places: a visual selection over a minified single-line file, and the
+    -- restored snapshot (a JSON file on disk, which any process running as the
+    -- user can write). Both would otherwise reach `matchadd()` as a
+    -- multi-megabyte pattern evaluated on every redraw.
+    max_text_len = 512,
   },
 
   -- ---------- token under the cursor ----------
@@ -88,6 +95,13 @@ local DEFAULTS = {
       "[%w_%-]+", -- generic token incl. dashes (broader than <cword>)
     },
     fallback_cword = true,
+    -- Above this line length, the Lua-pattern scan is skipped and `<cword>` is
+    -- used directly. The scan is O(line) *per pattern*, and a user-supplied Lua
+    -- pattern can backtrack — on a minified single-line JSON log (one line, tens
+    -- of megabytes, which is a normal thing to be handed) that product is enough
+    -- to hang the editor on a keypress. `<cword>` is bounded by the token, not
+    -- the line, so it stays usable there.
+    max_line_len = 8192,
   },
 
   -- ---------- navigation ----------
@@ -112,6 +126,12 @@ local DEFAULTS = {
   quickfix = {
     open = true,
     title = "Spotlight",
+    -- Unlike counting, filtering *produces* memory: one entry per matching line,
+    -- each holding that line's full text. On a large log where the token is
+    -- common, "every matching line" is most of the file — so the result is
+    -- truncated and the truncation is reported, rather than quietly growing a
+    -- list the size of the buffer.
+    max_entries = 10000,
   },
 
   -- ---------- persistence ----------

@@ -116,6 +116,10 @@ function M.add(token, opts)
   if type(token.text) ~= "string" or token.text == "" then
     return nil, "nothing to highlight"
   end
+  local max_len = config.get("match.max_text_len")
+  if #token.text > max_len then
+    return nil, ("token is %d bytes, over the %d-byte limit (match.max_text_len)"):format(#token.text, max_len)
+  end
   local existing = M.find_by_text(token.text)
   if existing then
     return nil, ("already spotlighted: %s"):format(token.text)
@@ -210,9 +214,23 @@ function M.restore(stored)
   palette.reset()
   local match_opts = config.get("match")
   local max = config.get("match.max")
+  local max_len = config.get("match.max_text_len")
   local seen = {}
   for _, s in ipairs(stored) do
-    if type(s) == "table" and type(s.text) == "string" and s.text ~= "" and not seen[s.text] and #items < max then
+    -- Every field is re-validated, not trusted. The snapshot is a JSON file in
+    -- the cache directory: writable by anything running as this user, and
+    -- hand-editable. It is the plugin's only external input, so it gets the same
+    -- treatment as one — type checks, the length cap, dedup, and the count cap.
+    -- The regex is rebuilt from `text` rather than read from the file, which is
+    -- what makes a crafted snapshot unable to inject a pattern.
+    if
+      type(s) == "table"
+      and type(s.text) == "string"
+      and s.text ~= ""
+      and #s.text <= max_len
+      and not seen[s.text]
+      and #items < max
+    then
       seen[s.text] = true
       local slot = palette.clamp(s.slot)
       next_id = next_id + 1

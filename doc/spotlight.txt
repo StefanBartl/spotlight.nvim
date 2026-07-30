@@ -18,7 +18,8 @@ CONTENTS                                                   *spotlight-contents*
  13. Lua API .................................. |spotlight-api|
  14. Health ................................... |spotlight-health|
  15. Debugging ................................ |spotlight-debug|
- 16. lib.nvim integration ..................... |spotlight-lib|
+ 16. Security model ........................... |spotlight-security|
+ 17. lib.nvim integration ..................... |spotlight-lib|
 
 ==============================================================================
 1. INTRODUCTION                                        *spotlight-introduction*
@@ -179,10 +180,12 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
         ignore_case = false,      -- false pins \C into the pattern
         word_boundaries = true,   -- \<...\> around all-word-character tokens
         max = 64,
+        max_text_len = 512,       -- see |spotlight-security|
       },
       cursor = {
         patterns = { ... },       -- Lua patterns, highest priority first
         fallback_cword = true,
+        max_line_len = 8192,      -- see |spotlight-security|
       },
       nav = {
         scope = "auto",           -- "auto" | "all"
@@ -197,6 +200,7 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
       quickfix = {
         open = true,
         title = "Spotlight",
+        max_entries = 10000,      -- see |spotlight-security|
       },
       persist = {
         enable = true,
@@ -213,6 +217,7 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
         prev = "[k",
       },
       notify = true,
+      debug = false,              -- see |spotlight-debug|
     })
 <
 Arrays are replaced wholesale rather than merged, so you can genuinely shrink
@@ -468,7 +473,62 @@ With `debug = false` (the default) a log call costs one table lookup, so the
 instrumentation is not conditional on a build.
 
 ==============================================================================
-16. LIB.NVIM INTEGRATION                                        *spotlight-lib*
+16. SECURITY MODEL                                         *spotlight-security*
+
+Not a claim of hardness — a plugin that highlights text is not a security
+boundary — but a statement of what is and is not trusted, so the limits below
+have a reason rather than a vibe.
+
+Nothing is executed, nothing is fetched, nothing is written outside the cache.
+No shell-outs, no `io.*`, no jobs, no network. The only three |:execute|-free
+`vim.cmd` calls are the fixed literals `normal! zz` and `copen`, with nothing
+interpolated. The only file written is the state snapshot, through
+lib.nvim.store.project.
+
+Regexes cannot backtrack pathologically. Every pattern handed to Vim is built as
+`\C\V` plus escaped literal text — no quantifiers, no groups, no alternation
+inside a branch — so no input, however crafted, can produce catastrophic
+backtracking.
+
+The snapshot is treated as external input. It is JSON in the cache directory:
+writable by anything running as this user, and hand-editable. Every field is
+re-validated on load (type, non-empty, length, dedup, count cap, slot clamped),
+and the regex is rebuilt from `text` rather than read from the file — so a
+crafted snapshot cannot inject a pattern.
+
+Three limits exist because the size of the input is not the plugin's to control:
+
+    match.max_text_len     512    Longest token accepted. Covers a `v$` on a
+                                  minified single-line file and any snapshot
+                                  field; without it either reaches |matchadd()|
+                                  as a multi-megabyte pattern re-evaluated on
+                                  every redraw.
+    cursor.max_line_len   8192    Above this, the resolver's Lua-pattern scan is
+                                  skipped and `<cword>` answers instead. The scan
+                                  is O(line) per pattern and a user pattern may
+                                  backtrack; a minified single-line log makes
+                                  that product enough to hang on a keypress.
+    quickfix.max_entries 10000    Unlike counting, filtering *produces* memory —
+                                  one entry per matching line, each holding the
+                                  full line text. Truncation is reported in the
+                                  notification and in the list title.
+
+Persistence exception keys are data, never paths. A key like `../../../etc/passwd`
+is stored and compared as an opaque table key and JSON field; the plugin opens no
+files of its own, so there is nothing for a traversal to traverse.
+
+Config values are sanitized rather than trusted: invalid colors and unparseable
+Lua patterns are dropped, numbers range-checked, and `list.swatch` has newlines
+stripped (it is written into a chooser buffer line, where |nvim_buf_set_lines()|
+treats an embedded newline as a hard error).
+
+One thing to be aware of rather than reassured about: spotlighted tokens *are*
+written to the cache directory by default. When reading a log full of
+credentials, `:Spotlight persist off` is the switch that keeps them out of it
+(see |spotlight-persist|).
+
+==============================================================================
+17. LIB.NVIM INTEGRATION                                        *spotlight-lib*
 
 "StefanBartl/lib.nvim" is a required dependency. Two modules are hard
 requirements:

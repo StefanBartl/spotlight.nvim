@@ -13,6 +13,7 @@
 
 local config = require("spotlight.config")
 local count = require("spotlight.core.count")
+local lib = require("spotlight.util.lib")
 local registry = require("spotlight.core.registry")
 
 local M = {}
@@ -43,14 +44,23 @@ function M.fill(item)
     return 0, "run this from the buffer you want to filter, not from the quickfix window"
   end
 
-  local entries = count.matching_lines(bufnr, pats)
   local opts = config.get("quickfix")
+  local entries, truncated = count.matching_lines(bufnr, pats, opts.max_entries)
 
   local title = item and ("%s: %s"):format(opts.title, item.text) or opts.title
+  if truncated then
+    title = ("%s (first %d)"):format(title, opts.max_entries)
+  end
   vim.fn.setqflist({}, " ", { title = title, items = entries })
 
   if #entries == 0 then
     return 0, "no matching lines in this buffer"
+  end
+  if truncated then
+    lib.notify(
+      ("stopped at %d matching lines (quickfix.max_entries) — the list is truncated"):format(opts.max_entries),
+      vim.log.levels.WARN
+    )
   end
   if opts.open then
     local from = vim.api.nvim_get_current_win()

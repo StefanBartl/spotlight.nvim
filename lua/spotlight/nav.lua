@@ -37,7 +37,14 @@ function M.under_cursor()
   if #items == 0 then
     return nil
   end
-  local pos = vim.api.nvim_win_get_cursor(0)
+  -- Guarded like the identical read in `spotlight.cursor.token`: this function is
+  -- public API, so it can be reached from user code at a moment when window 0 is
+  -- not a normal window (from inside a `WinClosed` callback, say) rather than only
+  -- from a keymap.
+  local ok, pos = pcall(vim.api.nvim_win_get_cursor, 0)
+  if not ok then
+    return nil
+  end
   local row0, col0 = pos[1] - 1, pos[2]
   local line = vim.api.nvim_buf_get_lines(0, row0, row0 + 1, false)[1]
   if not line or line == "" then

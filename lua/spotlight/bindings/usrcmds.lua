@@ -17,22 +17,27 @@ local composer = require("lib.nvim.usercmd.composer")
 
 local M = {}
 
---- The literal text of a single-line range, from the `'<`/`'>` marks.
----@param cmd table # The nvim user-command argument table.
+--- The literal text of a single-line range, from composer's `ctx.range`.
+---
+--- The columns come from `ctx.range.col1`/`col2`, which composer reads off the
+--- `'<`/`'>` marks — the same source this used to query via `vim.fn.col()`
+--- directly, now shared rather than re-derived. The route's `visual` allowlist
+--- takes care of rejecting blockwise/linewise selections, so only the
+--- single-line constraint is left to check here.
+---@param r Lib.UserCmd.Composer.RangeInfo
 ---@return string|nil text, string|nil err
-local function range_text(cmd)
-  if not cmd.range or cmd.range == 0 then
+local function range_text(r)
+  if not r.range or r.range == 0 then
     return nil, nil
   end
-  if cmd.line1 ~= cmd.line2 then
+  if r.line1 ~= r.line2 then
     return nil, "spotlight a selection within a single line"
   end
-  local line = vim.api.nvim_buf_get_lines(0, cmd.line1 - 1, cmd.line1, false)[1]
+  local line = vim.api.nvim_buf_get_lines(0, r.line1 - 1, r.line1, false)[1]
   if not line then
     return nil, "empty line"
   end
-  local scol = vim.fn.col("'<")
-  local ecol = vim.fn.col("'>")
+  local scol, ecol = r.col1, r.col2
   if type(scol) ~= "number" or type(ecol) ~= "number" or scol <= 0 then
     return nil, "no character-wise selection to read"
   end
@@ -63,6 +68,10 @@ function M.setup()
       {
         path = { "toggle" },
         range = true,
+        -- A spotlight is a piece of text within one line, so only a charwise
+        -- selection carries usable geometry: linewise has no columns to read
+        -- and blockwise spans several lines by definition.
+        visual = { "charwise" },
         args = { { name = "text", type = "STRING", optional = true } },
         desc = "Toggle a spotlight (cursor token, range selection, or explicit TEXT)",
         run = function(ctx)
@@ -75,7 +84,7 @@ function M.setup()
             end
             return
           end
-          local text, err = range_text(ctx.raw)
+          local text, err = range_text(ctx.range)
           if err then
             lib.notify(err, vim.log.levels.WARN)
             return

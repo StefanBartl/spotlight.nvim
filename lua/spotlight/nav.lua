@@ -95,10 +95,17 @@ local function nav_pattern()
   return pattern.alternation(pats)
 end
 
---- Jump one occurrence in `dir`.
+--- Jump one occurrence in `dir`, `count` times (the `unimpaired` convention:
+--- `3]k` is three one-step jumps, not "search for the pattern 3 times faster").
+--- Each step re-runs the same one-step `search()`, so a step that finds
+--- nothing (wraps with no match, or `search()` returns 0) stops the loop
+--- early rather than erroring — a partial jump is still a real jump.
 ---@param dir 1|-1 # 1 forward, -1 backward.
+---@param count integer|nil # defaults to 1.
 ---@return boolean moved, string|nil err
-function M.jump(dir)
+function M.jump(dir, count)
+  count = (type(count) == "number" and count > 0) and count or 1
+
   local pat = nav_pattern()
   if not pat then
     return false, "no active spotlights"
@@ -113,8 +120,15 @@ function M.jump(dir)
     flags = flags .. "W"
   end
 
-  local ok, lnum = pcall(vim.fn.search, pat, flags)
-  if not ok or type(lnum) ~= "number" or lnum == 0 then
+  local moved = false
+  for _ = 1, count do
+    local ok, lnum = pcall(vim.fn.search, pat, flags)
+    if not ok or type(lnum) ~= "number" or lnum == 0 then
+      break
+    end
+    moved = true
+  end
+  if not moved then
     return false, "no further occurrence"
   end
   if opts.center then
@@ -123,16 +137,18 @@ function M.jump(dir)
   return true, nil
 end
 
---- Jump to the next occurrence.
+--- Jump to the next occurrence, `count` times.
+---@param count integer|nil # defaults to 1.
 ---@return boolean moved, string|nil err
-function M.next()
-  return M.jump(1)
+function M.next(count)
+  return M.jump(1, count)
 end
 
---- Jump to the previous occurrence.
+--- Jump to the previous occurrence, `count` times.
+---@param count integer|nil # defaults to 1.
 ---@return boolean moved, string|nil err
-function M.prev()
-  return M.jump(-1)
+function M.prev(count)
+  return M.jump(-1, count)
 end
 
 --- Move the cursor to the first occurrence of one specific spotlight, from the

@@ -147,20 +147,22 @@ end
 
 -- ---------- navigation ----------
 
---- Jump to the next spotlight occurrence.
+--- Jump to the next spotlight occurrence. A count prefix (`3]k`) jumps that
+--- many occurrences forward, `unimpaired`-style.
 ---@return boolean moved
 function M.next()
-  local moved, err = nav.next()
+  local moved, err = nav.next(vim.v.count1)
   if not moved then
     report(err or "no further occurrence", vim.log.levels.WARN)
   end
   return moved
 end
 
---- Jump to the previous spotlight occurrence.
+--- Jump to the previous spotlight occurrence. A count prefix (`3[k`) jumps
+--- that many occurrences backward, `unimpaired`-style.
 ---@return boolean moved
 function M.prev()
-  local moved, err = nav.prev()
+  local moved, err = nav.prev(vim.v.count1)
   if not moved then
     report(err or "no further occurrence", vim.log.levels.WARN)
   end

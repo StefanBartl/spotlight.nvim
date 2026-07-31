@@ -47,8 +47,8 @@ function M.setup(cfg)
     api.quickfix(nil)
   end, "spotlight: matching lines to quickfix")
 
-  bind(k.next, "n", api.next, "spotlight: next occurrence")
-  bind(k.prev, "n", api.prev, "spotlight: previous occurrence")
+  bind(k.next, "n", api.next, "spotlight: next occurrence (×count)")
+  bind(k.prev, "n", api.prev, "spotlight: previous occurrence (×count)")
 end
 
 return M

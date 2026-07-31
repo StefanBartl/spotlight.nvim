@@ -162,6 +162,8 @@ function M.check()
   else
     info("persistence: off (persist.enable = false)")
   end
+
+  require("lib.nvim.usercmd.composer").checkhealth("Spotlight")
 end
 
 return M

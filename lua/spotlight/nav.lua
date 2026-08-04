@@ -71,6 +71,7 @@ function M.under_cursor()
   return nil
 end
 
+---@internal
 --- The pattern to navigate by, honouring `nav.scope`.
 ---@return string|nil
 local function nav_pattern()

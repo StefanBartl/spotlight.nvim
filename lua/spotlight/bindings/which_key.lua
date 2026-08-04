@@ -14,6 +14,7 @@
 
 local M = {}
 
+---@internal
 --- The leader-group prefix to label: the configured toggle key minus its last
 --- character, when that leaves a plausible `<leader>x` prefix.
 ---@param cfg Spotlight.Config

@@ -17,6 +17,7 @@ local composer = require("lib.nvim.usercmd.composer")
 
 local M = {}
 
+---@internal
 --- The literal text of a single-line range, from composer's `ctx.range`.
 ---
 --- The columns come from `ctx.range.col1`/`col2`, which composer reads off the

@@ -22,6 +22,7 @@ M.options = DEFAULTS
 ---@type string[]
 M.issues = {}
 
+---@internal
 --- Recursively merge `override` into a copy of `base`. Arrays (list-like
 --- tables) are replaced wholesale rather than concatenated, so a user can fully
 --- redefine e.g. `cursor.patterns` or `palette.colors` without inheriting the
@@ -44,6 +45,7 @@ local function deep_merge(base, override)
   return out
 end
 
+---@internal
 --- Whether `c` is a usable palette entry (both channels present, `#rrggbb`).
 ---@param c any
 ---@return boolean
@@ -55,6 +57,7 @@ local function valid_color(c)
     and c.fg:match("^#%x%x%x%x%x%x$") ~= nil
 end
 
+---@internal
 --- Drop unusable palette entries, falling back to the defaults if that would
 --- leave nothing to round-robin over.
 ---@param o Spotlight.Config
@@ -87,6 +90,7 @@ local function normalize_palette(o, key)
   o.palette[key] = kept
 end
 
+---@internal
 --- Drop cursor patterns Lua's matcher rejects. An invalid pattern would
 --- otherwise throw from inside the resolver on an unrelated keystroke, far from
 --- the config line that caused it.
@@ -110,6 +114,7 @@ local function normalize_cursor_patterns(o)
   o.cursor.patterns = kept
 end
 
+---@internal
 --- Clamp the numeric knobs into ranges the rest of the plugin can rely on.
 ---@param o Spotlight.Config
 ---@return nil
@@ -144,6 +149,7 @@ local function normalize_numbers(o)
   end
 end
 
+---@internal
 --- Strip newlines from `list.swatch`.
 ---
 --- The swatch is written straight into the chooser's buffer as part of a line, and
@@ -166,6 +172,7 @@ local function normalize_swatch(o)
   end
 end
 
+---@internal
 --- Normalize `nav.scope` to a value `spotlight.nav` understands.
 ---@param o Spotlight.Config
 ---@return nil

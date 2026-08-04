@@ -55,6 +55,7 @@ local exceptions = {}
 ---@type { call: fun(), cancel: fun() }|nil
 local saver = nil
 
+---@internal
 --- The `lib.nvim.store.project` module, or nil when lib.nvim is unavailable.
 ---@return table|nil
 local function store()

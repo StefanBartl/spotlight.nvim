@@ -11,6 +11,7 @@
 
 local M = {}
 
+---@internal
 --- Resolve a sub-module of `lib` once, swallowing load errors. Accepts both
 --- table modules (`lib.nvim.notify`) and bare function modules (`lib.nvim.map`
 --- returns a function, not a table).
@@ -49,6 +50,7 @@ end
 ---@type table|false|nil
 local _logger = nil
 
+---@internal
 --- Resolve (and cache) the `lib.nvim.logger` instance, or `false` if absent.
 ---@return table|false
 local function logger()

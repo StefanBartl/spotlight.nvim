@@ -16,6 +16,7 @@ local lib = require("spotlight.util.lib")
 
 local M = {}
 
+---@internal
 --- Whether the current platform has case-insensitive, backslash-separated paths.
 ---@return boolean
 local function is_windows()
@@ -29,6 +30,7 @@ local function is_windows()
   return vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
 end
 
+---@internal
 --- Normalize a path to forward slashes with no trailing slash.
 ---@param p string
 ---@return string

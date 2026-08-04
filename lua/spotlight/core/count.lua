@@ -16,6 +16,7 @@ local pattern = require("spotlight.core.pattern")
 
 local M = {}
 
+---@internal
 --- Count matches of `re` in one line. Loops because a request id can appear
 --- twice in the same log line, and `vim.regex:match_str` only reports the first.
 ---@param re vim.regex

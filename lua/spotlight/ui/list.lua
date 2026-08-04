@@ -26,6 +26,7 @@ local registry = require("spotlight.core.registry")
 
 local M = {}
 
+---@internal
 --- Render one spotlight as a rich chooser item.
 ---@param item Spotlight.Item
 ---@param n integer|nil # Match count, or nil for "not counted".

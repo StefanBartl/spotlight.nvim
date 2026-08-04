@@ -24,6 +24,7 @@ local registry = require("spotlight.core.registry")
 
 local M = {}
 
+---@internal
 --- Report `msg` unless the user turned notifications off.
 ---@param msg string
 ---@param level integer|nil

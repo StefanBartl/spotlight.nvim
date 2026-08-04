@@ -24,6 +24,7 @@ local lib = require("spotlight.util.lib")
 
 local M = {}
 
+---@internal
 --- Find the first match of Lua pattern `pat` in `line` that contains byte
 --- column `col0` (0-based). Iterates every match rather than stopping at the
 --- first, since the cursor can sit on the third IP in a line.
@@ -49,6 +50,7 @@ local function match_spanning(line, col0, pat)
   return nil
 end
 
+---@internal
 --- Classify `text` by its own shape, not by which resolver branch produced it.
 ---
 --- Doing it this way is what keeps `match.word_boundaries` meaningful. Deriving

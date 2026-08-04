@@ -31,6 +31,7 @@ local M = {}
 ---@type table<integer, table<integer, integer>>
 local ledger = {}
 
+---@internal
 --- Whether `win` should carry spotlight matches.
 ---
 --- Floating windows are skipped: they are transient UI (the spotlight list
@@ -51,6 +52,7 @@ local function eligible(win)
   return true
 end
 
+---@internal
 --- Every eligible window across all tabpages. Spotlights are session-global, so
 --- "all windows" genuinely means all of them, not just the current tabpage's.
 ---@return integer[]
@@ -64,6 +66,7 @@ local function all_windows()
   return out
 end
 
+---@internal
 --- Add `item` to `win`, recording the resulting match id. No-op if the ledger
 --- already has this spotlight in this window, which is what makes a blanket
 --- "re-apply everything" cheap and safe to call from an autocmd.

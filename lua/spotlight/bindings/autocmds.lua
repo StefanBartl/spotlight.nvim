@@ -29,6 +29,7 @@ local registry = require("spotlight.core.registry")
 
 local M = {}
 
+---@internal
 --- Apply every active spotlight to the window an autocmd fired for. `WinClosed`
 --- reports the window in `args.match` (a string), the others imply the current
 --- window.

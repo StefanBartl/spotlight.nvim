@@ -29,6 +29,7 @@ function M.group(n)
   return ("Spotlight%d"):format(n)
 end
 
+---@internal
 --- The color list matching the current `&background`.
 ---@return Spotlight.Color[]
 local function active_colors()

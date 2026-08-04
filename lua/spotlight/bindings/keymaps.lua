@@ -16,6 +16,7 @@ local lib = require("spotlight.util.lib")
 
 local M = {}
 
+---@internal
 --- Bind `lhs` unless it was disabled with `false`.
 ---@param lhs string|false|nil
 ---@param mode string|string[]

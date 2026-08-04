@@ -40,6 +40,7 @@ function M.on_change(fn)
   listeners[#listeners + 1] = fn
 end
 
+---@internal
 --- Fire the change listeners. Guarded individually: a failing persistence write
 --- must not swallow the highlight the user just asked for.
 ---@return nil
@@ -90,6 +91,7 @@ function M.find_by_text(text)
   return nil, nil
 end
 
+---@internal
 --- Palette slots currently in use, for `palette.next_slot`.
 ---@return table<integer, boolean>
 local function used_slots()

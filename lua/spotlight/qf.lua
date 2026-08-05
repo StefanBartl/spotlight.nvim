@@ -13,7 +13,6 @@
 
 local config = require("spotlight.config")
 local count = require("spotlight.core.count")
-local lib = require("spotlight.util.lib")
 local registry = require("spotlight.core.registry")
 
 local M = {}
@@ -21,13 +20,17 @@ local M = {}
 --- Send matching lines to the quickfix list.
 ---
 --- With `item` given, only that spotlight's matches are collected; otherwise
---- every active spotlight's are.
+--- every active spotlight's are. Reports status only — whether the result was
+--- truncated at `quickfix.max_entries` is returned for the caller to notify,
+--- not announced here: low-level modules validate and return, the facade is
+--- where user-facing messages are decided (see spotlight's boundary-error
+--- convention, matched by `spotlight.nav`/`spotlight.persist`).
 ---@param item Spotlight.Item|nil
----@return integer found, string|nil err
+---@return integer found, string|nil err, boolean truncated
 function M.fill(item)
   local items = item and { item } or registry.all()
   if #items == 0 then
-    return 0, "no active spotlights"
+    return 0, "no active spotlights", false
   end
 
   local pats = {}
@@ -41,7 +44,7 @@ function M.fill(item)
   -- next invocation would take it as the source. Refuse instead of producing a
   -- confusing second-generation list.
   if vim.bo[bufnr].buftype == "quickfix" then
-    return 0, "run this from the buffer you want to filter, not from the quickfix window"
+    return 0, "run this from the buffer you want to filter, not from the quickfix window", false
   end
 
   local opts = config.get("quickfix")
@@ -54,13 +57,7 @@ function M.fill(item)
   vim.fn.setqflist({}, " ", { title = title, items = entries })
 
   if #entries == 0 then
-    return 0, "no matching lines in this buffer"
-  end
-  if truncated then
-    lib.notify(
-      ("stopped at %d matching lines (quickfix.max_entries) — the list is truncated"):format(opts.max_entries),
-      vim.log.levels.WARN
-    )
+    return 0, "no matching lines in this buffer", false
   end
   if opts.open then
     local from = vim.api.nvim_get_current_win()
@@ -72,7 +69,7 @@ function M.fill(item)
       pcall(vim.api.nvim_set_current_win, from)
     end
   end
-  return #entries, nil
+  return #entries, nil, truncated
 end
 
 return M

@@ -185,10 +185,16 @@ function M.quickfix(text)
       return false
     end
   end
-  local found, err = qf.fill(item)
+  local found, err, truncated = qf.fill(item)
   if found == 0 then
     report(err or "no matching lines", vim.log.levels.WARN)
     return false
+  end
+  if truncated then
+    report(
+      ("stopped at %d matching lines (quickfix.max_entries) — the list is truncated"):format(config.get("quickfix.max_entries")),
+      vim.log.levels.WARN
+    )
   end
   report(("%d matching line%s"):format(found, found == 1 and "" or "s"))
   return true

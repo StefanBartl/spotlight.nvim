@@ -18,64 +18,29 @@ Reviews rather than plans, kept beside this file because they are where the
 - [NEOTREE_FEATURES.md](NEOTREE_FEATURES.md) — which mechanisms here are worth
   lifting into `filetree.nvim`.
 
-## Table of content
-
-- [Deliberately not built](#deliberately-not-built)
-- [Plausible next](#plausible-next)
-- [Wanted, needs design](#wanted-needs-design)
-- [Rejected](#rejected)
-
 ---
 
-## Deliberately not built
+## Table of content
 
-These were considered and left out on purpose. Each is listed with what would
-have to happen for it to be reconsidered.
-
-### Regex mode
-
-A spotlight is "highlight this exact token". Escaping to `\V` and pinning `\C` is
-what makes that reliable, and a regex mode would fork every code path that
-currently assumes literal-with-known-escaping — the pattern builder, the
-snapshot round trip (which rebuilds the regex from the raw text on purpose), the
-counting scan, the `\|` alternation used by navigation.
-
-*Reconsider when:* a concrete use case appears that `:Spotlight add` plus a
-manual `matchadd()` cannot cover.
-
-### Scope per buffer / filetype
-
-Spotlights are session-global because that is the model: a request id you spotted
-in `app.log` is the same id in `worker.log`. Buffer scoping would defeat the
-reason for tracking it, and would need a scope selector on every command.
-
-*Reconsider when:* someone actually keeps two unrelated investigations open at
-once. A "spotlight set" concept (see below) is probably the better answer to that
-than per-buffer scope.
-
-### Auto-rules (`ERROR`/`WARN` highlighted automatically)
-
-This is what a log syntax file or a filetype plugin is for, and doing it here
-would mean a rule engine, a precedence model against manual spotlights, and a
-palette-budget question (auto-rules eating slots the user wanted).
-
-*Reconsider when:* never, probably. The right shape is a separate log-syntax
-plugin.
-
-### Export / import of sets
-
-Would need a file format, a merge policy, and a story for what "import" does to
-the spotlights already active. The persistence layer already covers the actual
-need (come back tomorrow, find your work).
-
-*Reconsider when:* sharing an investigation with a colleague becomes a real
-workflow rather than a hypothetical one.
+  - [Companion documents](#companion-documents)
+  - [Plausible next](#plausible-next)
+    - [Match counts across all loaded buffers](#match-counts-across-all-loaded-buffers)
+    - [Quickfix across all loaded buffers](#quickfix-across-all-loaded-buffers)
+    - [`count` and `dot`-repeat on the toggle](#count-and-dot-repeat-on-the-toggle)
+    - [A `Spotlight.Item` per-slot lock](#a-spotlightitem-per-slot-lock)
+    - [`:Spotlight yank`](#spotlight-yank)
+  - [Wanted, needs design](#wanted-needs-design)
+    - [Spotlight sets](#spotlight-sets)
+    - [Occurrence count in the sign column or on the scrollbar](#occurrence-count-in-the-sign-column-or-on-the-scrollbar)
+    - [Per-window opt-out](#per-window-opt-out)
 
 ---
 
 ## Plausible next
 
 Ordered by expected value per line of code.
+
+---
 
 ### Match counts across all loaded buffers
 
@@ -87,11 +52,15 @@ you which file the token actually lives in.
 becomes slow with many large buffers open; would need to stay opt-in
 (`list.count_scope = "buffer"|"loaded"`).
 
+---
+
 ### Quickfix across all loaded buffers
 
 Same idea for `:Spotlight qf`: `qf.fill` already builds quickfix-shaped entries
 with an explicit `bufnr`, so multi-buffer output needs no new plumbing — only a
 scope argument (`:Spotlight qf all`) and the same size guard.
+
+---
 
 ### `count` and `dot`-repeat on the toggle
 
@@ -102,6 +71,8 @@ uses it.
 *Open question:* whether repeating a *toggle* is coherent, since the second press
 on the same token removes it.
 
+---
+
 ### A `Spotlight.Item` per-slot lock
 
 "Keep this one on slot 1 forever" — useful when a specific token has become the
@@ -109,10 +80,7 @@ one you always look for. Currently round-robin owns slot assignment.
 
 *Cost:* a `locked` flag on the item, honoured by `used_slots()` and the snapshot.
 
-### Statusline component
-
-`lib.nvim.ui.statusline` exists. Showing `3 spotlights` plus the swatch colors
-would fit in a handful of lines.
+---
 
 ### `:Spotlight yank`
 
@@ -123,6 +91,8 @@ whether to include line numbers.
 ---
 
 ## Wanted, needs design
+
+---
 
 ### Spotlight sets
 
@@ -135,6 +105,8 @@ really asking for sets.
 persistence shape that stores several sets without breaking the current snapshot
 format, and a decision on whether sets are additive or exclusive.
 
+---
+
 ### Occurrence count in the sign column or on the scrollbar
 
 A density map — where in the file this token clusters — is genuinely useful on a
@@ -144,6 +116,8 @@ need positions.
 *Needs:* a way to get that without an O(buffer) scan on every change. Possibly a
 one-shot scan behind an explicit command (`:Spotlight map`), which keeps the
 performance promise intact by making the cost visible and opt-in.
+
+---
 
 ### Per-window opt-out
 
@@ -155,13 +129,3 @@ when the window is reused for another buffer.
 
 ---
 
-## Rejected
-
-- **Live-updating counts.** Reintroduces the O(file size) scan that choosing
-  `matchadd()` over extmarks exists to avoid. This is not a "later" item; it is
-  incompatible with the design.
-- **Extmark-based highlighting as an option.** Two rendering backends means two
-  sets of bugs, and the extmark path is unusable for the target use case anyway.
-- **Highlighting inside floating windows.** Floats are transient UI (this
-  plugin's own list, completion popups, toasts). Matches painted there outlive
-  nothing and only create cleanup work.

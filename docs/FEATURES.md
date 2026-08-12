@@ -6,16 +6,18 @@ verified against `lua/spotlight/` as it stands; the roadmap's "plausible next"
 and "wanted, needs design" items are not listed here because none of them have
 shipped.
 
-## Toggle a spotlight on the token under the cursor
+## Toggle a spotlight on every occurrence of the token under the cursor
 
 One key adds a spotlight on whatever the cursor resolver decides you are
 pointing at, and the same key removes it again if that exact token is already
-lit.
+lit. `matchadd()` highlights the text everywhere it appears — every window,
+every buffer whose content happens to contain it — which is the point: a
+request id you spotted in `app.log` is the same request id in `worker.log`.
 
 - **Module:** `init.lua` (`M.toggle`), `cursor.lua` (`M.token`)
-- **Keymaps:** `<leader>mk` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
+- **Keymaps:** `<leader>mK` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
 - **Usercmds:** `:Spotlight`, `:Spotlight toggle [text]` — see [user commands](../docs/BINDINGS.md#user-commands)
-- **Config:** `keymaps.toggle` (default `<leader>mk`)
+- **Config:** `keymaps.toggle` (default `<leader>mK`)
 
 ## Toggle a visual selection
 
@@ -25,8 +27,46 @@ for a multi-line or whole-line (`V`) selection, since a pattern containing a
 newline cannot match anything `matchadd()` sees.
 
 - **Module:** `init.lua` (`M.toggle_selection`), `cursor.lua` (`M.selection`)
-- **Keymaps:** `<leader>mk` (visual mode)
+- **Keymaps:** `<leader>mK` (visual mode)
 - **Usercmds:** `:'<,'>Spotlight toggle`
+
+## Toggle a spotlight on only this occurrence
+
+The narrower sibling of the action above: `<leader>mk` (lowercase) marks
+*only* the specific occurrence the cursor or selection is on, not every place
+the same text appears. Useful when the text is common (`error`, `null`, a
+short id reused across unrelated log lines) and lighting up every instance
+would just be noise — this pins the highlight to one exact spot instead.
+
+Implemented as a different kind of spotlight, not a variant of the same one:
+the pattern handed to `matchadd()` is anchored to the exact line and column
+(`\%<line>l\%<col>c`, built by `core/pattern.lua`'s `M.build_at`) ahead of the
+literal text, so a duplicate of the same text elsewhere structurally cannot
+satisfy it. Because a position only means anything against the buffer it came
+from, rendering is restricted to windows currently showing that buffer (see
+`core/match.lua`) rather than applied everywhere the way a global spotlight
+is — the one place this feature is not "the same mechanism, narrower input."
+It follows that a "this occurrence only" spotlight is **session-only**: it is
+excluded from the persisted snapshot (a line/column pin does not survive a
+restart the way a text pattern does), and it is dropped automatically if its
+buffer is wiped out (`BufWipeout`/`BufDelete`) or a window switches away from
+that buffer (`BufWinEnter` reconciliation). Everything else — the list, next/
+previous navigation, the quickfix filter, counting — needs no special
+handling at all: they already operate on `item.pattern` generically, and a
+position-anchored pattern is still just a valid Vim regex to them.
+
+Toggle identity is the exact position, not the text — pressing `<leader>mk`
+again on the *same* occurrence removes it, but a second `<leader>mk` on a
+different occurrence of the same word adds an independent spotlight, even
+while a global spotlight for that same text (from `<leader>mK`) is active.
+
+- **Module:** `init.lua` (`M.toggle_here`, `M.toggle_here_selection`,
+  `M.toggle_here_at`), `core/registry.lua` (`M.add_at`, `M.find_at`,
+  `M.toggle_at`, `M.remove_for_buffer`), `core/pattern.lua` (`M.build_at`),
+  `core/match.lua` (the buffer-scope guard in `add()`, `M.reconcile_window`)
+- **Keymaps:** `<leader>mk` (normal + visual mode)
+- **Usercmds:** `:Spotlight here`, `:'<,'>Spotlight here`
+- **Config:** `keymaps.toggle_here` (default `<leader>mk`)
 
 ## Log-aware cursor resolver
 
@@ -83,7 +123,7 @@ skipped above `list.count_max_lines` and the row shows `?` instead — opening
 the list should never itself become the slow part.
 
 - **Module:** `ui/list.lua`, `core/count.lua` (`M.count`)
-- **Keymaps:** `<leader>mK` (list/jump)
+- **Keymaps:** `<leader>mL` (list/jump)
 - **Usercmds:** `:Spotlight list [jump|remove]`
 - **Config:** `list.count` (default `true`), `list.count_max_lines` (default
   `200000`), `list.swatch`
@@ -134,7 +174,7 @@ the round-robin color cursor so the next set starts again from slot 1.
 
 - **Module:** `init.lua` (`M.clear`), `core/registry.lua` (`M.clear`),
   `core/palette.lua` (`M.reset`)
-- **Keymaps:** `<leader>m<C-k>`
+- **Keymaps:** `<leader>mC`
 - **Usercmds:** `:Spotlight clear`
 
 ## Per-project persistence
@@ -144,6 +184,11 @@ Restored on the next session automatically. State is keyed by **git root**
 subdirectory and follows a checkout to another machine. Writes are debounced
 so a burst of toggles is one logical save, and flushed on `VimLeavePre` so the
 last toggle before `:qa` is never lost.
+
+"This occurrence only" spotlights (see above) are excluded regardless of this
+setting — `core/registry.lua`'s `M.snapshot` never includes them, since a
+line/column pin is only meaningful against the exact buffer state it was
+recorded from.
 
 - **Module:** `persist.lua` (`M.save`, `M.load`, `M.flush`)
 - **Config:** `persist.enable` (default `true`), `persist.default` (default

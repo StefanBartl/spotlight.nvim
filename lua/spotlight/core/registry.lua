@@ -76,15 +76,36 @@ function M.get(id)
 end
 
 --- Find a spotlight by the raw text it was created from. This is the identity
---- used for toggling: pressing the key twice on the same token removes it,
---- because "the same token" is what the user perceives — comparing the built
---- regex instead would make `error` (word-bounded) and a visually selected
---- `error` (literal) two different spotlights that look identical on screen.
+--- used for toggling a **global** spotlight: pressing the key twice on the
+--- same token removes it, because "the same token" is what the user
+--- perceives — comparing the built regex instead would make `error`
+--- (word-bounded) and a visually selected `error` (literal) two different
+--- spotlights that look identical on screen.
+---
+--- Buffer-scoped items (see `M.add_at`) are skipped: their identity is
+--- position, not text, since the whole point of one is to single out *this*
+--- occurrence from every other one that shares its text.
 ---@param text string
 ---@return Spotlight.Item|nil item, integer|nil index
 function M.find_by_text(text)
   for i, item in ipairs(items) do
-    if item.text == text then
+    if item.scope ~= "buffer" and item.text == text then
+      return item, i
+    end
+  end
+  return nil, nil
+end
+
+--- Find a buffer-scoped spotlight by the exact position it was created at —
+--- the toggle identity for `M.add_at`, mirroring what `M.find_by_text` is for
+--- `M.add`.
+---@param buf integer
+---@param row1 integer
+---@param col1 integer
+---@return Spotlight.Item|nil item, integer|nil index
+function M.find_at(buf, row1, col1)
+  for i, item in ipairs(items) do
+    if item.scope == "buffer" and item.buf == buf and item.row1 == row1 and item.col1 == col1 then
       return item, i
     end
   end
@@ -158,6 +179,68 @@ function M.add(token, opts)
   return item, nil
 end
 
+--- Add a spotlight for exactly one buffer position — `token.text` highlighted
+--- only where it sits at `pos.buf`/`pos.row1`/`pos.col1`, not every occurrence
+--- of that text everywhere. This is `M.add`'s counterpart for "this occurrence
+--- only" (`spotlight.M.toggle_here`): same guards (empty text, length cap,
+--- `match.max`), same palette allocation, different identity and a pattern
+--- pinned to a position instead of built from the token's shape.
+---
+--- Session-only by design: `M.snapshot` excludes buffer-scoped items, because
+--- persisting a line/column only makes sense against the exact buffer state it
+--- was recorded from, and that guarantee does not survive a restart the way a
+--- text pattern's does.
+---@param token Spotlight.Token
+---@param pos { buf: integer, row1: integer, col1: integer }
+---@param opts? { slot?: integer, origin?: string|false }
+---@return Spotlight.Item|nil item, string|nil err
+function M.add_at(token, pos, opts)
+  opts = opts or {}
+  if type(token.text) ~= "string" or token.text == "" then
+    return nil, "nothing to highlight"
+  end
+  local max_len = config.get("match.max_text_len")
+  if #token.text > max_len then
+    return nil, ("token is %d bytes, over the %d-byte limit (match.max_text_len)"):format(#token.text, max_len)
+  end
+  local existing = M.find_at(pos.buf, pos.row1, pos.col1)
+  if existing then
+    return nil, ("already spotlighted here: %s"):format(token.text)
+  end
+  local max = config.get("match.max")
+  if #items >= max then
+    return nil, ("spotlight limit reached (match.max = %d)"):format(max)
+  end
+
+  local slot = opts.slot and palette.clamp(opts.slot) or palette.next_slot(used_slots())
+
+  local origin = opts.origin
+  if origin == nil then
+    origin = path.buffer_key(pos.buf)
+  elseif origin == false then
+    origin = nil
+  end
+
+  next_id = next_id + 1
+  ---@type Spotlight.Item
+  local item = {
+    id = next_id,
+    text = token.text,
+    pattern = pattern.build_at(token.text, pos.row1, pos.col1, config.get("match")),
+    slot = slot,
+    hl = palette.group(slot),
+    origin = origin,
+    scope = "buffer",
+    buf = pos.buf,
+    row1 = pos.row1,
+    col1 = pos.col1,
+  }
+  items[#items + 1] = item
+  match.apply_all({ item }, config.get("match.priority"))
+  notify_change()
+  return item, nil
+end
+
 --- Remove the spotlight with id `id`.
 ---@param id integer
 ---@return Spotlight.Item|nil removed
@@ -189,6 +272,49 @@ function M.toggle(token)
     return "error", nil, err
   end
   return "added", item, nil
+end
+
+--- Toggle a buffer-scoped spotlight at `pos`: remove it if that exact position
+--- is already spotlighted, otherwise add it. The `M.add_at` counterpart of
+--- `M.toggle`.
+---@param token Spotlight.Token
+---@param pos { buf: integer, row1: integer, col1: integer }
+---@return "added"|"removed"|"error" action, Spotlight.Item|nil item, string|nil err
+function M.toggle_at(token, pos)
+  if type(token.text) ~= "string" or token.text == "" then
+    return "error", nil, "nothing under the cursor to spotlight"
+  end
+  local existing = M.find_at(pos.buf, pos.row1, pos.col1)
+  if existing then
+    return "removed", M.remove(existing.id), nil
+  end
+  local item, err = M.add_at(token, pos)
+  if not item then
+    return "error", nil, err
+  end
+  return "added", item, nil
+end
+
+--- Drop every buffer-scoped spotlight tied to `buf`. Called when a buffer is
+--- wiped out from under a position-pinned spotlight — the position it was
+--- pinned to no longer means anything, so nothing is served by keeping a
+--- registry entry that can never render again.
+---@param buf integer
+---@return integer removed
+function M.remove_for_buffer(buf)
+  local n = 0
+  for i = #items, 1, -1 do
+    local item = items[i]
+    if item.scope == "buffer" and item.buf == buf then
+      match.remove(item.id)
+      table.remove(items, i)
+      n = n + 1
+    end
+  end
+  if n > 0 then
+    notify_change()
+  end
+  return n
 end
 
 --- Remove every spotlight. Returns how many there were.
@@ -256,16 +382,22 @@ end
 --- Serialize the current list for persistence. `kind` is recovered from the
 --- pattern's own boundary markers, so the round-trip does not need a separate
 --- field on the runtime item that could drift out of sync with the regex.
+---
+--- Buffer-scoped items (`M.add_at`) are left out entirely — see `M.add_at`'s
+--- doc comment for why a line/column pin is session-only rather than
+--- persisted.
 ---@return Spotlight.StoredItem[]
 function M.snapshot()
   local out = {}
-  for i, item in ipairs(items) do
-    out[i] = {
-      text = item.text,
-      slot = item.slot,
-      kind = item.pattern:find("\\<", 1, true) and "word" or "literal",
-      origin = item.origin,
-    }
+  for _, item in ipairs(items) do
+    if item.scope ~= "buffer" then
+      out[#out + 1] = {
+        text = item.text,
+        slot = item.slot,
+        kind = item.pattern:find("\\<", 1, true) and "word" or "literal",
+        origin = item.origin,
+      }
+    end
   end
   return out
 end
@@ -288,8 +420,12 @@ end
 function M.rebuild()
   local match_opts = config.get("match")
   for _, item in ipairs(items) do
-    local kind = item.pattern:find("\\<", 1, true) and "word" or "literal"
-    item.pattern = pattern.build({ text = item.text, kind = kind }, match_opts)
+    if item.scope == "buffer" then
+      item.pattern = pattern.build_at(item.text, item.row1, item.col1, match_opts)
+    else
+      local kind = item.pattern:find("\\<", 1, true) and "word" or "literal"
+      item.pattern = pattern.build({ text = item.text, kind = kind }, match_opts)
+    end
     item.slot = palette.clamp(item.slot)
     item.hl = palette.group(item.slot)
   end

@@ -27,11 +27,14 @@ local M = {}
 ---@internal
 --- Find the first match of Lua pattern `pat` in `line` that contains byte
 --- column `col0` (0-based). Iterates every match rather than stopping at the
---- first, since the cursor can sit on the third IP in a line.
+--- first, since the cursor can sit on the third IP in a line. Returns the
+--- match's own 1-based start column alongside the text, so a caller building a
+--- position-pinned spotlight (`spotlight.core.pattern.build_at`) does not have
+--- to re-scan the line to find where the match actually started.
 ---@param line string
 ---@param col0 integer
 ---@param pat string
----@return string|nil
+---@return string|nil text, integer|nil start_col1
 local function match_spanning(line, col0, pat)
   local init = 1
   while init <= #line + 1 do
@@ -42,12 +45,40 @@ local function match_spanning(line, col0, pat)
     -- `s`/`e` are 1-based inclusive; `col0` is 0-based. The cursor is inside
     -- the match when s <= col0 + 1 <= e.
     if s <= col0 + 1 and col0 + 1 <= e then
-      return line:sub(s, e)
+      return line:sub(s, e), s
     end
     -- Advance past this match; +1 guards against a zero-width match looping.
     init = (e >= s) and (e + 1) or (s + 1)
   end
   return nil
+end
+
+---@internal
+--- Find the 1-based start column of the first plain (non-pattern) occurrence
+--- of `needle` in `line` that contains byte column `col0` (0-based). Used for
+--- `<cword>`, which comes back as text only — its own position still has to be
+--- located to pin a "this occurrence only" spotlight. Plain substring search,
+--- not a Lua pattern: no escaping to get right, no backtracking to worry
+--- about, unlike `match_spanning`.
+---@param line string
+---@param col0 integer
+---@param needle string
+---@return integer|nil start_col1
+local function plain_spanning(line, col0, needle)
+  if needle == "" then
+    return nil
+  end
+  local init = 1
+  while true do
+    local s, e = line:find(needle, init, true)
+    if not s then
+      return nil
+    end
+    if s <= col0 + 1 and col0 + 1 <= e then
+      return s
+    end
+    init = e + 1
+  end
 end
 
 ---@internal
@@ -70,8 +101,14 @@ local function kind_of(text)
 end
 
 --- Resolve the token under the cursor in normal mode.
+---
+--- The second return value is the token's own position (1-based line/column,
+--- as `\%l`/`\%c` in `core.pattern.build_at` want them) — nil whenever the
+--- first return value is, and always present alongside a non-nil token. Every
+--- existing caller took one return value before this was added and keeps
+--- working unchanged; only `spotlight.M.toggle_here` reads the second.
 ---@param bufnr integer|nil # Defaults to the current buffer.
----@return Spotlight.Token|nil
+---@return Spotlight.Token|nil token, Spotlight.Pos|nil pos
 function M.token(bufnr)
   bufnr = bufnr or 0
   local win = vim.api.nvim_get_current_win()
@@ -99,19 +136,23 @@ function M.token(bufnr)
     })
     local cword = vim.fn.expand("<cword>")
     if opts.fallback_cword and type(cword) == "string" and cword ~= "" then
-      return { text = cword, kind = kind_of(cword) }
+      local col1 = plain_spanning(line, col0, cword)
+      if not col1 then
+        return nil
+      end
+      return { text = cword, kind = kind_of(cword) }, { row1 = row0 + 1, col1 = col1 }
     end
     return nil
   end
 
   for i, pat in ipairs(opts.patterns) do
-    local text = match_spanning(line, col0, pat)
+    local text, col1 = match_spanning(line, col0, pat)
     if text and text ~= "" then
       -- Which pattern won is the single most useful debug fact here: a
       -- surprising token almost always means a broader pattern sits ahead of
       -- the specific one the user expected.
       lib.debug("cursor: resolved by pattern", { index = i, pattern = pat, text = text, kind = kind_of(text) })
-      return { text = text, kind = kind_of(text) }
+      return { text = text, kind = kind_of(text) }, { row1 = row0 + 1, col1 = col1 }
     end
   end
 
@@ -119,7 +160,11 @@ function M.token(bufnr)
     local cword = vim.fn.expand("<cword>")
     if type(cword) == "string" and cword ~= "" then
       lib.debug("cursor: no pattern matched, fell back to <cword>", { text = cword, kind = kind_of(cword) })
-      return { text = cword, kind = kind_of(cword) }
+      local col1 = plain_spanning(line, col0, cword)
+      if not col1 then
+        return nil
+      end
+      return { text = cword, kind = kind_of(cword) }, { row1 = row0 + 1, col1 = col1 }
     end
   end
   lib.debug("cursor: nothing resolved", { col = col0, patterns_tried = #opts.patterns })
@@ -133,7 +178,10 @@ end
 --- mid-selection. Multi-line selections are refused rather than joined: a
 --- pattern containing a newline cannot match anything `matchadd()` sees, so
 --- silently accepting one would produce a spotlight that highlights nothing.
----@return Spotlight.Token|nil token, string|nil err
+---
+--- The third return value is the selection's own position, on the same terms
+--- as `M.token`'s second — present alongside a non-nil token, nil otherwise.
+---@return Spotlight.Token|nil token, string|nil err, Spotlight.Pos|nil pos
 function M.selection()
   local mode = vim.fn.mode()
   if mode ~= "v" and mode ~= "V" and mode ~= "\22" then
@@ -170,7 +218,7 @@ function M.selection()
   -- Always literal, never shape-classified like `M.token`: selecting `err` out
   -- of `error` is an explicit request to match that substring, and adding word
   -- boundaries would turn it into a spotlight that highlights nothing.
-  return { text = text, kind = "literal" }, nil
+  return { text = text, kind = "literal" }, nil, { row1 = row_c, col1 = scol }
 end
 
 return M

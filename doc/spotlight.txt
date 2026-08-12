@@ -104,24 +104,33 @@ should not stop the plugin from loading.
 
 Bound when `keymaps.preset` is true (the default):
 
-    <leader>mk       n  toggle a spotlight on the token under the cursor
-    <leader>mk       x  toggle a spotlight on the exact selection
-    <leader>mK       n  open the spotlight list
-    <leader>m<C-k>   n  remove every spotlight
+    <leader>mk       n  toggle a spotlight on only this occurrence
+    <leader>mk       x  toggle a spotlight on only this occurrence (selection)
+    <leader>mK       n  toggle a spotlight on every occurrence of the token
+    <leader>mK       x  toggle a spotlight on every occurrence (selection)
+    <leader>mL       n  open the spotlight list
+    <leader>mC       n  remove every spotlight
     <leader>mq       n  matching lines -> quickfix
     ]k               n  next occurrence
     [k               n  previous occurrence
 
+`<leader>mk`/`<leader>mK` are the pair the plugin is organized around: same
+key, lowercase for the narrower action (this occurrence only, pinned to that
+exact spot — see |spotlight-here|), shifted for the wider one (every
+occurrence, everywhere the text appears).
+
 None of these is a prefix of another, deliberately: a mapping that is also the
-prefix of a longer one costs a 'timeoutlen' pause on every press. That is why
-clear-all is `<leader>m<C-k>` rather than `<leader>mkc`.
+prefix of a longer one costs a 'timeoutlen' pause on every press. `k`/`K`
+diverge at that very character, so `<leader>mk` and `<leader>mK` sit fine
+side by side.
 
 Each key is its own config value. Setting one to `false` frees that lhs while
 keeping the rest of the preset:
 >lua
     require("spotlight").setup({
       keymaps = {
-        toggle = "<leader>hh",
+        toggle_here = "<leader>hh",
+        toggle = "<leader>hH",
         next = false,          -- leave ]k alone
       },
     })
@@ -129,11 +138,40 @@ keeping the rest of the preset:
 Or bind the actions yourself — they are plain functions (|spotlight-api|):
 >lua
     require("spotlight").setup({ keymaps = { preset = false } })
-    vim.keymap.set("n", "<leader>hh", require("spotlight").toggle)
+    vim.keymap.set("n", "<leader>hh", require("spotlight").toggle_here)
+    vim.keymap.set("n", "<leader>hH", require("spotlight").toggle)
 <
 which-key is a soft dependency. When installed, the preset's leader prefix is
 labelled as a "Spotlight" group; per-key descriptions come from each mapping's
 own `desc`, so nothing else is registered.
+
+                                                              *spotlight-here*
+`toggle_here` (`<leader>mk`) marks only the exact occurrence the cursor or
+selection is on — not every occurrence of that text, which is what `toggle`
+(`<leader>mK`) does. Useful when the text is common enough (`error`, `null`, a
+short reused id) that lighting up every instance would be noise.
+
+The pattern handed to |matchadd()| is anchored to the exact line and column
+(`\%<line>l\%<col>c`, ahead of the literal text) rather than built from the
+token alone, so a duplicate of the same text elsewhere cannot satisfy it. A
+position only means anything against the buffer it came from, so rendering is
+restricted to windows currently showing that buffer — the one place this
+differs from how a global spotlight works, which is deliberately visible
+everywhere the text is (see |spotlight-matchadd|).
+
+One consequence follows directly: a "this occurrence only" spotlight is
+session-only. It is excluded from the persisted snapshot (a line/column pin
+does not mean anything after a restart the way a text pattern does — see
+|spotlight-persist|), and it is dropped automatically if its buffer is wiped
+out or a window switches away from that buffer. Everything else — the list,
+`]k`/`[k`, the quickfix filter, counting — needs no special handling: they
+already operate on the item's pattern generically, and a position-anchored
+one is still just a valid Vim regex to them.
+
+Toggle identity is the position, not the text: pressing `<leader>mk` again on
+the *same* occurrence removes it; a different occurrence of the same word is
+an independent spotlight, even alongside a `<leader>mK` spotlight for the
+same text.
 
 ==============================================================================
 5. COMMANDS                                                *spotlight-commands*
@@ -143,9 +181,11 @@ One verb with <Tab>-completed subcommands, built on lib.nvim's user-command
 composer — completion, argument validation and the generated docs all come from
 the same route tree.
 
-    :Spotlight                     toggle the token under the cursor
-    :Spotlight toggle [text]       toggle the cursor token, a range selection,
-                                   or the explicit {text}
+    :Spotlight                     toggle every occurrence of the token
+    :Spotlight toggle [text]       toggle every occurrence: the cursor token,
+                                   a range selection, or the explicit {text}
+    :Spotlight here                toggle only this occurrence: the cursor
+                                   token, or a range selection
     :Spotlight add {text}          add a spotlight for the literal {text}
     :Spotlight remove {text}       remove the spotlight matching {text}
     :Spotlight clear               remove every spotlight
@@ -209,9 +249,10 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
       },
       keymaps = {
         preset = true,
-        toggle = "<leader>mk",
-        list = "<leader>mK",
-        clear = "<leader>m<C-k>",
+        toggle_here = "<leader>mk",  -- only this occurrence
+        toggle = "<leader>mK",       -- every occurrence
+        list = "<leader>mL",
+        clear = "<leader>mC",
         quickfix = "<leader>mq",
         next = "]k",
         prev = "[k",
@@ -286,13 +327,15 @@ match, every spotlight is in scope, searched as one alternation.
 ==============================================================================
 9. THE LIST                                                    *spotlight-list*
 
-`<leader>mK` or `:Spotlight list` opens a chooser with one row per spotlight:
+`<leader>mL` or `:Spotlight list` opens a chooser with one row per spotlight:
 
     <color swatch>  <token>                       <match count>
 
 Selecting a row jumps to that spotlight's first occurrence in the current
 buffer. `:Spotlight list remove` opens the same list with selection bound to
-removal instead.
+removal instead. A "this occurrence only" spotlight (|spotlight-here|) is
+tagged `(this occurrence only)` in its row, since it is otherwise
+indistinguishable from a global one with the same text.
 
 The swatch is painted in the spotlight's own |Spotlight1| ... group, via
 lib.nvim.ui.kit.select's rich items, so there is no rendering code in this
@@ -376,6 +419,11 @@ Spotlights are filtered against the current rules on load as well as on save, so
 flipping `persist.default` in your config takes effect immediately rather than
 only for spotlights created afterwards.
 
+"This occurrence only" spotlights (|spotlight-here|) are excluded from every
+snapshot regardless of these rules — a line/column pin only means something
+against the exact buffer state it was recorded from, and that guarantee does
+not survive a restart.
+
 ==============================================================================
 12. COLORS                                                   *spotlight-colors*
 
@@ -411,8 +459,11 @@ to any key or called from your own code:
 >lua
     local spotlight = require("spotlight")
 
-    spotlight.toggle()             -- token under the cursor
-    spotlight.toggle_selection()   -- current visual selection (visual mode)
+    spotlight.toggle()             -- every occurrence of the token under the cursor
+    spotlight.toggle_selection()   -- every occurrence of the selection (visual mode)
+    spotlight.toggle_here()        -- only this occurrence of the token under the cursor
+    spotlight.toggle_here_selection() -- only this occurrence of the selection (visual mode)
+    spotlight.toggle_here_at(text, pos) -- only the occurrence at an explicit { buf, row1, col1 }
     spotlight.add(text)            -- literal text
     spotlight.remove(text)         -- by exact text
     spotlight.clear()              -- all
@@ -488,7 +539,10 @@ lib.nvim.store.project.
 Regexes cannot backtrack pathologically. Every pattern handed to Vim is built as
 `\C\V` plus escaped literal text — no quantifiers, no groups, no alternation
 inside a branch — so no input, however crafted, can produce catastrophic
-backtracking.
+backtracking. A "this occurrence only" spotlight (|spotlight-here|) adds only
+`\%<line>l\%<col>c` ahead of that same literal body — fixed, zero-width
+position assertions, not quantified or user-controlled beyond the two numbers
+themselves, so the same guarantee holds.
 
 The snapshot is treated as external input. It is JSON in the cache directory:
 writable by anything running as this user, and hand-editable. Every field is

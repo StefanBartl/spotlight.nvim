@@ -42,6 +42,28 @@ function M.build(token, opts)
   return (opts.ignore_case and "\\c" or "\\C") .. "\\V" .. body
 end
 
+--- Build a Vim regex pinned to one exact buffer position: line `row1`, byte
+--- column `col1` (both 1-based), followed by the literal text. Used for a
+--- "this occurrence only" spotlight, where the point is that a duplicate of
+--- the same text elsewhere must *not* light up.
+---
+--- `\%<row>l\%<col>c` are position atoms — special after a backslash
+--- regardless of magic state, the same way `\<`/`\>` still work after `\V` in
+--- `M.build`. They make the match require both "on this line" and "starting
+--- at this column" before the literal body is even considered, so no repeat
+--- of the same text elsewhere in the buffer (or in another buffer the pattern
+--- is never applied to — see `spotlight.core.match`) can satisfy it.
+---@param text string
+---@param row1 integer # 1-based line.
+---@param col1 integer # 1-based byte column.
+---@param opts Spotlight.MatchOpts
+---@return string pattern
+function M.build_at(text, row1, col1, opts)
+  local body = M.escape(text)
+  local case = opts.ignore_case and "\\c" or "\\C"
+  return case .. "\\%" .. tostring(row1) .. "l\\%" .. tostring(col1) .. "c\\V" .. body
+end
+
 --- Combine several complete patterns into one alternation, for a single
 --- `search()` call over every spotlight at once.
 ---

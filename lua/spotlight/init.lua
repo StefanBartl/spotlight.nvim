@@ -84,6 +84,62 @@ function M.toggle_selection()
   return true
 end
 
+-- ---------- toggling: this occurrence only ----------
+
+--- Toggle a spotlight on exactly the occurrence of the token under the
+--- cursor — not on every occurrence of that text in the buffer, which is what
+--- `M.toggle` does. Pinned to the line/column it was resolved at, and to the
+--- windows currently showing this buffer (see `core/match.lua`).
+---@return boolean changed
+function M.toggle_here()
+  local token, pos = cursor.token()
+  if not token or not pos then
+    report("no token under the cursor", vim.log.levels.WARN)
+    return false
+  end
+  return M.toggle_here_at(token.text, { buf = vim.api.nvim_get_current_buf(), row1 = pos.row1, col1 = pos.col1 })
+end
+
+--- Toggle a spotlight on exactly the current visual selection's occurrence —
+--- the visual-mode counterpart of `M.toggle_here`, the same way
+--- `M.toggle_selection` is `M.toggle`'s.
+---@return boolean changed
+function M.toggle_here_selection()
+  local token, err, pos = cursor.selection()
+  vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
+  if not token or not pos then
+    report(err or "no selection", vim.log.levels.WARN)
+    return false
+  end
+  return M.toggle_here_at(token.text, { buf = vim.api.nvim_get_current_buf(), row1 = pos.row1, col1 = pos.col1 })
+end
+
+--- Toggle a spotlight for a literal `text` pinned to one exact buffer
+--- position, rather than to whatever the cursor or selection currently
+--- resolves to. The `:Spotlight here` range path uses this: by the time a `:`
+--- command runs, Visual mode has already ended, so the position has to be
+--- supplied rather than read live the way `M.toggle_here_selection` reads it.
+---@param text string
+---@param pos { buf: integer, row1: integer, col1: integer }
+---@return boolean changed
+function M.toggle_here_at(text, pos)
+  if type(text) ~= "string" or text == "" then
+    report("nothing to spotlight", vim.log.levels.WARN)
+    return false
+  end
+  local action, item, err = registry.toggle_at({ text = text, kind = "literal" }, pos)
+  if action == "error" then
+    report(err or "could not toggle spotlight", vim.log.levels.WARN)
+    return false
+  end
+  if action == "added" and item then
+    report(("spotlight %d, this occurrence only: %s"):format(item.slot, item.text))
+  elseif item then
+    report(("removed spotlight: %s"):format(item.text))
+  end
+  return true
+end
+
 --- Add a spotlight for an explicit literal string. The `:Spotlight add` path,
 --- for a token that is not conveniently under the cursor.
 ---

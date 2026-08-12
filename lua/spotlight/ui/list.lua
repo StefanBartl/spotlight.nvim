@@ -34,7 +34,11 @@ local M = {}
 ---@return table
 local function row(item, n, swatch)
   local shown = n and tostring(n) or "?"
-  local line = ("%s %-40s %s"):format(swatch, item.text, shown)
+  -- Buffer-scoped items ("this occurrence only") are otherwise indistinguishable
+  -- in the list from a global spotlight of the same text — the tag is the only
+  -- place that distinction is visible outside `:checkhealth`.
+  local label = item.scope == "buffer" and (item.text .. "  (this occurrence only)") or item.text
+  local line = ("%s %-40s %s"):format(swatch, label, shown)
   return {
     value = item,
     lines = { line },

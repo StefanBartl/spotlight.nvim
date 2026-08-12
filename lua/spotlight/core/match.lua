@@ -70,11 +70,26 @@ end
 --- Add `item` to `win`, recording the resulting match id. No-op if the ledger
 --- already has this spotlight in this window, which is what makes a blanket
 --- "re-apply everything" cheap and safe to call from an autocmd.
+---
+--- Buffer-scoped items (`item.scope == "buffer"`) additionally require `win`
+--- to be currently showing `item.buf`. This is the one place that check has
+--- to live: a buffer-scoped item's pattern is pinned to a line/column, which
+--- is only meaningful against the buffer it was recorded from — applying it
+--- to a window showing a *different* buffer could, in principle, light up an
+--- unrelated line that happens to share the same shape. Global items carry no
+--- such restriction, which is the whole point of them (the same request id
+--- lighting up in `worker.log` as in `app.log`).
 ---@param win integer
 ---@param item Spotlight.Item
 ---@param priority integer
 ---@return nil
 local function add(win, item, priority)
+  if item.scope == "buffer" then
+    local ok_buf, winbuf = pcall(vim.api.nvim_win_get_buf, win)
+    if not ok_buf or winbuf ~= item.buf then
+      return
+    end
+  end
   local per_win = ledger[win]
   if per_win and per_win[item.id] then
     return
@@ -119,6 +134,35 @@ end
 function M.apply_all(items, priority)
   for _, win in ipairs(all_windows()) do
     M.apply_window(win, items, priority)
+  end
+end
+
+--- Drop any buffer-scoped match `win` is still carrying for a buffer it no
+--- longer shows. `matchadd()` matches belong to the *window*, not the buffer —
+--- switching `win` to a different file leaves the old match active and would
+--- otherwise keep evaluating a line/column-pinned pattern against content it
+--- was never meant to see. Global items are untouched: staying visible across
+--- whatever buffer a window shows is their entire design.
+---@param win integer
+---@param items Spotlight.Item[]
+---@return nil
+function M.reconcile_window(win, items)
+  local per_win = ledger[win]
+  if not per_win or not vim.api.nvim_win_is_valid(win) then
+    return
+  end
+  local ok, winbuf = pcall(vim.api.nvim_win_get_buf, win)
+  if not ok then
+    return
+  end
+  for _, item in ipairs(items) do
+    if item.scope == "buffer" and item.buf ~= winbuf then
+      local match_id = per_win[item.id]
+      if match_id then
+        pcall(vim.fn.matchdelete, match_id, win)
+        per_win[item.id] = nil
+      end
+    end
   end
 end
 

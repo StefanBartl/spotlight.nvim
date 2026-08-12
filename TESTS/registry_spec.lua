@@ -115,6 +115,71 @@ function M.run()
 
   registry.clear()
   t.eq("clear: no matches left in the window", #vim.fn.getmatches(), 0)
+
+  -- ---------- buffer-scoped items ("this occurrence only") ----------
+  registry.clear()
+  local bufA = t.fixture({ "req=aaa ip=10.0.0.1", "req=bbb ip=10.0.0.2", "req=aaa ip=10.0.0.3" })
+  local winMain = vim.api.nvim_get_current_win()
+
+  local first, err_at = registry.add_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
+  t.ok("add_at: returns the item", first ~= nil)
+  t.eq("add_at: no error", err_at, nil)
+  t.eq("add_at: scope is buffer", first.scope, "buffer")
+  t.eq("add_at: pattern is anchored to the position", first.pattern, "\\C\\%1l\\%5c\\Vaaa")
+
+  -- Same text, a different position: a second, independent item — identity is
+  -- position, not text, unlike the global `M.add`/`M.toggle`.
+  local second = registry.add_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 3, col1 = 5 })
+  t.ok("add_at: a second occurrence of the same text is a separate item", second ~= nil)
+  t.eq("add_at: two buffer-scoped items active", registry.count(), 2)
+
+  -- Also independent of a global spotlight sharing the same text.
+  registry.add({ text = "aaa", kind = "literal" })
+  t.eq("add_at: coexists with a global spotlight of the same text", registry.count(), 3)
+  t.eq("find_by_text: only finds the global one, not either buffer-scoped item", registry.find_by_text("aaa").scope, nil)
+
+  local found = registry.find_at(bufA, 1, 5)
+  t.eq("find_at: finds the item at that exact position", found and found.id, first.id)
+  t.eq("find_at: a position with nothing there is nil", registry.find_at(bufA, 2, 1), nil)
+
+  local action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
+  t.eq("toggle_at: an existing position is removed", action, "removed")
+  t.eq("toggle_at: back to two", registry.count(), 2)
+  action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
+  t.eq("toggle_at: an absent position is added", action, "added")
+
+  -- Rendering is pinned to windows showing the origin buffer: a window on a
+  -- *different* buffer must not pick up the position-anchored matches, only
+  -- the global one — exactly the property that keeps "this occurrence only"
+  -- from ever leaking into an unrelated file (see core/match.lua). A real
+  -- second window is required here, not just a second buffer: `matchadd()`
+  -- ledger entries are per-window.
+  t.eq("winMain: carries all three (two buffer-scoped + one global)", #vim.fn.getmatches(winMain), 3)
+
+  vim.cmd("split")
+  local winOther = vim.api.nvim_get_current_win()
+  t.fixture({ "unrelated line one", "unrelated line two" })
+  registry.apply_to_window(winOther)
+  t.eq("apply_to_window: only the global spotlight reaches a window on an unrelated buffer", #vim.fn.getmatches(winOther), 1)
+  vim.cmd("close")
+
+  -- Session-only: excluded from persistence snapshots.
+  local snap2 = registry.snapshot()
+  local only_global = 0
+  for _, s in ipairs(snap2) do
+    if s.text == "aaa" then
+      only_global = only_global + 1
+    end
+  end
+  t.eq("snapshot: only the global 'aaa' spotlight is included, not the two buffer-scoped ones", only_global, 1)
+
+  -- Wiping the origin buffer drops its buffer-scoped spotlights.
+  local removed_n = registry.remove_for_buffer(bufA)
+  t.eq("remove_for_buffer: both buffer-scoped items on bufA are gone", removed_n, 2)
+  t.eq("remove_for_buffer: the global spotlight survives", registry.count(), 1)
+  t.eq("remove_for_buffer: the survivor is the global one", registry.all()[1].scope, nil)
+
+  registry.clear()
 end
 
 return M

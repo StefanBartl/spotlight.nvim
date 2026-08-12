@@ -95,7 +95,7 @@ scope argument (`:Spotlight qf all`) and the same size guard.
 
 ### `count` and `dot`-repeat on the toggle
 
-`3<leader>mk` has no obvious meaning, but `.` after a toggle arguably does
+`3<leader>mK` has no obvious meaning, but `.` after a toggle arguably does
 ("spotlight this one too"). `lib.nvim.dotrepeat` exists and cascade.nvim already
 uses it.
 

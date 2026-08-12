@@ -37,10 +37,19 @@ function M.setup(cfg)
   local api = require("spotlight")
   local k = cfg.keymaps
 
-  -- One `lhs` for both modes: normal mode spotlights the resolved token, visual
-  -- mode the exact selection. Same intent, so the same key.
-  bind(k.toggle, "n", api.toggle, "spotlight: toggle token under cursor")
-  bind(k.toggle, "x", api.toggle_selection, "spotlight: toggle selection")
+  -- One `lhs` per action for both modes: normal mode spotlights the resolved
+  -- token, visual mode the exact selection. Same intent, so the same key.
+  --
+  -- `toggle_here` (lowercase k) marks only the one occurrence the cursor/
+  -- selection is on; `toggle` (uppercase K) marks every occurrence of that
+  -- text in the buffer. The lowercase key is the one reached for by default —
+  -- it is also the narrower, more reversible action — with the wider one a
+  -- deliberate shift to the shifted key.
+  bind(k.toggle_here, "n", api.toggle_here, "spotlight: toggle this occurrence only")
+  bind(k.toggle_here, "x", api.toggle_here_selection, "spotlight: toggle this selection only")
+
+  bind(k.toggle, "n", api.toggle, "spotlight: toggle every occurrence of the token under cursor")
+  bind(k.toggle, "x", api.toggle_selection, "spotlight: toggle every occurrence of the selection")
 
   bind(k.list, "n", api.list, "spotlight: open the spotlight list")
   bind(k.clear, "n", api.clear, "spotlight: clear all spotlights")

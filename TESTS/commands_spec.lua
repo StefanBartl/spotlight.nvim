@@ -50,6 +50,20 @@ function M.run()
   t.eq("cmd/toggle: an existing text is removed", registry.count(), 0)
   vim.cmd("Spotlight toggle aaa")
   t.eq("cmd/toggle: an absent text is added", registry.count(), 1)
+  vim.cmd("Spotlight clear")
+
+  -- ---------- :Spotlight here ("this occurrence only") ----------
+  t.ok("cmd/here: cursor placed on the first aaa", t.cursor_on(1, "aaa"))
+  vim.cmd("Spotlight here")
+  t.eq("cmd/here: one spotlight added", registry.count(), 1)
+  t.eq("cmd/here: scoped to this buffer position", registry.all()[1].scope, "buffer")
+  vim.cmd("Spotlight here")
+  t.eq("cmd/here: pressing it again on the same spot removes it", registry.count(), 0)
+
+  -- Restore the plain invariant the rest of the suite below expects: one
+  -- global "aaa" spotlight active.
+  vim.cmd("Spotlight toggle aaa")
+  t.eq("cmd/here: unrelated to the global toggle identity", registry.count(), 1)
 
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
   vim.cmd("Spotlight next")
@@ -91,9 +105,12 @@ function M.run()
 
   -- ---------- preset keymaps ----------
   api.setup({ keymaps = { preset = true } })
-  t.ok("keymaps: toggle bound in normal mode", mapped("<leader>mk", "n"))
-  t.ok("keymaps: toggle bound in visual mode", mapped("<leader>mk", "x"))
-  t.ok("keymaps: list bound", mapped("<leader>mK", "n"))
+  t.ok("keymaps: toggle_here (this occurrence only) bound in normal mode", mapped("<leader>mk", "n"))
+  t.ok("keymaps: toggle_here bound in visual mode", mapped("<leader>mk", "x"))
+  t.ok("keymaps: toggle (every occurrence) bound in normal mode", mapped("<leader>mK", "n"))
+  t.ok("keymaps: toggle bound in visual mode", mapped("<leader>mK", "x"))
+  t.ok("keymaps: list bound", mapped("<leader>mL", "n"))
+  t.ok("keymaps: clear bound", mapped("<leader>mC", "n"))
   t.ok("keymaps: quickfix bound", mapped("<leader>mq", "n"))
   t.ok("keymaps: next bound", mapped("]k", "n"))
   t.ok("keymaps: prev bound", mapped("[k", "n"))

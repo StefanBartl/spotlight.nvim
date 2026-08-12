@@ -16,17 +16,27 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 
 | lhs | mode | action | config key | desc |
 | --- | --- | --- | --- | --- |
-| `<leader>mk` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on the token under the cursor |
-| `<leader>mk` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on the exact visual selection |
-| `<leader>mK` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
-| `<leader>m<C-k>` | n | `clear` | `keymaps.clear` | Remove every spotlight |
+| `<leader>mk` | n | `toggle_here` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the token under the cursor |
+| `<leader>mk` | x | `toggle_here_selection` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the exact visual selection |
+| `<leader>mK` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the token under the cursor |
+| `<leader>mK` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the exact visual selection |
+| `<leader>mL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
+| `<leader>mC` | n | `clear` | `keymaps.clear` | Remove every spotlight |
 | `<leader>mq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
 | `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence |
 | `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence |
 
+`<leader>mk` / `<leader>mK` are the pair the concept turns on: lowercase marks
+only the one occurrence the cursor/selection is on (a new spotlight, pinned to
+that exact buffer position — see [FEATURES.md](FEATURES.md#toggle-a-spotlight-on-only-this-occurrence)),
+uppercase marks every occurrence of that text, same as before this pair
+existed. `<leader>mL`/`<leader>mC` moved off `<leader>mK`/`<leader>m<C-k>` to
+free the shifted key for the "every occurrence" toggle.
+
 **No `lhs` above is a prefix of another.** This is deliberate: a mapping that is
-also the prefix of a longer one costs a `'timeoutlen'` pause on *every* press,
-which is why clear-all is `<leader>m<C-k>` rather than `<leader>mkc`.
+also the prefix of a longer one costs a `'timeoutlen'` pause on *every* press.
+`<leader>mk` and `<leader>mK` are fine together — `k`/`K` diverge at that very
+character, neither extends the other.
 
 Collision-checked against the existing `<leader>m*` group in the author's config
 (`<leader>man`, `<leader>ms`, `<leader>mc`, `<leader>mn*`, `<leader>ml*`,
@@ -39,8 +49,9 @@ typing and validation come from the route tree.
 
 | Command | Args | Range | Action | Desc |
 | --- | --- | --- | --- | --- |
-| `:Spotlight` | — | no | `toggle` | Default route: toggle the token under the cursor |
-| `:Spotlight toggle` | `[text]` | yes | `toggle` / `add` / `remove` | Cursor token, `'<,'>` range selection, or explicit `text` |
+| `:Spotlight` | — | no | `toggle` | Default route: toggle every occurrence of the token under the cursor |
+| `:Spotlight toggle` | `[text]` | yes | `toggle` / `add` / `remove` | Every occurrence: cursor token, `'<,'>` range selection, or explicit `text` |
+| `:Spotlight here` | — | yes | `toggle_here` / `toggle_here_at` | Only this occurrence: cursor token, or `'<,'>` range selection |
 | `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
 | `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
 | `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
@@ -64,6 +75,7 @@ the whole reason `matchadd()` was chosen over extmarks.
 | --- | --- | --- | --- |
 | `spotlight_windows` | `WinNew`, `BufWinEnter`, `TabNewEntered` | `*` | Apply every active spotlight to windows that have none yet. `matchadd()` is window-local, so this is what makes the marking look global. All three are needed: `WinNew` for a `:split`, `BufWinEnter` for a buffer shown in an existing window, `TabNewEntered` for a tab created with its window already in place. Deferred one tick, because on `WinNew` the new window is not yet current. |
 | `spotlight_windows` | `WinClosed` | `*` | Drop the closed window's ledger entry. The matches died with the window, so `matchdelete()` on those ids would only fail. |
+| `spotlight_windows` | `BufWipeout`, `BufDelete` | `*` | Drop every "this occurrence only" spotlight pinned to the buffer that just disappeared. |
 | `spotlight_highlights` | `ColorScheme` | `*` | Redefine `Spotlight1..8`. A colorscheme clears highlight groups it does not know about. Gated by `palette.reapply_on_colorscheme`. |
 | `spotlight_highlights` | `OptionSet` | `background` | Switch between `palette.colors` and `palette.colors_light`. |
 | `spotlight_persist` | `VimEnter` | `*` | Load the persisted snapshot, once. Not called directly from `setup()`: a session or `:cd` plugin may not have settled the project root yet, and the store is keyed by it. Gated by `persist.enable`. |
@@ -95,8 +107,11 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 
 | Function | Mode | Returns | Desc |
 | --- | --- | --- | --- |
-| `require("spotlight").toggle()` | n | `boolean` | Toggle the resolved token under the cursor |
-| `require("spotlight").toggle_selection()` | x | `boolean` | Toggle the exact visual selection (literal) |
+| `require("spotlight").toggle()` | n | `boolean` | Toggle every occurrence of the resolved token under the cursor |
+| `require("spotlight").toggle_selection()` | x | `boolean` | Toggle every occurrence of the exact visual selection (literal) |
+| `require("spotlight").toggle_here()` | n | `boolean` | Toggle only this occurrence of the resolved token under the cursor |
+| `require("spotlight").toggle_here_selection()` | x | `boolean` | Toggle only this occurrence of the exact visual selection |
+| `require("spotlight").toggle_here_at(text, pos)` | any | `boolean` | Toggle only the occurrence at an explicit `{ buf, row1, col1 }` |
 | `require("spotlight").add(text)` | any | `boolean` | Add a spotlight for a literal string |
 | `require("spotlight").remove(text)` | any | `boolean` | Remove by exact text |
 | `require("spotlight").clear()` | any | `boolean` | Remove every spotlight |

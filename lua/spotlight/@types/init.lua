@@ -9,6 +9,26 @@
 
 -- ---------- runtime model ----------
 
+--- Whether a spotlight is applied globally (every window, any buffer) or
+--- pinned to one exact position in one buffer.
+---
+---   * `"global"` (the default, and the only kind before this field existed):
+---     `pattern` matches the token's text anywhere, applied to every eligible
+---     window regardless of which buffer it shows.
+---   * `"buffer"`: "this occurrence only" (`spotlight.M.toggle_here`).
+---     `pattern` is anchored to `row1`/`col1` (`core.pattern.build_at`) and
+---     `core.match` applies it only to windows currently showing `buf`.
+---     Session-only — `core.registry.snapshot` excludes these.
+---@alias Spotlight.ItemScope "global"|"buffer"
+
+--- A resolved buffer position, 1-based on both axes to match `\%l`/`\%c` in
+--- `core.pattern.build_at` and the shape `nvim_win_get_cursor` half-uses
+--- (line is already 1-based there; `col1` here is not the 0-based column that
+--- API returns, it is one past that).
+---@class Spotlight.Pos
+---@field row1 integer # 1-based line.
+---@field col1 integer # 1-based byte column.
+
 --- One spotlight: a pattern plus the palette slot it renders in.
 --- `pattern` is a **complete Vim regex** (already escaped and flag-prefixed by
 --- `spotlight.core.pattern`), ready to hand to |matchadd()| — not the raw text
@@ -20,6 +40,10 @@
 ---@field slot integer          # Palette slot, 1..#palette.colors.
 ---@field hl string             # Highlight group name, e.g. "Spotlight3".
 ---@field origin string|nil     # Project-relative path of the file it was created in (persist scoping).
+---@field scope Spotlight.ItemScope|nil # nil behaves as "global". See `Spotlight.ItemScope`.
+---@field buf integer|nil       # `scope == "buffer"` only: the buffer this spotlight is pinned to.
+---@field row1 integer|nil      # `scope == "buffer"` only: 1-based line, part of its toggle identity.
+---@field col1 integer|nil      # `scope == "buffer"` only: 1-based byte column, part of its toggle identity.
 
 --- The on-disk snapshot under the `spotlight/state` project key.
 ---@class Spotlight.Snapshot
@@ -111,7 +135,8 @@
 
 ---@class Spotlight.KeymapOpts
 ---@field preset boolean               # Bind the default keys.
----@field toggle string|false          # Normal + visual: toggle the token/selection.
+---@field toggle_here string|false     # Normal + visual: toggle only this occurrence of the token/selection.
+---@field toggle string|false          # Normal + visual: toggle every occurrence of the token/selection.
 ---@field list string|false            # Open the spotlight list.
 ---@field clear string|false           # Remove every spotlight.
 ---@field quickfix string|false        # Send all matching lines to the quickfix list.

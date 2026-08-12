@@ -11,6 +11,9 @@
 ---     with its window already in place.
 ---   - `WinClosed` — drop the ledger entry. The matches died with the window, so
 ---     `matchdelete()` on those ids would only fail.
+---   - `BufWipeout` / `BufDelete` — drop any "this occurrence only" spotlight
+---     pinned to the buffer that just disappeared; its line/column stopped
+---     meaning anything the moment the buffer did.
 ---   - `ColorScheme` / `OptionSet background` — redefine the `SpotlightN` groups.
 ---     A colorscheme clears highlight groups it does not know about, and the
 ---     background is what selects between the dark and light palettes.
@@ -54,8 +57,16 @@ function M.setup(cfg)
     -- callback runs the window exists and is entered, so a plain "fill every
     -- eligible window" pass is both correct and idempotent (core.match skips
     -- windows that already carry the match).
+    --
+    -- `reconcile_window` runs first: `BufWinEnter` is also what fires when a
+    -- window switches to a *different* buffer, which is exactly when a
+    -- buffer-scoped match left over from the previous buffer needs dropping —
+    -- see `core/match.lua`'s own doc comment on why a stale one is not just
+    -- cosmetic.
     vim.schedule(function()
+      local match = require("spotlight.core.match")
       for _, win in ipairs(vim.api.nvim_list_wins()) do
+        match.reconcile_window(win, registry.all())
         fill_window(win)
       end
     end)
@@ -74,6 +85,17 @@ function M.setup(cfg)
     group = win_group,
     pattern = "*",
     desc = "spotlight: forget a closed window's matches",
+  })
+
+  lib.autocmd({ "BufWipeout", "BufDelete" }, function(args)
+    local buf = tonumber(args.buf)
+    if buf then
+      registry.remove_for_buffer(buf)
+    end
+  end, {
+    group = win_group,
+    pattern = "*",
+    desc = "spotlight: drop this-occurrence-only spotlights pinned to a wiped buffer",
   })
 
   local hl_group = lib.augroup("spotlight_highlights")

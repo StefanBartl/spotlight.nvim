@@ -147,12 +147,17 @@ local DEFAULTS = {
   -- ---------- keymaps ----------
   keymaps = {
     preset = true,
-    -- `<leader>mk` / `<leader>mK` are the two keys the concept fixes. The rest
-    -- deliberately avoid the `<leader>mk` prefix: a mapping that is also the
-    -- prefix of a longer one costs a 'timeoutlen' pause on every press.
-    toggle = "<leader>mk",
-    list = "<leader>mK",
-    clear = "<leader>m<C-k>",
+    -- `<leader>mk` / `<leader>mK` are the two keys the concept fixes:
+    -- lowercase marks only the one occurrence under the cursor/selection,
+    -- uppercase marks every occurrence of that text in the buffer — same
+    -- key, shifted, for the wider action. Neither is a prefix of the other
+    -- (`k` and `K` diverge at that very character), and none of the rest sit
+    -- on the `<leader>mk`/`<leader>mK` prefix either: a mapping that is also
+    -- the prefix of a longer one costs a 'timeoutlen' pause on every press.
+    toggle_here = "<leader>mk",
+    toggle = "<leader>mK",
+    list = "<leader>mL",
+    clear = "<leader>mC",
     quickfix = "<leader>mq",
     next = "]k",
     prev = "[k",

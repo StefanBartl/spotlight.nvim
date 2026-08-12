@@ -51,6 +51,28 @@ function M.run()
   t.fixture({ "a=10.0.0.1 b=10.0.0.2 c=10.0.0.3" })
   t.ok("multi: cursor placed on the third ip", t.cursor_on(1, "10.0.0.3"))
   t.eq("multi: the match spanning the cursor wins, not the first on the line", cursor.token().text, "10.0.0.3")
+
+  -- ---------- position, for "this occurrence only" spotlights ----------
+  -- `M.token`'s second return value must point at the exact occurrence the
+  -- cursor is on, not just any occurrence of the same text — the whole reason
+  -- `core.pattern.build_at` needs it.
+  t.fixture({ "a=10.0.0.1 b=10.0.0.2 c=10.0.0.3" })
+  t.ok("pos/pattern: cursor placed on the third ip", t.cursor_on(1, "10.0.0.3"))
+  local tok3, pos3 = cursor.token()
+  t.eq("pos/pattern: resolves the third occurrence", tok3.text, "10.0.0.3")
+  t.eq("pos/pattern: row is 1-based", pos3.row1, 1)
+  t.eq("pos/pattern: column points at the third, not the first, occurrence", pos3.col1, ("a=10.0.0.1 b=10.0.0.2 c="):len() + 1)
+
+  t.fixture({ "error and error again" })
+  t.ok("pos/word: cursor placed on the second error", t.cursor_on(1, "error again"))
+  local tok_w, pos_w = cursor.token()
+  t.eq("pos/word: resolves the second occurrence's text", tok_w.text, "error")
+  t.eq("pos/word: column points at the second occurrence, not the first", pos_w.col1, ("error and "):len() + 1)
+
+  local sel_tok, sel_err, sel_pos = cursor.selection()
+  t.eq("pos/selection: outside visual mode there is no position either", sel_pos, nil)
+  t.eq("pos/selection: outside visual mode there is no token", sel_tok, nil)
+  t.ok("pos/selection: reports why", sel_err ~= nil)
 end
 
 return M

@@ -120,7 +120,7 @@ function M.check()
   local keymaps = config.get("keymaps")
   if keymaps.preset then
     local bound = {}
-    for _, name in ipairs({ "toggle", "list", "clear", "quickfix", "next", "prev" }) do
+    for _, name in ipairs({ "toggle_here", "toggle", "list", "clear", "quickfix", "next", "prev" }) do
       if type(keymaps[name]) == "string" and keymaps[name] ~= "" then
         bound[#bound + 1] = ("%s = %s"):format(name, keymaps[name])
       end

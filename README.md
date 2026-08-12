@@ -199,15 +199,18 @@ require("spotlight").setup()
 
 ## Quickstart
 
-Open a log. Put the cursor on a request id and press `<leader>mk`: every other
+Open a log. Put the cursor on a request id and press `<leader>mK`: every other
 occurrence lights up, in the whole buffer and in every window showing it.
+`<leader>mk` (lowercase) does the narrower thing — only *this* occurrence,
+pinned to this exact spot, for when the text is too common to light up
+everywhere.
 
 Point at a PID, press it again: a second color. An IP: a third.
 
 - `]k` / `[k` — walk the occurrences of the token you are on.
-- `<leader>mK` — the list: swatch, token, match count. Pick one to jump to it.
+- `<leader>mL` — the list: swatch, token, match count. Pick one to jump to it.
 - `<leader>mq` — every line matching any spotlight, into the quickfix list.
-- `<leader>m<C-k>` — clear them all.
+- `<leader>mC` — clear them all.
 
 Quit and come back tomorrow: they are still there.
 
@@ -219,26 +222,29 @@ Bound when `keymaps.preset` is `true` (the default). Each key is its own config
 value, and setting one to `false` frees just that `lhs` without opting out of the
 whole preset.
 
-| lhs               | mode | action             | description                                        |
-| ----------------- | ---- | ------------------ | -------------------------------------------------- |
-| `<leader>mk`      | n    | `toggle`           | Toggle a spotlight on the token under the cursor.  |
-| `<leader>mk`      | x    | `toggle_selection` | Toggle a spotlight on the exact selection.         |
-| `<leader>mK`      | n    | `list`             | Open the spotlight list.                           |
-| `<leader>m<C-k>`  | n    | `clear`            | Remove every spotlight.                            |
-| `<leader>mq`      | n    | `quickfix`         | Matching lines → quickfix.                         |
-| `]k`              | n    | `next`             | Next occurrence.                                   |
-| `[k`              | n    | `prev`             | Previous occurrence.                               |
+| lhs               | mode | action                  | description                                             |
+| ----------------- | ---- | ----------------------- | -------------------------------------------------------- |
+| `<leader>mk`      | n    | `toggle_here`           | Toggle a spotlight on only this occurrence of the token. |
+| `<leader>mk`      | x    | `toggle_here_selection` | Toggle a spotlight on only this occurrence of the selection. |
+| `<leader>mK`      | n    | `toggle`                | Toggle a spotlight on every occurrence of the token.      |
+| `<leader>mK`      | x    | `toggle_selection`      | Toggle a spotlight on every occurrence of the selection.  |
+| `<leader>mL`      | n    | `list`                  | Open the spotlight list.                                  |
+| `<leader>mC`      | n    | `clear`                 | Remove every spotlight.                                   |
+| `<leader>mq`      | n    | `quickfix`               | Matching lines → quickfix.                                |
+| `]k`              | n    | `next`                  | Next occurrence.                                           |
+| `[k`              | n    | `prev`                  | Previous occurrence.                                       |
 
 Note that none of these is a prefix of another: a mapping that is also the prefix
-of a longer one costs a `'timeoutlen'` pause on *every* press, which is why
-clear-all is `<leader>m<C-k>` and not `<leader>mkc`.
+of a longer one costs a `'timeoutlen'` pause on *every* press. `<leader>mk` and
+`<leader>mK` are fine side by side — `k`/`K` diverge at that very character.
 
 To rebind, either set the config values:
 
 ```lua
 require("spotlight").setup({
   keymaps = {
-    toggle = "<leader>hh",
+    toggle_here = "<leader>hh",
+    toggle = "<leader>hH",
     list = "<leader>hl",
     next = false,          -- leave ]k alone
   },
@@ -251,8 +257,10 @@ require("spotlight").setup({
 require("spotlight").setup({ keymaps = { preset = false } })
 
 local spotlight = require("spotlight")
-vim.keymap.set("n", "<leader>hh", spotlight.toggle, { desc = "spotlight: toggle" })
-vim.keymap.set("x", "<leader>hh", spotlight.toggle_selection, { desc = "spotlight: toggle selection" })
+vim.keymap.set("n", "<leader>hh", spotlight.toggle_here, { desc = "spotlight: toggle this occurrence" })
+vim.keymap.set("x", "<leader>hh", spotlight.toggle_here_selection, { desc = "spotlight: toggle this selection" })
+vim.keymap.set("n", "<leader>hH", spotlight.toggle, { desc = "spotlight: toggle every occurrence" })
+vim.keymap.set("x", "<leader>hH", spotlight.toggle_selection, { desc = "spotlight: toggle every occurrence (selection)" })
 ```
 
 which-key is a soft dependency: when installed, the preset's leader prefix is
@@ -271,8 +279,9 @@ from the same route tree.
 
 | Command                          | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `:Spotlight`                     | Toggle the token under the cursor (same as `<leader>mk`).               |
-| `:Spotlight toggle [text]`       | Toggle the cursor token, a `'<,'>` range selection, or explicit `text`. |
+| `:Spotlight`                     | Toggle every occurrence of the token under the cursor (same as `<leader>mK`). |
+| `:Spotlight toggle [text]`       | Toggle every occurrence: the cursor token, a `'<,'>` range selection, or explicit `text`. |
+| `:Spotlight here`                | Toggle only this occurrence: the cursor token, or a `'<,'>` range selection (same as `<leader>mk`). |
 | `:Spotlight add {text}`          | Add a spotlight for the literal `text`.                                |
 | `:Spotlight remove {text}`       | Remove the spotlight matching `text` exactly.                           |
 | `:Spotlight clear`               | Remove every spotlight.                                                 |
@@ -355,9 +364,10 @@ require("spotlight").setup({
 
   keymaps = {
     preset = true,
-    toggle = "<leader>mk",
-    list = "<leader>mK",
-    clear = "<leader>m<C-k>",
+    toggle_here = "<leader>mk",  -- only this occurrence
+    toggle = "<leader>mK",       -- every occurrence
+    list = "<leader>mL",
+    clear = "<leader>mC",
     quickfix = "<leader>mq",
     next = "]k",
     prev = "[k",

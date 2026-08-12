@@ -12,6 +12,9 @@
 --- the live cursor: by the time a `:` command runs, Visual mode has already
 --- ended — which is precisely when those marks become valid, and precisely when
 --- `spotlight.cursor.selection`'s live-position approach stops working.
+---
+--- `here` is `toggle`'s "this occurrence only" counterpart (see
+--- `spotlight.M.toggle_here`), range-aware on the same terms.
 
 local composer = require("lib.nvim.usercmd.composer")
 
@@ -25,8 +28,12 @@ local M = {}
 --- directly, now shared rather than re-derived. The route's `visual` allowlist
 --- takes care of rejecting blockwise/linewise selections, so only the
 --- single-line constraint is left to check here.
+--- The third return value is the selection's own start column (1-based),
+--- needed by the `here` route to pin a buffer-scoped spotlight — `toggle`'s
+--- text-only routes ignore it, same as any Lua caller ignoring a trailing
+--- return.
 ---@param r Lib.UserCmd.Composer.RangeInfo
----@return string|nil text, string|nil err
+---@return string|nil text, string|nil err, integer|nil start_col1
 local function range_text(r)
   if not r.range or r.range == 0 then
     return nil, nil
@@ -49,7 +56,7 @@ local function range_text(r)
   if text == "" then
     return nil, "empty selection"
   end
-  return text, nil
+  return text, nil, scol
 end
 
 --- Create the `:Spotlight` verb.
@@ -100,6 +107,25 @@ function M.setup()
             return
           end
           api.toggle()
+        end,
+      },
+
+      {
+        path = { "here" },
+        range = true,
+        visual = { "charwise" },
+        desc = "Toggle a spotlight for only this occurrence (cursor token or range selection)",
+        run = function(ctx)
+          local text, err, scol = range_text(ctx.range)
+          if err then
+            lib.notify(err, vim.log.levels.WARN)
+            return
+          end
+          if text and scol then
+            api.toggle_here_at(text, { buf = vim.api.nvim_get_current_buf(), row1 = ctx.range.line1, col1 = scol })
+            return
+          end
+          api.toggle_here()
         end,
       },
 

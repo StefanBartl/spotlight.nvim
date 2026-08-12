@@ -1,0 +1,274 @@
+# Features
+
+`spotlight.nvim` marks tokens in a log — any number of them, in distinguishable
+colors, applied in every window, and persisted per project. Everything below is
+verified against `lua/spotlight/` as it stands; the roadmap's "plausible next"
+and "wanted, needs design" items are not listed here because none of them have
+shipped.
+
+## Toggle a spotlight on the token under the cursor
+
+One key adds a spotlight on whatever the cursor resolver decides you are
+pointing at, and the same key removes it again if that exact token is already
+lit.
+
+- **Module:** `init.lua` (`M.toggle`), `cursor.lua` (`M.token`)
+- **Keymaps:** `<leader>mk` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
+- **Usercmds:** `:Spotlight`, `:Spotlight toggle [text]` — see [user commands](../docs/BINDINGS.md#user-commands)
+- **Config:** `keymaps.toggle` (default `<leader>mk`)
+
+## Toggle a visual selection
+
+The same action in visual mode takes the exact selected bytes, literally — no
+shape classification, no word boundaries, just what you highlighted. Refused
+for a multi-line or whole-line (`V`) selection, since a pattern containing a
+newline cannot match anything `matchadd()` sees.
+
+- **Module:** `init.lua` (`M.toggle_selection`), `cursor.lua` (`M.selection`)
+- **Keymaps:** `<leader>mk` (visual mode)
+- **Usercmds:** `:'<,'>Spotlight toggle`
+
+## Log-aware cursor resolver
+
+`<cword>` splits on `'iskeyword'`, so a UUID is five words, an IPv4 address is
+four, and a timestamp is a fistful — exactly the tokens worth tracking in a
+log. Instead, a configurable, ordered list of Lua patterns (UUID, ISO
+timestamp, clock time, `192.168.1.1:8080`, `0x1f4a`, git shas, `user@host`,
+dotted paths, plain numbers) is searched across the cursor line, and the first
+pattern whose match spans the cursor column wins. `<cword>` is the last
+resort. Above `cursor.max_line_len` the pattern scan is skipped entirely and
+`<cword>` answers instead, so a minified single-line log cannot make the scan
+itself expensive.
+
+- **Module:** `cursor.lua` (`M.token`, `match_spanning`, `kind_of`)
+- **Config:** `cursor.patterns`, `cursor.fallback_cword` (default `true`),
+  `cursor.max_line_len` (default `8192`)
+
+## Auto-color palette
+
+Eight `Spotlight1`..`Spotlight8` highlight groups, each with an explicit
+background **and** foreground so contrast is the plugin's property rather than
+inherited from the colorscheme. Slots are handed out round-robin from the last
+one assigned, but skip a slot that is already in use as long as any slot is
+free, so two unrelated spotlights don't end up wearing the same color.
+Separate dark/light color lists switch automatically with `'background'`, and
+every group is redefined on `ColorScheme` (a colorscheme clears groups it does
+not know about).
+
+- **Module:** `core/palette.lua` (`M.apply`, `M.next_slot`, `M.clamp`)
+- **Config:** `palette.colors`, `palette.colors_light`, `palette.bold`
+  (default `true`), `palette.reapply_on_colorscheme` (default `true`)
+- **Autocmds:** `ColorScheme`, `OptionSet background` — see
+  [autocommands](../docs/BINDINGS.md#autocommands)
+
+## Applied in every window
+
+`matchadd()` is window-local, so a roughly 30-line ledger
+(`window -> { spotlight id -> match id }`) plus three window autocommands make
+a spotlight look global: new splits, buffers shown in an existing window, and
+new tabs are all filled automatically, and a closed window's ledger entry is
+dropped rather than cleaned up with `matchdelete()` (the match already died
+with the window).
+
+- **Module:** `core/match.lua`, `bindings/autocmds.lua`
+- **Autocmds:** `WinNew`, `BufWinEnter`, `TabNewEntered`, `WinClosed` — see
+  [autocommands](../docs/BINDINGS.md#autocommands)
+
+## The spotlight list
+
+Every active spotlight, one row each: color swatch, token text, and a match
+count computed on demand in the current buffer. Selecting a row jumps to its
+first occurrence (or removes it, in the `list_remove` variant). Counting is
+skipped above `list.count_max_lines` and the row shows `?` instead — opening
+the list should never itself become the slow part.
+
+- **Module:** `ui/list.lua`, `core/count.lua` (`M.count`)
+- **Keymaps:** `<leader>mK` (list/jump)
+- **Usercmds:** `:Spotlight list [jump|remove]`
+- **Config:** `list.count` (default `true`), `list.count_max_lines` (default
+  `200000`), `list.swatch`
+
+## Next / previous navigation
+
+`]k` / `[k` jump one occurrence at a time, `unimpaired`-style (`3]k` is three
+one-step jumps). Built on `search()`, not a collected position list, so a jump
+costs the distance travelled rather than the size of the file, and it
+deliberately never touches the search register or `'hlsearch'`. With
+`nav.scope = "auto"` (the default), a cursor sitting inside one spotlight's
+match navigates only that spotlight; off any match, all spotlights are
+searched together.
+
+- **Module:** `nav.lua` (`M.jump`, `M.next`, `M.prev`, `M.under_cursor`)
+- **Keymaps:** `]k`, `[k`
+- **Usercmds:** `:Spotlight next`, `:Spotlight prev`
+- **Config:** `nav.scope` (default `"auto"`), `nav.wrap` (default `true`),
+  `nav.center` (default `true`)
+
+## Quickfix filter
+
+Every line in the current buffer matching any spotlight — or one specific
+spotlight's matches — sent to the quickfix list, each line reported once even
+if several spotlights hit it. Capped at `quickfix.max_entries`, with scanning
+stopped (not just truncated after the fact) once the cap is hit, and the
+truncation reported in both the notification and the quickfix title.
+
+- **Module:** `qf.lua`, `core/count.lua` (`M.matching_lines`)
+- **Keymaps:** `<leader>mq`
+- **Usercmds:** `:Spotlight qf [text]`
+- **Config:** `quickfix.open` (default `true`), `quickfix.title`,
+  `quickfix.max_entries` (default `10000`)
+
+## Add / remove by explicit text
+
+`:Spotlight add {text}` and `:Spotlight remove {text}` work on a literal
+string that doesn't happen to be under the cursor or in a selection —
+useful when scripting or acting on a token spotted in a different file.
+
+- **Module:** `init.lua` (`M.add`, `M.remove`)
+- **Usercmds:** `:Spotlight add {text}`, `:Spotlight remove {text}`
+
+## Clear all
+
+Removes every active spotlight across every window in one call, and resets
+the round-robin color cursor so the next set starts again from slot 1.
+
+- **Module:** `init.lua` (`M.clear`), `core/registry.lua` (`M.clear`),
+  `core/palette.lua` (`M.reset`)
+- **Keymaps:** `<leader>m<C-k>`
+- **Usercmds:** `:Spotlight clear`
+
+## Per-project persistence
+
+Restored on the next session automatically. State is keyed by **git root**
+(via `lib.nvim.store.project`), so it survives opening the project from a
+subdirectory and follows a checkout to another machine. Writes are debounced
+so a burst of toggles is one logical save, and flushed on `VimLeavePre` so the
+last toggle before `:qa` is never lost.
+
+- **Module:** `persist.lua` (`M.save`, `M.load`, `M.flush`)
+- **Config:** `persist.enable` (default `true`), `persist.default` (default
+  `true`), `persist.debounce_ms` (default `500`)
+- **Autocmds:** `VimEnter` (load), `VimLeavePre` (flush)
+
+## Per-file persistence opt-out
+
+`:Spotlight persist off` marks the *current file* so spotlights created while
+looking at it are not written to disk, without touching the global default.
+The exception is recorded against a spotlight's **origin** — the file it was
+created in — not against every file the same string happens to appear in,
+because answering "where does this token appear" would require an O(every
+file) scan on every save. The exception itself always persists (including for
+excluded files), otherwise the setting would not survive a restart.
+
+- **Tab:** true
+- **Module:** `persist.lua` (`M.persists`, `M.set_exception`, `M.status`)
+- **Usercmds:** `:Spotlight persist on|off|default|status`
+- **Config:** `persist.default` inverts the model between opt-out and opt-in
+
+### Why origin, not appearance
+
+Two readings of "don't persist this file's spotlights" were possible: "don't
+persist spotlights that *appear* in this file" (not implementable without
+scanning every file on every save, and the answer changes every time a log
+rotates), or "don't persist spotlights that were *created* while looking at
+this file" (exact, cheap, recorded once at creation time). The second is what
+ships. A spotlight made in `worker.log` stays persisted even if the same
+string also occurs in an excluded `secrets.log` — the exception is about
+where the token came from, matching the actual use case: "this customer log
+is full of tokens I don't want written to my cache directory."
+
+## Case-pinned matching
+
+Every spotlight pattern bakes in `\C`, so a spotlight's meaning does not
+silently change when `'ignorecase'` is toggled elsewhere in the session.
+
+- **Module:** `core/pattern.lua`
+- **Config:** `match.ignore_case` (default `false`)
+
+## Word-boundary matching by shape
+
+An all-word-character token (`error`) gets `\<`/`\>` so it does not light up
+inside `errors`; a token that isn't (`192.168.1.1`, punctuation-bearing
+literals) cannot carry boundaries, since `\<` asserts a word start that a
+character like `.` never satisfies. The kind is derived from the token's own
+shape, not from which resolver branch produced it, which is what keeps this
+setting meaningful regardless of pattern ordering. An explicit selection or
+`:Spotlight add` is always literal, boundaries or not.
+
+- **Module:** `cursor.lua` (`kind_of`), `core/pattern.lua`
+- **Config:** `match.word_boundaries` (default `true`)
+
+## `:checkhealth spotlight`
+
+Reports the Neovim version, `'termguicolors'`, each `lib.nvim` module's
+availability separately (a missing `usercmd.composer` and a missing
+`debounce` are different problems), every config value that failed
+validation and what it fell back to, the resolved match/cursor/keymap
+settings, and live state — active spotlights with their slots, how many
+windows carry matches, the project root, and every per-file persistence
+override.
+
+- **Module:** `health.lua`
+
+## Debug logging
+
+`debug = true` logs exactly the four decisions that answer "why did nothing
+light up": which cursor-resolver pattern won and its index, which windows the
+match ledger applied to or skipped (and any `matchadd()` rejection), what the
+persisted snapshot filter kept and dropped, and whether navigation narrowed to
+one spotlight or searched them all. Routed through `lib.nvim.logger` when
+available, falling back to `vim.notify` at DEBUG level otherwise. With
+`debug = false` a log call costs one table lookup.
+
+- **Module:** `util/lib.lua` (`M.debug`)
+- **Config:** `debug` (default `false`)
+
+## `:Spotlight refresh`
+
+Redefines the palette and re-applies every spotlight to every window from
+scratch — the escape hatch for the one thing `matchadd()` cannot do (update a
+match in place), and the fix if another plugin has cleared the current
+window's matches with `:call clearmatches()`.
+
+- **Module:** `init.lua` (`M.refresh`)
+- **Usercmds:** `:Spotlight refresh`
+
+## Scriptable facade
+
+Every action is also a plain function on the `spotlight` module — no
+`<Plug>` indirection, no action that exists only as a keymap. `spotlight.
+spotlights()` gives live read access to the registry for a status line or a
+scripted check.
+
+- **Module:** `init.lua`
+- **Usercmds:** none — this is the underlying API every keymap and command
+  binds onto
+
+## which-key integration
+
+When which-key is installed, the preset's `<leader>m` prefix is labelled as a
+"Spotlight" group; individual key descriptions come from each mapping's own
+`desc`. Entirely soft — nothing breaks if which-key is absent.
+
+- **Module:** `bindings/which_key.lua`
+
+## Cross-platform persistence keys
+
+Per-file exception and origin keys are project-relative paths normalized to
+forward slashes and compared case-insensitively on Windows, where
+`C:\Repos\x` and `c:\repos\x` name the same file and would otherwise produce
+two different exception entries.
+
+- **Module:** `util/path.lua`
+
+## Bounded, non-throwing configuration
+
+Invalid config values are degraded to their defaults rather than raising an
+error: a malformed color or an unparseable Lua pattern is dropped, every
+other setting still applies, and `:checkhealth spotlight` lists exactly what
+was rejected. Numeric limits (`match.max_text_len`, `cursor.max_line_len`,
+`quickfix.max_entries`) are enforced as hard caps rather than advisory
+defaults, so no single crafted or oversized input can turn a highlight or a
+quickfix fill into a multi-second stall.
+
+- **Module:** `config/init.lua`

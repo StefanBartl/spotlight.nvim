@@ -107,6 +107,7 @@ Bound when `keymaps.preset` is true (the default):
     <leader>mk       n  toggle a spotlight on only this occurrence
     <leader>mk       x  toggle a spotlight on only this occurrence (selection)
     <leader>mK       n  toggle a spotlight on every occurrence of the token
+                        (dot-repeatable, `.` re-resolves the cursor token)
     <leader>mK       x  toggle a spotlight on every occurrence (selection)
     <leader>mL       n  open the spotlight list
     <leader>mC       n  remove every spotlight
@@ -123,6 +124,14 @@ None of these is a prefix of another, deliberately: a mapping that is also the
 prefix of a longer one costs a 'timeoutlen' pause on every press. `k`/`K`
 diverge at that very character, so `<leader>mk` and `<leader>mK` sit fine
 side by side.
+
+The normal-mode `<leader>mK` (and the bare `:Spotlight`/`:Spotlight toggle`
+command path) is dot-repeatable via `lib.nvim.dotrepeat`: press it on one
+token, move elsewhere, and `.` toggles whatever the cursor is on *then* — it
+re-resolves fresh rather than repeating the original toggle, so `.` on an
+already-lit token removes it, same as pressing the key on it again would.
+There is deliberately no count multiplier (`3<leader>mK` does nothing special)
+— unlike `3]k`, a count on a toggle has no established meaning to borrow.
 
 Each key is its own config value. Setting one to `false` frees that lhs while
 keeping the rest of the preset:
@@ -624,6 +633,7 @@ breaking a feature:
     lib.nvim.autocmd            guarded autocommands
     lib.nvim.ui.hl              highlight definition
     lib.nvim.cross.platform     Windows path-case detection
+    lib.nvim.dotrepeat          `.` repeats the normal-mode toggle
 
 |:checkhealth| lists each one with its status.
 

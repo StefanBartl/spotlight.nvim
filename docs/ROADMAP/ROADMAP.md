@@ -24,7 +24,6 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Plausible next](#plausible-next)
-    - [`count` and `dot`-repeat on the toggle](#count-and-dot-repeat-on-the-toggle)
     - [A `Spotlight.Item` per-slot lock](#a-spotlightitem-per-slot-lock)
     - [`:Spotlight yank`](#spotlight-yank)
   - [Wanted, needs design](#wanted-needs-design)
@@ -37,17 +36,6 @@ Reviews rather than plans, kept beside this file because they are where the
 ## Plausible next
 
 Ordered by expected value per line of code.
-
----
-
-### `count` and `dot`-repeat on the toggle
-
-`3<leader>mK` has no obvious meaning, but `.` after a toggle arguably does
-("spotlight this one too"). `lib.nvim.dotrepeat` exists and cascade.nvim already
-uses it.
-
-*Open question:* whether repeating a *toggle* is coherent, since the second press
-on the same token removes it.
 
 ---
 

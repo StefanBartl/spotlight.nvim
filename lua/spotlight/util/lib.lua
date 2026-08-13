@@ -222,4 +222,37 @@ function M.debounce(fn, ms)
   }
 end
 
+--- Wrap `fn` so pressing `.` afterwards re-invokes it — used for the
+--- normal-mode toggle keymap so `.` after `<leader>mK` re-resolves and
+--- toggles whatever is under the cursor *now*, not a captured closure over
+--- the original spot. Uses `lib.nvim.dotrepeat.repeatable` if available, else
+--- returns `fn` unchanged (dot-repeat becomes a no-op, not a broken keymap).
+---@param fn fun()
+---@return fun()
+function M.dot_repeatable(fn)
+  local lib = try_require("lib.nvim.dotrepeat")
+  if lib and type(lib.repeatable) == "function" then
+    local ok, wrapped = pcall(lib.repeatable, fn)
+    if ok and type(wrapped) == "function" then
+      return wrapped
+    end
+  end
+  return fn
+end
+
+--- Run `fn` now and arm it as the `.` target, for call sites that cannot bind
+--- a keymap directly (the `:Spotlight` command path). Uses
+--- `lib.nvim.dotrepeat.run` if available, else just calls `fn()`.
+---@param fn fun()
+---@return nil
+function M.dot_run(fn)
+  local lib = try_require("lib.nvim.dotrepeat")
+  if lib and type(lib.run) == "function" then
+    if pcall(lib.run, fn) then
+      return
+    end
+  end
+  fn()
+end
+
 return M

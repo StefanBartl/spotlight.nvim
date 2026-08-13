@@ -68,9 +68,11 @@ function M.setup()
   composer.verb("Spotlight", {
     desc = "Spotlight: persistent multi-token highlighting",
     -- Bare `:Spotlight` is the action reached most often, so it is the default
-    -- rather than an error or a help dump.
+    -- rather than an error or a help dump. Routed through `dot_run` for the
+    -- same reason as the `toggle` route's cursor-fallback branch below: `.`
+    -- afterwards should re-toggle whatever the cursor is on then.
     default = function()
-      api.toggle()
+      lib.dot_run(api.toggle)
     end,
     routes = {
       {
@@ -106,7 +108,10 @@ function M.setup()
             end
             return
           end
-          api.toggle()
+          -- No explicit text and no range: this resolves the cursor token,
+          -- same as the bare `:Spotlight` default — dot-repeatable for the
+          -- same reason.
+          lib.dot_run(api.toggle)
         end,
       },
 

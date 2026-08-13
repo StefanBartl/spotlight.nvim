@@ -18,7 +18,7 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 | --- | --- | --- | --- | --- |
 | `<leader>mk` | n | `toggle_here` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the token under the cursor |
 | `<leader>mk` | x | `toggle_here_selection` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the exact visual selection |
-| `<leader>mK` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the token under the cursor |
+| `<leader>mK` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the token under the cursor. Dot-repeatable: `.` re-resolves and toggles the token under the cursor at that later moment |
 | `<leader>mK` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the exact visual selection |
 | `<leader>mL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
 | `<leader>mC` | n | `clear` | `keymaps.clear` | Remove every spotlight |

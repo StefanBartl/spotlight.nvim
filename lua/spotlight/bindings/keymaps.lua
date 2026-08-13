@@ -48,7 +48,17 @@ function M.setup(cfg)
   bind(k.toggle_here, "n", api.toggle_here, "spotlight: toggle this occurrence only")
   bind(k.toggle_here, "x", api.toggle_here_selection, "spotlight: toggle this selection only")
 
-  bind(k.toggle, "n", api.toggle, "spotlight: toggle every occurrence of the token under cursor")
+  -- Only the normal-mode toggle is dot-repeatable: `.` re-invokes the wrapped
+  -- function fresh, so it re-resolves whatever the cursor is on *then*, not a
+  -- captured closure over the original spot. Visual mode is left alone —
+  -- dot-repeat is a normal-mode-operator concept, and the selection it read
+  -- no longer exists by the time `.` fires.
+  bind(
+    k.toggle,
+    "n",
+    lib.dot_repeatable(api.toggle),
+    "spotlight: toggle every occurrence of the token under cursor (dot-repeatable)"
+  )
   bind(k.toggle, "x", api.toggle_selection, "spotlight: toggle every occurrence of the selection")
 
   bind(k.list, "n", api.list, "spotlight: open the spotlight list")

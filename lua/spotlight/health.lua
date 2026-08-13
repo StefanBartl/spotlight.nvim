@@ -19,6 +19,7 @@ local LIB_MODULES = {
   { module = "lib.nvim.notify", purpose = "namespaced notifications", required = false },
   { module = "lib.nvim.logger", purpose = "structured debug logs (spotlight.debug)", required = false },
   { module = "lib.nvim.map", purpose = "keymap registration", required = false },
+  { module = "lib.nvim.dotrepeat", purpose = "`.` repeats the normal-mode toggle", required = false },
   { module = "lib.nvim.autocmd", purpose = "guarded autocommands", required = false },
   { module = "lib.nvim.ui.hl", purpose = "highlight definition", required = false },
 }

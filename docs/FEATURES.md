@@ -14,7 +14,18 @@ lit. `matchadd()` highlights the text everywhere it appears — every window,
 every buffer whose content happens to contain it — which is the point: a
 request id you spotted in `app.log` is the same request id in `worker.log`.
 
-- **Module:** `init.lua` (`M.toggle`), `cursor.lua` (`M.token`)
+The normal-mode keymap is dot-repeatable: press `<leader>mK` on one token,
+move to another, and `.` toggles that one too — "spotlight this one as well",
+via `lib.nvim.dotrepeat`. Each firing re-resolves the cursor token fresh
+rather than repeating the original action, so `.` on an already-lit token
+removes it, exactly like pressing `<leader>mK` on it again would. The
+`:Spotlight` command path (bare `:Spotlight` and `:Spotlight toggle` with no
+explicit text or range) is dot-repeatable the same way; a count prefix
+(`3<leader>mK`) is deliberately not given a meaning — unlike `3]k`, "toggle
+three tokens from one keypress" has no established convention to borrow.
+
+- **Module:** `init.lua` (`M.toggle`), `cursor.lua` (`M.token`),
+  `util/lib.lua` (`M.dot_repeatable`, `M.dot_run`)
 - **Keymaps:** `<leader>mK` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
 - **Usercmds:** `:Spotlight`, `:Spotlight toggle [text]` — see [user commands](../docs/BINDINGS.md#user-commands)
 - **Config:** `keymaps.toggle` (default `<leader>mK`)

@@ -48,11 +48,12 @@ elsewhere, even one right next to it.
 
 `<leader>mK` on an already-spotlighted token *removes* it — `registry.toggle`
 keys on the exact text, not on position (`<leader>mk`'s `registry.toggle_at`
-keys on position instead, for the reason above). This is the thing to
-internalize before doing anything with `count`/`.`: there is no dot-repeat for
-toggle (deliberately — see `docs/ROADMAP/ROADMAP.md`), and there is no
-"toggle 3 different tokens" from a single keypress. Each `<leader>mK` is one
-decision about one token.
+keys on position instead, for the reason above). `.` afterward repeats this:
+it re-resolves whatever the cursor is on *then*, not the original token, so
+`.` on an already-lit token removes it too, the same as pressing `<leader>mK`
+on it again would — there is no capture of "the token from before". There is
+still no "toggle 3 different tokens" from a single keypress, and a count
+prefix (`3<leader>mK`) is deliberately not given a meaning, unlike `3]k`.
 
 The corollary: `:Spotlight add error` and later putting the cursor on an
 `error` and pressing `<leader>mK` operate on the *same* spotlight if the text

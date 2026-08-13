@@ -15,6 +15,7 @@ require("spotlight.@types")
 local config = require("spotlight.config")
 local cursor = require("spotlight.cursor")
 local lib = require("spotlight.util.lib")
+local map = require("spotlight.map")
 local nav = require("spotlight.nav")
 local palette = require("spotlight.core.palette")
 local path = require("spotlight.util.path")
@@ -434,6 +435,38 @@ function M.sets_list()
     lines[i] = ("%s (%d spotlight%s)"):format(name, sets.count(name), sets.count(name) == 1 and "" or "s")
   end
   lib.notify(table.concat(lines, "\n"))
+end
+
+-- ---------- occurrence density (sign column) ----------
+
+--- Scan the current buffer once and place one sign per matching line — "where
+--- in this file does this token cluster". With `text`, only that spotlight's
+--- matches; otherwise every active spotlight's, each in its own color.
+--- Explicit and one-shot: nothing re-runs this automatically.
+---@param text string|nil
+---@return boolean shown
+function M.map(text)
+  local found, err, truncated = map.show(text)
+  if found == 0 then
+    report(err or "no matching lines", vim.log.levels.WARN)
+    return false
+  end
+  if truncated then
+    report(
+      ("stopped at %d marks (map.max_entries) — the map is truncated"):format(config.get("map.max_entries")),
+      vim.log.levels.WARN
+    )
+  end
+  report(("marked %d matching line%s"):format(found, found == 1 and "" or "s"))
+  return true
+end
+
+--- Clear every mark `M.map` placed in the current buffer.
+---@return boolean cleared
+function M.map_clear()
+  map.clear()
+  report("cleared the occurrence map")
+  return true
 end
 
 -- ---------- persistence ----------

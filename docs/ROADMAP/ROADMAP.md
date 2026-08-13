@@ -24,24 +24,11 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Wanted, needs design](#wanted-needs-design)
-    - [Occurrence count in the sign column or on the scrollbar](#occurrence-count-in-the-sign-column-or-on-the-scrollbar)
     - [Per-window opt-out](#per-window-opt-out)
 
 ---
 
 ## Wanted, needs design
-
----
-
-### Occurrence count in the sign column or on the scrollbar
-
-A density map — where in the file this token clusters — is genuinely useful on a
-long log and is the one thing the current design cannot show, because it would
-need positions.
-
-*Needs:* a way to get that without an O(buffer) scan on every change. Possibly a
-one-shot scan behind an explicit command (`:Spotlight map`), which keeps the
-performance promise intact by making the cost visible and opt-in.
 
 ---
 

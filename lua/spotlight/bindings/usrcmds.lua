@@ -261,6 +261,23 @@ function M.setup()
       },
 
       {
+        path = { "map" },
+        args = { { name = "text", type = "STRING", optional = true } },
+        desc = "Mark every matching line in the sign column (all spotlights, or just TEXT's)",
+        run = function(ctx)
+          api.map(ctx.args.text)
+        end,
+      },
+
+      {
+        path = { "map", "clear" },
+        desc = "Clear the sign-column occurrence map in the current buffer",
+        run = function()
+          api.map_clear()
+        end,
+      },
+
+      {
         path = { "sets", "save" },
         args = { { name = "name", type = "STRING" } },
         desc = "Save the active spotlights as a named set (overwrites if it already exists)",

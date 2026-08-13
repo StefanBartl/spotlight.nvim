@@ -84,6 +84,7 @@
 ---@field cursor Spotlight.CursorOpts
 ---@field nav Spotlight.NavOpts
 ---@field list Spotlight.ListOpts
+---@field map Spotlight.MapOpts
 ---@field quickfix Spotlight.QuickfixOpts
 ---@field persist Spotlight.PersistOpts
 ---@field keymaps Spotlight.KeymapOpts
@@ -131,6 +132,13 @@
 ---@field count_max_lines integer # Skip counting above this buffer line count; the list shows "?" instead.
 ---@field count_scope Spotlight.ListCountScope # "buffer" (default) or "loaded" — see `Spotlight.ListCountScope`.
 ---@field swatch string          # Text painted in the spotlight's own colors as the row's color chip.
+
+--- One-shot, opt-in occurrence density: `:Spotlight map` places a sign per
+--- matching line in the current buffer's sign column, painted in the
+--- matching spotlight's own group. Never live — see `spotlight-map`.
+---@class Spotlight.MapOpts
+---@field sign_text string  # ≤2 display cells (Neovim's own sign-text limit).
+---@field max_entries integer # Stop after this many marks; independent of `quickfix.max_entries`.
 
 ---@class Spotlight.QuickfixOpts
 ---@field open boolean  # `:copen` after filling the list.

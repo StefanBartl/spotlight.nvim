@@ -159,10 +159,37 @@ from the sum rather than making the whole count unknown — the row then shows
 - **Module:** `ui/list.lua`, `core/count.lua` (`M.count`, `M.count_loaded`,
   `M.scannable_buffers`)
 - **Keymaps:** `<leader>mL` (list/jump)
-- **Usercmds:** `:Spotlight list [jump|remove]`
+- **Usercmds:** `:Spotlight list [jump|remove|lock]`
 - **Config:** `list.count` (default `true`), `list.count_max_lines` (default
   `200000`), `list.count_scope` (default `"buffer"`, or `"loaded"`),
   `list.swatch`
+
+## Occurrence density (sign column)
+
+The roadmap's own resolution for "where in the file does this token
+cluster": `:Spotlight map` scans the current buffer once and places a sign
+on every matching line, in the matching spotlight's own color — a shape the
+highlighting itself cannot show, since `matchadd()` renders only what is
+currently visible. Deliberately one-shot and explicit, not live: the whole
+plugin's design principle is zero cost per keystroke or text change, and a
+density map that stayed current would need exactly the invalidation that
+principle exists to avoid. Editing the buffer after `:Spotlight map` leaves
+the marks exactly where they were; run it again to refresh them.
+
+With `:Spotlight map {text}`, only that spotlight's lines. `:Spotlight map
+clear` removes the marks from the current buffer. Per-buffer, not global —
+showing the map in a different buffer never touches another buffer's marks,
+and nothing needs cleaning up on `BufWipeout`: Neovim drops a wiped buffer's
+extmarks with it, so this feature adds zero new autocmds.
+
+- **Module:** `map.lua` (`M.show`, `M.clear`), `core/count.lua`
+  (`M.matching_lines_by_item`)
+- **Keymaps:** none — deliberately command-only, matching the feature's own
+  "cost visible and opt-in" design principle; a default key would undercut it
+- **Usercmds:** `:Spotlight map [text]`, `:Spotlight map clear`
+- **Config:** `map.sign_text` (default `"▪"`, ≤2 display cells — Neovim's own
+  sign-text limit), `map.max_entries` (default `10000`, independent of
+  `quickfix.max_entries`)
 
 ## Next / previous navigation
 

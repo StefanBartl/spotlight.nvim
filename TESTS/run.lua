@@ -24,6 +24,7 @@ local SPECS = {
   "lock_spec",
   "yank_spec",
   "sets_spec",
+  "map_spec",
 }
 
 -- Notifications are outcome reports, not test output: silence them so a failure

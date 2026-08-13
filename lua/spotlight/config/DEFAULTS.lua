@@ -129,6 +129,18 @@ local DEFAULTS = {
     swatch = "  ",
   },
 
+  -- ---------- occurrence density (sign column) ----------
+  map = {
+    -- Painted in the matching spotlight's own SpotlightN group, so the sign
+    -- column reads as an extension of the highlight rather than a separate
+    -- visual language. Capped at 2 display cells -- Neovim's own sign-text
+    -- limit -- and validated against it at setup().
+    sign_text = "▪",
+    -- Same shape as quickfix.max_entries, independent value: this is a
+    -- second, unrelated cap on a second, unrelated scan.
+    max_entries = 10000,
+  },
+
   -- ---------- quickfix ----------
   quickfix = {
     open = true,

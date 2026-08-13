@@ -147,6 +147,24 @@ local function normalize_numbers(o)
     o.quickfix.max_entries = DEFAULTS.quickfix.max_entries
     M.issues[#M.issues + 1] = "quickfix.max_entries must be a positive number — using the default"
   end
+  if type(o.map.max_entries) ~= "number" or o.map.max_entries < 1 then
+    o.map.max_entries = DEFAULTS.map.max_entries
+    M.issues[#M.issues + 1] = "map.max_entries must be a positive number — using the default"
+  end
+end
+
+---@internal
+--- `map.sign_text` must be a non-empty string within Neovim's own 2-cell sign
+--- limit — an oversized value would not fail loudly, it would just get
+--- silently truncated by `nvim_buf_set_extmark` at a point far from this
+--- setting, which is worse than degrading to the default here.
+---@param o Spotlight.Config
+---@return nil
+local function normalize_map_sign_text(o)
+  if type(o.map.sign_text) ~= "string" or o.map.sign_text == "" or vim.fn.strdisplaywidth(o.map.sign_text) > 2 then
+    M.issues[#M.issues + 1] = "map.sign_text must be a non-empty string of at most 2 display cells — using the default"
+    o.map.sign_text = DEFAULTS.map.sign_text
+  end
 end
 
 ---@internal
@@ -207,6 +225,7 @@ function M.setup(opts)
   normalize_nav(M.options)
   normalize_list_count_scope(M.options)
   normalize_swatch(M.options)
+  normalize_map_sign_text(M.options)
 end
 
 --- Read a value by dot-path, e.g. `get("match.priority")`.

@@ -12,16 +12,17 @@ CONTENTS                                                   *spotlight-contents*
   7. Token resolution ......................... |spotlight-cursor|
   8. Navigation ............................... |spotlight-nav|
   9. The list ................................. |spotlight-list|
- 10. Quickfix filter .......................... |spotlight-quickfix|
- 11. Yank to a register ....................... |spotlight-yank|
- 12. Persistence .............................. |spotlight-persist|
- 13. Spotlight sets ........................... |spotlight-sets|
- 14. Colors ................................... |spotlight-colors|
- 15. Lua API .................................. |spotlight-api|
- 16. Health ................................... |spotlight-health|
- 17. Debugging ................................ |spotlight-debug|
- 18. Security model ........................... |spotlight-security|
- 19. lib.nvim integration ..................... |spotlight-lib|
+ 10. Occurrence density (sign column) ......... |spotlight-map|
+ 11. Quickfix filter .......................... |spotlight-quickfix|
+ 12. Yank to a register ....................... |spotlight-yank|
+ 13. Persistence .............................. |spotlight-persist|
+ 14. Spotlight sets ........................... |spotlight-sets|
+ 15. Colors ................................... |spotlight-colors|
+ 16. Lua API .................................. |spotlight-api|
+ 17. Health ................................... |spotlight-health|
+ 18. Debugging ................................ |spotlight-debug|
+ 19. Security model ........................... |spotlight-security|
+ 20. lib.nvim integration ..................... |spotlight-lib|
 
 ==============================================================================
 1. INTRODUCTION                                        *spotlight-introduction*
@@ -208,6 +209,8 @@ the same route tree.
     :Spotlight qf [text]           matching lines -> quickfix (current buffer)
     :Spotlight qf all [text]       same, across every loaded buffer
     :Spotlight yank [text]         matching lines -> unnamed register
+    :Spotlight map [text]          mark matching lines in the sign column
+    :Spotlight map clear           clear the sign-column occurrence map
     :Spotlight lock [text]         toggle whether a spotlight keeps its slot
                                    permanently ({text}, or the cursor token)
     :Spotlight persist {state}     on | off | default | status
@@ -258,6 +261,10 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
         count_max_lines = 200000,
         count_scope = "buffer",  -- "buffer" | "loaded", see |spotlight-list|
         swatch = "  ",
+      },
+      map = {
+        sign_text = "▪",          -- <=2 display cells, see |spotlight-map|
+        max_entries = 10000,
       },
       quickfix = {
         open = true,
@@ -387,7 +394,35 @@ The list deliberately does not honour a `vim.ui.select` override
 plain strings, so delegating would drop the per-row colors that are the point.
 
 ==============================================================================
-10. QUICKFIX FILTER                                        *spotlight-quickfix*
+10. OCCURRENCE DENSITY (SIGN COLUMN)                             *spotlight-map*
+
+`:Spotlight map` scans the current buffer once and places a sign on every
+matching line, painted in the matching spotlight's own color — "where does
+this token cluster", a shape the highlighting itself cannot show, since
+|matchadd()| renders only what is currently visible. With
+`:Spotlight map {text}`, only that spotlight's lines. `:Spotlight map clear`
+removes the marks from the current buffer.
+
+Deliberately one-shot and explicit, not live: the whole plugin exists to
+keep cost independent of file size and off every keystroke (see
+|spotlight-matchadd|), and a density map that stayed current would need
+exactly the invalidation that principle avoids. Editing the buffer after
+`:Spotlight map` leaves the marks exactly where they were; run it again to
+refresh them. No keymap is bound by default — a bound key here would
+undercut the "cost visible and opt-in" point of the feature.
+
+Per-buffer, not global: showing the map in a different buffer never touches
+marks placed in another one, and nothing needs cleaning up on |BufWipeout| —
+Neovim drops a wiped buffer's extmarks with it, so this feature adds zero
+new autocommands.
+
+`map.sign_text` (default a single square marker) is capped at 2 display
+cells — Neovim's own sign-text limit — and validated against it at setup().
+`map.max_entries` caps how many marks one scan can place, independent of
+`quickfix.max_entries`.
+
+==============================================================================
+11. QUICKFIX FILTER                                        *spotlight-quickfix*
 
 `<leader>mq` or `:Spotlight qf` puts every line of the current buffer that
 matches a spotlight into the quickfix list — "show me only the lines with this
@@ -411,7 +446,7 @@ The spotlight colors render inside the quickfix window too — it is an ordinary
 window as far as the ledger is concerned.
 
 ==============================================================================
-11. YANK TO A REGISTER                                        *spotlight-yank*
+12. YANK TO A REGISTER                                        *spotlight-yank*
 
 `:Spotlight yank` is the quickfix filter's sibling for "I just want the
 text, not a navigable list": every line in the current buffer matching a
@@ -429,7 +464,7 @@ line-numbered variant is a plausible follow-up, not something this needed to
 guess at up front.
 
 ==============================================================================
-12. PERSISTENCE                                             *spotlight-persist*
+13. PERSISTENCE                                             *spotlight-persist*
 
 State lives in lib.nvim.store.project under the key `spotlight/state`, keyed by
 *git root* — so it works when you open the project from a subdirectory, and
@@ -484,7 +519,7 @@ against the exact buffer state it was recorded from, and that guarantee does
 not survive a restart.
 
 ==============================================================================
-13. SPOTLIGHT SETS                                              *spotlight-sets*
+14. SPOTLIGHT SETS                                              *spotlight-sets*
 
 Named, saved snapshots of the registry, switched one at a time:
 
@@ -517,7 +552,7 @@ regular persistence: a line/column pin means nothing outside the exact
 buffer state it was recorded from.
 
 ==============================================================================
-14. COLORS                                                   *spotlight-colors*
+15. COLORS                                                   *spotlight-colors*
 
                 *Spotlight1* *Spotlight2* *Spotlight3* *Spotlight4*
                 *Spotlight5* *Spotlight6* *Spotlight7* *Spotlight8*
@@ -554,7 +589,7 @@ terminal's 256-color cube and slots get harder to tell apart; |:checkhealth|
 warns about this.
 
 ==============================================================================
-15. LUA API                                                     *spotlight-api*
+16. LUA API                                                     *spotlight-api*
 
 Every action is a plain function on the `spotlight` module, so it can be bound
 to any key or called from your own code:
@@ -585,6 +620,8 @@ to any key or called from your own code:
     spotlight.sets_switch(name)    -- clear + restore the saved set `name`
     spotlight.sets_delete(name)    -- delete the saved set `name`
     spotlight.sets_list()          -- report every saved set
+    spotlight.map(text|nil)        -- mark matching lines in the sign column
+    spotlight.map_clear()          -- clear the sign-column occurrence map
     spotlight.refresh()            -- redefine palette, re-apply everything
     spotlight.spotlights()         -- the live Spotlight.Item[] list
 <
@@ -595,7 +632,7 @@ outcome (suppress those messages with `notify = false`).
 current window's matches with `clearmatches()`.
 
 ==============================================================================
-16. HEALTH                                                   *spotlight-health*
+17. HEALTH                                                   *spotlight-health*
 >vim
     :checkhealth spotlight
 <
@@ -607,7 +644,7 @@ active spotlights with their slots, how many windows carry matches, the project
 root, and every per-file persistence override.
 
 ==============================================================================
-17. DEBUGGING                                                 *spotlight-debug*
+18. DEBUGGING                                                 *spotlight-debug*
 >lua
     require("spotlight").setup({ debug = true })
 <
@@ -635,7 +672,7 @@ With `debug = false` (the default) a log call costs one table lookup, so the
 instrumentation is not conditional on a build.
 
 ==============================================================================
-18. SECURITY MODEL                                         *spotlight-security*
+19. SECURITY MODEL                                         *spotlight-security*
 
 Not a claim of hardness — a plugin that highlights text is not a security
 boundary — but a statement of what is and is not trusted, so the limits below
@@ -693,7 +730,7 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 (see |spotlight-persist|).
 
 ==============================================================================
-19. LIB.NVIM INTEGRATION                                        *spotlight-lib*
+20. LIB.NVIM INTEGRATION                                        *spotlight-lib*
 
 "StefanBartl/lib.nvim" is a required dependency. Two modules are hard
 requirements:

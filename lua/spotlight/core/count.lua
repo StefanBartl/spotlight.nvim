@@ -170,4 +170,63 @@ function M.matching_lines(bufnr, patterns, max_entries)
   return out, false
 end
 
+--- `M.matching_lines`'s sibling for `spotlight.map`: one shared buffer scan
+--- (not one scan per `item`, which would multiply the cost by however many
+--- spotlights are active) that additionally records *which* item's pattern
+--- won each line — needed for a sign column painted in the matching
+--- spotlight's own color, which `M.matching_lines`'s pattern-only output
+--- cannot answer. Same chunked-read shape, same one-entry-per-line rule when
+--- several items hit the same line (the earliest column wins, matching
+--- `M.matching_lines`'s own tie-break).
+---@param bufnr integer
+---@param items Spotlight.Item[]
+---@param max_entries integer|nil # Defaults to `map.max_entries`.
+---@return { bufnr: integer, lnum: integer, col: integer, item: Spotlight.Item }[] entries
+---@return boolean truncated
+function M.matching_lines_by_item(bufnr, items, max_entries)
+  if type(max_entries) ~= "number" or max_entries < 1 then
+    max_entries = require("spotlight.config").get("map.max_entries")
+  end
+
+  ---@type { re: vim.regex, item: Spotlight.Item }[]
+  local compiled = {}
+  for _, item in ipairs(items) do
+    local re = pattern.compile(item.pattern)
+    if re then
+      compiled[#compiled + 1] = { re = re, item = item }
+    end
+  end
+  local out = {}
+  if #compiled == 0 then
+    return out, false
+  end
+
+  local total = vim.api.nvim_buf_line_count(bufnr)
+  local CHUNK = 5000
+  for start = 0, total - 1, CHUNK do
+    local lines = vim.api.nvim_buf_get_lines(bufnr, start, math.min(start + CHUNK, total), false)
+    for i, line in ipairs(lines) do
+      local first_col, first_item = nil, nil
+      for _, c in ipairs(compiled) do
+        local s = c.re:match_str(line)
+        if s and (first_col == nil or s < first_col) then
+          first_col, first_item = s, c.item
+        end
+      end
+      if first_item then
+        if #out >= max_entries then
+          return out, true
+        end
+        out[#out + 1] = {
+          bufnr = bufnr,
+          lnum = start + i,
+          col = first_col + 1,
+          item = first_item,
+        }
+      end
+    end
+  end
+  return out, false
+end
+
 return M

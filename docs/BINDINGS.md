@@ -62,6 +62,8 @@ typing and validation come from the route tree.
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
 | `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |
 | `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
+| `:Spotlight map` | `[text]` | no | `map` | Mark every matching line in the sign column (all spotlights, or just `text`'s) |
+| `:Spotlight map clear` | — | no | `map_clear` | Clear the sign-column occurrence map in the current buffer |
 | `:Spotlight sets save` | `{name}` | no | `sets_save` | Save the active spotlights as a named set (overwrites) |
 | `:Spotlight sets switch` | `{name}` | no | `sets_switch` | Clear the active spotlights and restore a saved set |
 | `:Spotlight sets delete` | `{name}` | no | `sets_delete` | Delete a saved set (active spotlights untouched) |
@@ -136,6 +138,8 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").sets_switch(name)` | any | `boolean` | Clear the active spotlights and restore a saved set |
 | `require("spotlight").sets_delete(name)` | any | `boolean` | Delete a saved set |
 | `require("spotlight").sets_list()` | any | `nil` | Report every saved set and its spotlight count |
+| `require("spotlight").map(text?)` | any | `boolean` | Mark every matching line in the sign column |
+| `require("spotlight").map_clear()` | any | `boolean` | Clear the sign-column occurrence map |
 | `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
 | `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
 | `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |

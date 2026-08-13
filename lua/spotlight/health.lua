@@ -113,6 +113,10 @@ function M.check()
       config.get("list.count_max_lines")
     )
   )
+  -- One-shot only, not tracked here as live state — see spotlight.map's own
+  -- module doc for why "which buffers currently have marks" is deliberately
+  -- not session-global bookkeeping.
+  info(("map: sign_text '%s', max %d entries"):format(config.get("map.sign_text"), config.get("map.max_entries")))
 
   -- Debug logging (resolver outcome, ledger apply/skip, snapshot filter, nav scope).
   if config.get("debug") == true then

@@ -78,16 +78,20 @@ check whether it came from a selection. `<leader>mk` (this occurrence only)
 sidesteps the whole question — it never widens past the one spot you pointed
 at, selection or not.
 
-## The list's match count is per-buffer, not per-project
+## The list's match count is per-buffer by default, not per-project
 
-`<leader>mL` opens the list with a count column — computed against the
-**current buffer only**. A spotlight active across `app.log`, `worker.log`,
-and `auth.log` shows its count for whichever one you have open when you press
-the key. This is the honest tradeoff behind the whole plugin (an O(project)
-count would mean scanning every open buffer, and `matchadd()` was chosen
-specifically to avoid O(buffer) work on the hot path) — but it means "3" in
-the list is not "3 total," it's "3 here." Multi-buffer counting is on the
-roadmap as an explicit opt-in (`list.count_scope`), not shipped.
+`<leader>mL` opens the list with a count column — computed, by default,
+against the **current buffer only**. A spotlight active across `app.log`,
+`worker.log`, and `auth.log` shows its count for whichever one you have open
+when you press the key. This is the honest tradeoff behind the whole plugin
+(an O(project) count means scanning every open buffer, and `matchadd()` was
+chosen specifically to avoid O(buffer) work on the hot path) — but it means
+"3" in the list is not "3 total," it's "3 here." Set
+`list.count_scope = "loaded"` to sum across every *loaded* buffer instead —
+opt-in, since it multiplies that one O(buffer) scan by however many buffers
+are loaded. A buffer that alone exceeds `list.count_max_lines` is skipped
+from the sum rather than making the whole count unknown, shown as `N+`
+instead of a plain `N`.
 
 Above `list.count_max_lines` (200000 by default) the count doesn't run at all
 and the row shows `?` — on a genuinely huge log, don't wait for a number that

@@ -183,6 +183,17 @@ local function normalize_nav(o)
   end
 end
 
+---@internal
+--- Normalize `list.count_scope` to a value `spotlight.core.count` understands.
+---@param o Spotlight.Config
+---@return nil
+local function normalize_list_count_scope(o)
+  if o.list.count_scope ~= "buffer" and o.list.count_scope ~= "loaded" then
+    M.issues[#M.issues + 1] = ('list.count_scope must be "buffer" or "loaded" — using "%s"'):format(DEFAULTS.list.count_scope)
+    o.list.count_scope = DEFAULTS.list.count_scope
+  end
+end
+
 --- Apply user options. Safe to call once from `setup()`.
 ---@param opts Spotlight.Config|nil
 ---@return nil
@@ -194,6 +205,7 @@ function M.setup(opts)
   normalize_cursor_patterns(M.options)
   normalize_numbers(M.options)
   normalize_nav(M.options)
+  normalize_list_count_scope(M.options)
   normalize_swatch(M.options)
 end
 

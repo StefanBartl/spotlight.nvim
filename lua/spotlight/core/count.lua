@@ -36,6 +36,18 @@ local function count_in_line(re, line)
   return n
 end
 
+--- Every loaded, ordinary file buffer eligible for a multi-buffer scan.
+--- Terminal/quickfix/help/scratch buffers (`buftype ~= ""`) are excluded —
+--- mirrors `spotlight.util.path`'s own buffer-key guard, since neither a
+--- persistence key nor a cross-buffer count means anything for a buffer with
+--- no stable file identity.
+---@return integer[]
+function M.scannable_buffers()
+  return vim.tbl_filter(function(b)
+    return vim.api.nvim_buf_is_loaded(b) and vim.bo[b].buftype == ""
+  end, vim.api.nvim_list_bufs())
+end
+
 --- Count how many times `item`'s pattern matches in `bufnr`.
 ---
 --- Returns `nil` when the buffer is larger than `max_lines`, which callers must
@@ -66,6 +78,30 @@ function M.count(bufnr, item, max_lines)
     end
   end
   return n, total
+end
+
+--- Sum `M.count` for `item` across every `M.scannable_buffers()` buffer.
+---
+--- A buffer over `max_lines` is skipped from the sum rather than making the
+--- whole result `nil` — a lower bound across nine buffers is more useful than
+--- refusing to answer because a tenth was too big to look at. `exact` tells
+--- the caller which case happened, mirroring `M.count`'s own `nil`-vs-`0`
+--- distinction one level up (the list renders this as `N+` instead of `N`).
+---@param item Spotlight.Item
+---@param max_lines integer
+---@return integer total, boolean exact, integer scanned # `scanned` = buffers actually counted.
+function M.count_loaded(item, max_lines)
+  local total, exact, scanned = 0, true, 0
+  for _, bufnr in ipairs(M.scannable_buffers()) do
+    local n = M.count(bufnr, item, max_lines)
+    if n == nil then
+      exact = false
+    else
+      total = total + n
+      scanned = scanned + 1
+    end
+  end
+  return total, exact, scanned
 end
 
 --- Collect every line in `bufnr` matching any pattern in `patterns`, as

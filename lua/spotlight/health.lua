@@ -105,6 +105,13 @@ function M.check()
       config.get("cursor.fallback_cword") and "on" or "off"
     )
   )
+  info(
+    ("list: count %s (scope: %s, max %d lines)"):format(
+      config.get("list.count") and "on" or "off",
+      config.get("list.count_scope"),
+      config.get("list.count_max_lines")
+    )
+  )
 
   -- Debug logging (resolver outcome, ledger apply/skip, snapshot filter, nav scope).
   if config.get("debug") == true then

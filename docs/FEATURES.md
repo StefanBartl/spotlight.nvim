@@ -122,11 +122,22 @@ first occurrence (or removes it, in the `list_remove` variant). Counting is
 skipped above `list.count_max_lines` and the row shows `?` instead — opening
 the list should never itself become the slow part.
 
-- **Module:** `ui/list.lua`, `core/count.lua` (`M.count`)
+With `list.count_scope = "loaded"`, the count column sums matches across
+every *loaded* buffer (ordinary file buffers only — terminal/quickfix/help
+buffers are excluded) instead of just the current one, so it answers "how
+many total" rather than "how many here". Opt-in, not the default: it
+multiplies the one O(buffer) scan in the plugin by however many buffers are
+loaded. A buffer that individually exceeds `list.count_max_lines` is skipped
+from the sum rather than making the whole count unknown — the row then shows
+`N+` (a lower bound) instead of a plain `N`, and the list's title says so.
+
+- **Module:** `ui/list.lua`, `core/count.lua` (`M.count`, `M.count_loaded`,
+  `M.scannable_buffers`)
 - **Keymaps:** `<leader>mL` (list/jump)
 - **Usercmds:** `:Spotlight list [jump|remove]`
 - **Config:** `list.count` (default `true`), `list.count_max_lines` (default
-  `200000`), `list.swatch`
+  `200000`), `list.count_scope` (default `"buffer"`, or `"loaded"`),
+  `list.swatch`
 
 ## Next / previous navigation
 

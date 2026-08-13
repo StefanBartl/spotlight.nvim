@@ -24,7 +24,6 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Plausible next](#plausible-next)
-    - [Match counts across all loaded buffers](#match-counts-across-all-loaded-buffers)
     - [Quickfix across all loaded buffers](#quickfix-across-all-loaded-buffers)
     - [`count` and `dot`-repeat on the toggle](#count-and-dot-repeat-on-the-toggle)
     - [A `Spotlight.Item` per-slot lock](#a-spotlightitem-per-slot-lock)
@@ -39,18 +38,6 @@ Reviews rather than plans, kept beside this file because they are where the
 ## Plausible next
 
 Ordered by expected value per line of code.
-
----
-
-### Match counts across all loaded buffers
-
-The list currently counts in the current buffer only, which is honest but
-narrow — the spotlight itself is global. Counting every loaded buffer would tell
-you which file the token actually lives in.
-
-*Cost:* one loop and a per-buffer `count_max_lines` check. *Risk:* the list
-becomes slow with many large buffers open; would need to stay opt-in
-(`list.count_scope = "buffer"|"loaded"`).
 
 ---
 

@@ -118,9 +118,16 @@
 ---@field wrap boolean             # Wrap around the end of the buffer.
 ---@field center boolean           # `zz` after jumping.
 
+--- "buffer": count only in the buffer the list was opened from. "loaded": sum
+--- matches across every loaded buffer (`vim.api.nvim_list_bufs()`, ordinary
+--- file buffers only), reported as a lower bound (`N+`) rather than `nil` if
+--- any one buffer was skipped for exceeding `count_max_lines`.
+---@alias Spotlight.ListCountScope "buffer"|"loaded"
+
 ---@class Spotlight.ListOpts
 ---@field count boolean          # Compute match counts when the list opens (on demand, never live).
 ---@field count_max_lines integer # Skip counting above this buffer line count; the list shows "?" instead.
+---@field count_scope Spotlight.ListCountScope # "buffer" (default) or "loaded" — see `Spotlight.ListCountScope`.
 ---@field swatch string          # Text painted in the spotlight's own colors as the row's color chip.
 
 ---@class Spotlight.QuickfixOpts

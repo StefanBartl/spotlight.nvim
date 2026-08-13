@@ -18,6 +18,7 @@ local SPECS = {
   "persist_spec",
   "hardening_spec",
   "commands_spec",
+  "list_count_scope_spec",
 }
 
 -- Notifications are outcome reports, not test output: silence them so a failure

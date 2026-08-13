@@ -119,6 +119,13 @@ local DEFAULTS = {
     -- not at all above this size — matching the "cost independent of file
     -- size" promise that picking matchadd() over extmarks is there to keep.
     count_max_lines = 200000,
+    -- "buffer" (the default): count only in the buffer the list was opened
+    -- from — honest but narrow, since a spotlight itself is global. "loaded":
+    -- sum matches across every *loaded* buffer instead, so the count answers
+    -- "how many total", not "how many here". Opt-in, not the default: it
+    -- multiplies the one O(file) scan in the plugin by however many buffers
+    -- are loaded, each still gated by count_max_lines individually.
+    count_scope = "buffer",
     swatch = "  ",
   },
 

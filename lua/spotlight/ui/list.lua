@@ -31,9 +31,11 @@ local M = {}
 ---@param item Spotlight.Item
 ---@param n integer|nil # Match count, or nil for "not counted".
 ---@param swatch string
+---@param partial boolean|nil # True when `n` is a lower bound (a `list.count_scope
+--- = "loaded"` scan skipped at least one oversized buffer), not an exact count.
 ---@return table
-local function row(item, n, swatch)
-  local shown = n and tostring(n) or "?"
+local function row(item, n, swatch, partial)
+  local shown = n and (tostring(n) .. (partial and "+" or "")) or "?"
   -- Buffer-scoped items ("this occurrence only") are otherwise indistinguishable
   -- in the list from a global spotlight of the same text — the tag is the only
   -- place that distinction is visible outside `:checkhealth`.
@@ -68,22 +70,42 @@ function M.open(mode)
 
   local list_opts = config.get("list")
   local bufnr = vim.api.nvim_get_current_buf()
+  local loaded_scope = list_opts.count_scope == "loaded"
   local entries = {}
-  local counted = true
+  local counted, any_partial = true, false
   for i, item in ipairs(items) do
-    local n = nil
+    local n, partial = nil, false
     if list_opts.count then
-      n = count.count(bufnr, item, list_opts.count_max_lines)
+      -- A buffer-scoped ("this occurrence only") item can only ever match in
+      -- the one buffer it is pinned to (its pattern is a `\%l\%c` position
+      -- anchor) — scanning every loaded buffer for it would be pure waste, so
+      -- it always takes the single-buffer path regardless of count_scope.
+      if loaded_scope and item.scope ~= "buffer" then
+        local exact
+        n, exact = count.count_loaded(item, list_opts.count_max_lines)
+        partial = not exact
+        if partial then
+          any_partial = true
+        end
+      else
+        n = count.count(item.scope == "buffer" and item.buf or bufnr, item, list_opts.count_max_lines)
+      end
       if n == nil then
         counted = false
       end
     end
-    entries[i] = row(item, n, list_opts.swatch)
+    entries[i] = row(item, n, list_opts.swatch, partial)
   end
 
   local title = mode == "remove" and "Spotlights — select to remove" or "Spotlights — select to jump"
+  if loaded_scope then
+    title = title .. " (counting across all loaded buffers)"
+  end
   if list_opts.count and not counted then
     title = title .. " (buffer above list.count_max_lines: counts shown as ?)"
+  end
+  if any_partial then
+    title = title .. " (+ = at least one buffer skipped: lower bound)"
   end
 
   local select = lib.try_require("lib.nvim.ui.kit.select")

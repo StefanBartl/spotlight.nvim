@@ -235,6 +235,7 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
       list = {
         count = true,
         count_max_lines = 200000,
+        count_scope = "buffer",  -- "buffer" | "loaded", see |spotlight-list|
         swatch = "  ",
       },
       quickfix = {
@@ -351,6 +352,14 @@ operation here (see |spotlight-matchadd|). Above `list.count_max_lines` (default
 200000) the scan is skipped and the count shows `?`; that is meaningfully
 different from `0` and the title says so. Set `list.count = false` to skip
 counting entirely.
+
+`list.count_scope = "loaded"` (default `"buffer"`) sums the count across every
+loaded, ordinary file buffer instead of just the one the list was opened from —
+"how many total" rather than "how many here". A buffer that alone exceeds
+`list.count_max_lines` is skipped from the sum rather than making the whole
+count unknown; the row then shows `N+` (a lower bound) and the title notes it.
+Opt-in: it multiplies the one O(buffer) scan by however many buffers are
+loaded.
 
 The list deliberately does not honour a `vim.ui.select` override
 (telescope-ui-select, fzf-lua, dressing): a foreign picker only understands

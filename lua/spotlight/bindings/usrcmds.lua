@@ -162,11 +162,13 @@ function M.setup()
 
       {
         path = { "list" },
-        args = { { name = "action", type = "STRING", enum = { "jump", "remove" }, optional = true } },
+        args = { { name = "action", type = "STRING", enum = { "jump", "remove", "lock" }, optional = true } },
         desc = "Open the spotlight list (swatch + pattern + match count)",
         run = function(ctx)
           if ctx.args.action == "remove" then
             api.list_remove()
+          elseif ctx.args.action == "lock" then
+            api.list_lock()
           else
             api.list()
           end
@@ -222,6 +224,15 @@ function M.setup()
           else
             api.persist_status()
           end
+        end,
+      },
+
+      {
+        path = { "lock" },
+        args = { { name = "text", type = "STRING", optional = true } },
+        desc = "Toggle whether a spotlight keeps its palette slot permanently (TEXT, or the cursor token)",
+        run = function(ctx)
+          api.lock_toggle(ctx.args.text)
         end,
       },
 

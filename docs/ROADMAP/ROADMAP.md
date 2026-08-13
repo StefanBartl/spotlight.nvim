@@ -24,7 +24,6 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Plausible next](#plausible-next)
-    - [A `Spotlight.Item` per-slot lock](#a-spotlightitem-per-slot-lock)
     - [`:Spotlight yank`](#spotlight-yank)
   - [Wanted, needs design](#wanted-needs-design)
     - [Spotlight sets](#spotlight-sets)
@@ -36,15 +35,6 @@ Reviews rather than plans, kept beside this file because they are where the
 ## Plausible next
 
 Ordered by expected value per line of code.
-
----
-
-### A `Spotlight.Item` per-slot lock
-
-"Keep this one on slot 1 forever" — useful when a specific token has become the
-one you always look for. Currently round-robin owns slot assignment.
-
-*Cost:* a `locked` flag on the item, honoured by `used_slots()` and the snapshot.
 
 ---
 

@@ -38,8 +38,12 @@ local function row(item, n, swatch, partial)
   local shown = n and (tostring(n) .. (partial and "+" or "")) or "?"
   -- Buffer-scoped items ("this occurrence only") are otherwise indistinguishable
   -- in the list from a global spotlight of the same text — the tag is the only
-  -- place that distinction is visible outside `:checkhealth`.
+  -- place that distinction is visible outside `:checkhealth`. Same reasoning
+  -- for a locked slot: nothing else in the list shows it.
   local label = item.scope == "buffer" and (item.text .. "  (this occurrence only)") or item.text
+  if item.locked then
+    label = label .. "  (locked)"
+  end
   local line = ("%s %-40s %s"):format(swatch, label, shown)
   return {
     value = item,
@@ -56,11 +60,12 @@ end
 --- Open the list. Selecting an entry jumps to its first occurrence; `<Tab>` is
 --- not used for removal because kit's chooser reserves it for multi-select —
 --- instead the list is re-opened in "remove" mode via `:Spotlight list remove`
---- (and by `mode = "remove"` here).
----@param mode "jump"|"remove"|nil # Defaults to "jump".
+--- (and by `mode = "remove"` here). `"lock"` toggles the selected entry's
+--- `Spotlight.Item.locked` flag instead of jumping or removing.
+---@param mode "jump"|"remove"|"lock"|nil # Defaults to "jump".
 ---@return nil
 function M.open(mode)
-  mode = mode == "remove" and "remove" or "jump"
+  mode = (mode == "remove" or mode == "lock") and mode or "jump"
 
   local items = registry.all()
   if #items == 0 then
@@ -97,7 +102,10 @@ function M.open(mode)
     entries[i] = row(item, n, list_opts.swatch, partial)
   end
 
-  local title = mode == "remove" and "Spotlights — select to remove" or "Spotlights — select to jump"
+  local title = ({
+    remove = "Spotlights — select to remove",
+    lock = "Spotlights — select to toggle lock",
+  })[mode] or "Spotlights — select to jump"
   if loaded_scope then
     title = title .. " (counting across all loaded buffers)"
   end
@@ -128,6 +136,13 @@ function M.open(mode)
         local removed = registry.remove(item.id)
         if removed and config.get("notify") then
           lib.notify(("removed spotlight: %s"):format(removed.text))
+        end
+        return
+      end
+      if mode == "lock" then
+        local now_locked = not item.locked
+        if registry.set_locked(item.id, now_locked) and config.get("notify") then
+          lib.notify(("%s: %s"):format(now_locked and "locked" or "unlocked", item.text))
         end
         return
       end

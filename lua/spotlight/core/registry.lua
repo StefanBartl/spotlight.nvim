@@ -123,6 +123,19 @@ local function used_slots()
   return used
 end
 
+---@internal
+--- Palette slots a locked item has claimed, for `palette.next_slot`.
+---@return table<integer, boolean>
+local function locked_slots()
+  local locked = {}
+  for _, item in ipairs(items) do
+    if item.locked then
+      locked[item.slot] = true
+    end
+  end
+  return locked
+end
+
 --- Add a spotlight for `token`. Returns the new item, or nil plus a reason when
 --- it was refused (empty token, duplicate, or `match.max` reached).
 ---
@@ -152,7 +165,7 @@ function M.add(token, opts)
     return nil, ("spotlight limit reached (match.max = %d)"):format(max)
   end
 
-  local slot = opts.slot and palette.clamp(opts.slot) or palette.next_slot(used_slots())
+  local slot = opts.slot and palette.clamp(opts.slot) or palette.next_slot(used_slots(), locked_slots())
 
   -- Recorded even when persistence is off: turning it on later should not
   -- require re-creating the spotlights to know where they came from.
@@ -212,7 +225,7 @@ function M.add_at(token, pos, opts)
     return nil, ("spotlight limit reached (match.max = %d)"):format(max)
   end
 
-  local slot = opts.slot and palette.clamp(opts.slot) or palette.next_slot(used_slots())
+  local slot = opts.slot and palette.clamp(opts.slot) or palette.next_slot(used_slots(), locked_slots())
 
   local origin = opts.origin
   if origin == nil then
@@ -253,6 +266,23 @@ function M.remove(id)
   table.remove(items, index)
   notify_change()
   return item
+end
+
+--- Set whether the spotlight with id `id` keeps its `slot` permanently — see
+--- `palette.next_slot`'s locked-slot handling. Only changes bookkeeping, not
+--- the item's current slot: locking does not reassign a color, it just stops
+--- this one from being handed to a different spotlight later.
+---@param id integer
+---@param value boolean
+---@return boolean ok
+function M.set_locked(id, value)
+  local item = M.get(id)
+  if not item then
+    return false
+  end
+  item.locked = value or nil
+  notify_change()
+  return true
 end
 
 --- Toggle a spotlight for `token`: remove it if that exact text is already
@@ -372,6 +402,7 @@ function M.restore(stored)
         slot = slot,
         hl = palette.group(slot),
         origin = type(s.origin) == "string" and s.origin or nil,
+        locked = s.locked == true or nil,
       }
     end
   end
@@ -396,6 +427,7 @@ function M.snapshot()
         slot = item.slot,
         kind = item.pattern:find("\\<", 1, true) and "word" or "literal",
         origin = item.origin,
+        locked = item.locked,
       }
     end
   end

@@ -106,7 +106,21 @@ Separate dark/light color lists switch automatically with `'background'`, and
 every group is redefined on `ColorScheme` (a colorscheme clears groups it does
 not know about).
 
-- **Module:** `core/palette.lua` (`M.apply`, `M.next_slot`, `M.clamp`)
+A spotlight can lock its slot — "keep this one on slot 1 forever", for a
+token that has become the one you always look for. A locked slot is skipped
+by round-robin the same way an in-use one is, but it stays skipped even once
+every other slot fills up and reuse becomes unavoidable: it is never handed
+to a *different* spotlight, only ever kept by the one that locked it.
+Locking doesn't move a spotlight to a new slot, it just stops the one it
+already has from being taken later. The lock survives persistence (it is
+part of the stored snapshot) and is reachable from the list
+(`:Spotlight list lock`) or directly (`:Spotlight lock [text]`).
+
+- **Module:** `core/palette.lua` (`M.apply`, `M.next_slot`, `M.clamp`),
+  `core/registry.lua` (`M.set_locked`), `ui/list.lua` (`"lock"` mode)
+- **Keymaps:** none — command/list only, to avoid keymap sprawl for an
+  occasional action
+- **Usercmds:** `:Spotlight lock [text]`, `:Spotlight list lock`
 - **Config:** `palette.colors`, `palette.colors_light`, `palette.bold`
   (default `true`), `palette.reapply_on_colorscheme` (default `true`)
 - **Autocmds:** `ColorScheme`, `OptionSet background` — see

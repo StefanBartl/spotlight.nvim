@@ -198,11 +198,15 @@ the same route tree.
     :Spotlight add {text}          add a spotlight for the literal {text}
     :Spotlight remove {text}       remove the spotlight matching {text}
     :Spotlight clear               remove every spotlight
-    :Spotlight list [jump|remove]  open the list; "remove" deletes on select
+    :Spotlight list [jump|remove|lock]
+                                   open the list; "remove" deletes on select,
+                                   "lock" toggles the lock on select
     :Spotlight next                jump to the next occurrence
     :Spotlight prev                jump to the previous occurrence
     :Spotlight qf [text]           matching lines -> quickfix (current buffer)
     :Spotlight qf all [text]       same, across every loaded buffer
+    :Spotlight lock [text]         toggle whether a spotlight keeps its slot
+                                   permanently ({text}, or the cursor token)
     :Spotlight persist {state}     on | off | default | status
     :Spotlight refresh             redefine the palette, re-apply everything
 
@@ -477,6 +481,16 @@ still in use while any are free. Plain round-robin would hand out a color
 already on screen while three others sit unused, and two identically colored
 spotlights are exactly the confusion the palette exists to prevent.
 
+                                                                *spotlight-lock*
+A spotlight can lock its slot with `:Spotlight lock [text]` (or
+`:Spotlight list lock`) — "keep this one on slot 1 forever", for a token that
+has become the one you always look for. A locked slot is skipped by
+round-robin the same way an in-use one is, but stays skipped even once every
+other slot fills up and reuse becomes unavoidable: it is never handed to a
+*different* spotlight. Locking does not move a spotlight to a new slot, only
+stops it from losing the one it already has. The lock is part of the
+persisted snapshot, so it survives a restart.
+
 'termguicolors' should be on. Without it the hex values are approximated to the
 terminal's 256-color cube and slots get harder to tell apart; |:checkhealth|
 warns about this.
@@ -499,6 +513,9 @@ to any key or called from your own code:
     spotlight.clear()              -- all
     spotlight.list()               -- the list, selection jumps
     spotlight.list_remove()        -- the list, selection removes
+    spotlight.list_lock()          -- the list, selection toggles the lock
+    spotlight.lock_set(text, value)   -- set the slot lock for `text`
+    spotlight.lock_toggle(text|nil)   -- toggle it, for `text` or the cursor token
     spotlight.next()               -- next occurrence
     spotlight.prev()               -- previous occurrence
     spotlight.quickfix(text|nil)   -- matching lines -> quickfix (current buffer)

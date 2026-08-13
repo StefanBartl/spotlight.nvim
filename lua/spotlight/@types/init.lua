@@ -44,6 +44,7 @@
 ---@field buf integer|nil       # `scope == "buffer"` only: the buffer this spotlight is pinned to.
 ---@field row1 integer|nil      # `scope == "buffer"` only: 1-based line, part of its toggle identity.
 ---@field col1 integer|nil      # `scope == "buffer"` only: 1-based byte column, part of its toggle identity.
+---@field locked boolean|nil    # True: `slot` is never handed to a different spotlight, even once the palette fills up.
 
 --- The on-disk snapshot under the `spotlight/state` project key.
 ---@class Spotlight.Snapshot
@@ -60,6 +61,7 @@
 ---@field slot integer
 ---@field kind Spotlight.TokenKind
 ---@field origin string|nil
+---@field locked boolean|nil
 
 --- What the resolver decided the token under the cursor is. Drives whether the
 --- generated regex gets word boundaries: a bare `<cword>` fallback wants them

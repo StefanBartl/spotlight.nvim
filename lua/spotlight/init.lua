@@ -202,6 +202,58 @@ function M.list_remove()
   require("spotlight.ui.list").open("remove")
 end
 
+--- Open the spotlight list in lock mode; selecting an entry toggles whether
+--- its palette slot is locked (see `M.lock_toggle`).
+---@return nil
+function M.list_lock()
+  require("spotlight.ui.list").open("lock")
+end
+
+-- ---------- per-slot lock ----------
+
+--- Set whether the spotlight matching `text` exactly keeps its palette slot
+--- permanently, never handing it to a different spotlight even once the
+--- palette fills up.
+---@param text string
+---@param value boolean
+---@return boolean changed
+function M.lock_set(text, value)
+  local item = registry.find_by_text(text)
+  if not item then
+    report(("no spotlight for: %s"):format(tostring(text)), vim.log.levels.WARN)
+    return false
+  end
+  registry.set_locked(item.id, value)
+  report(("%s: %s"):format(value and "locked" or "unlocked", item.text))
+  return true
+end
+
+--- Toggle the lock on the spotlight matching `text` exactly, or — with no
+--- `text` — on whatever spotlight the cursor token resolves to, mirroring
+--- `M.toggle`'s own resolution. Locking is only meaningful for a spotlight
+--- that already exists, so an unresolved or not-yet-spotlighted token is
+--- refused rather than silently doing nothing.
+---@param text string|nil
+---@return boolean changed
+function M.lock_toggle(text)
+  local item
+  if type(text) == "string" and text ~= "" then
+    item = registry.find_by_text(text)
+  else
+    local token = cursor.token()
+    if not token then
+      report("no token under the cursor", vim.log.levels.WARN)
+      return false
+    end
+    item = registry.find_by_text(token.text)
+  end
+  if not item then
+    report(("no spotlight for: %s"):format(tostring(text)), vim.log.levels.WARN)
+    return false
+  end
+  return M.lock_set(item.text, not item.locked)
+end
+
 -- ---------- navigation ----------
 
 --- Jump to the next spotlight occurrence. A count prefix (`3]k`) jumps that

@@ -55,11 +55,12 @@ typing and validation come from the route tree.
 | `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
 | `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
 | `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
-| `:Spotlight list` | `[jump\|remove]` | no | `list` / `list_remove` | Open the list; `remove` deletes on select |
+| `:Spotlight list` | `[jump\|remove\|lock]` | no | `list` / `list_remove` / `list_lock` | Open the list; `remove` deletes on select, `lock` toggles the lock on select |
 | `:Spotlight next` | — | no | `next` | Jump to the next occurrence |
 | `:Spotlight prev` | — | no | `prev` | Jump to the previous occurrence |
 | `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines in the current buffer → quickfix (all, or just `text`'s) |
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
+| `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
 | `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
 | `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
 
@@ -118,10 +119,13 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").clear()` | any | `boolean` | Remove every spotlight |
 | `require("spotlight").list()` | n | `nil` | Open the list; selection jumps |
 | `require("spotlight").list_remove()` | n | `nil` | Open the list; selection removes |
+| `require("spotlight").list_lock()` | n | `nil` | Open the list; selection toggles the lock |
 | `require("spotlight").next()` | n | `boolean` | Next occurrence |
 | `require("spotlight").prev()` | n | `boolean` | Previous occurrence |
 | `require("spotlight").quickfix(text?)` | n | `boolean` | Matching lines in the current buffer → quickfix |
 | `require("spotlight").quickfix_all(text?)` | n | `boolean` | Same, across every loaded buffer |
+| `require("spotlight").lock_set(text, value)` | any | `boolean` | Set the slot lock for the spotlight matching `text` exactly |
+| `require("spotlight").lock_toggle(text?)` | any | `boolean` | Toggle the slot lock for `text`, or the cursor token |
 | `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
 | `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
 | `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |

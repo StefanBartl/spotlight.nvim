@@ -151,7 +151,7 @@ function M.check()
     )
   )
   for _, item in ipairs(registry.all()) do
-    info(("  slot %d (%s): %s"):format(item.slot, item.hl, item.text))
+    info(("  slot %d (%s): %s%s"):format(item.slot, item.hl, item.text, item.locked and " [locked]" or ""))
   end
 
   local persist = require("spotlight.persist")

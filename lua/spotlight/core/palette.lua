@@ -61,28 +61,58 @@ end
 ---@type integer
 local last = 0
 
---- Pick the next palette slot, given the slots already in use.
+--- Pick the next palette slot, given the slots already in use and the slots a
+--- `locked` item has claimed permanently.
 ---
 --- Round-robin from the last handed-out slot, but skipping slots that are still
 --- occupied as long as any slot is free. Plain round-robin would happily hand
 --- out a color already on screen while three others sit unused — and two
 --- same-colored spotlights are exactly the confusion the palette exists to
---- prevent. Once every slot is taken, reuse is unavoidable and the cursor just
---- advances.
+--- prevent. Once every unlocked slot is taken, reuse is unavoidable and the
+--- cursor just advances — but a *locked* slot is never handed to a different
+--- spotlight even then: locking exists precisely so a slot's color stops being
+--- up for grabs, and a fallback that ignored locks would only honour that
+--- promise until the palette filled up.
+---
+--- Bounded to `n` iterations in both scans, so an exhausted or even fully
+--- locked palette still returns rather than looping — see the terminal case
+--- below.
 ---@param used table<integer, boolean> # Slots currently in use.
+---@param locked table<integer, boolean>|nil # Slots a locked item has claimed.
 ---@return integer slot
-function M.next_slot(used)
+function M.next_slot(used, locked)
+  locked = locked or {}
   local n = M.size()
   if n == 0 then
     return 1
   end
+
+  -- Primary scan: first slot that is neither used nor locked.
   for i = 1, n do
     local slot = (last + i - 1) % n + 1
-    if not used[slot] then
+    if not used[slot] and not locked[slot] then
       last = slot
       return slot
     end
   end
+
+  -- Every slot is occupied. Reuse an unlocked one rather than the plain
+  -- "advance and return" the unlocked-only path used to do — that fallback
+  -- carried no notion of locking and could hand out a locked slot the moment
+  -- the palette filled up.
+  for i = 1, n do
+    local slot = (last + i - 1) % n + 1
+    if not locked[slot] then
+      last = slot
+      return slot
+    end
+  end
+
+  -- Every slot, without exception, is locked: nothing can be handed out
+  -- without breaking some lock. Advance `last` anyway, so a later unlock
+  -- resumes round-robin from a fresh point, and return it — a color, just
+  -- not a promise, rather than hanging forever looking for one that cannot
+  -- exist.
   last = last % n + 1
   return last
 end

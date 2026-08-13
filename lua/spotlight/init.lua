@@ -21,6 +21,7 @@ local path = require("spotlight.util.path")
 local persist = require("spotlight.persist")
 local qf = require("spotlight.qf")
 local registry = require("spotlight.core.registry")
+local sets = require("spotlight.sets")
 local yank = require("spotlight.yank")
 
 local M = {}
@@ -366,6 +367,73 @@ function M.yank(text)
   end
   report(("yanked %d matching line%s"):format(found, found == 1 and "" or "s"))
   return true
+end
+
+-- ---------- sets ----------
+
+--- Save the active spotlights as a named set, overwriting it if it already
+--- exists. Buffer-scoped ("this occurrence only") spotlights are excluded,
+--- the same as regular persistence.
+---@param name string
+---@return boolean ok
+function M.sets_save(name)
+  local ok, err = sets.save(name)
+  if not ok then
+    report(err or "could not save the set", vim.log.levels.WARN)
+    return false
+  end
+  local n = sets.count(name) or 0
+  report(("saved set '%s' (%d spotlight%s)"):format(name, n, n == 1 and "" or "s"))
+  return true
+end
+
+--- Clear the active spotlights and restore the named set. Destructive by
+--- design — the previous state is discarded, not merged — so the report says
+--- so plainly rather than leaving that to be discovered the hard way.
+---@param name string
+---@return boolean ok
+function M.sets_switch(name)
+  local restored, err = sets.switch(name)
+  if err then
+    report(err, vim.log.levels.WARN)
+    return false
+  end
+  report(
+    ("switched to set '%s' (%d spotlight%s) — previous state discarded, save it first with 'sets save' to keep it"):format(
+      name,
+      restored,
+      restored == 1 and "" or "s"
+    )
+  )
+  return true
+end
+
+--- Delete the named set. Never touches the active spotlights.
+---@param name string
+---@return boolean ok
+function M.sets_delete(name)
+  local ok = sets.delete(name)
+  if not ok then
+    report(("no such set: %s"):format(tostring(name)), vim.log.levels.WARN)
+    return false
+  end
+  report(("deleted set: %s"):format(name))
+  return true
+end
+
+--- Report every saved set and how many spotlights it holds.
+---@return nil
+function M.sets_list()
+  local names = sets.names()
+  if #names == 0 then
+    lib.notify("no saved sets", vim.log.levels.INFO)
+    return
+  end
+  local lines = {}
+  for i, name in ipairs(names) do
+    lines[i] = ("%s (%d spotlight%s)"):format(name, sets.count(name), sets.count(name) == 1 and "" or "s")
+  end
+  lib.notify(table.concat(lines, "\n"))
 end
 
 -- ---------- persistence ----------

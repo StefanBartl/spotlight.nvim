@@ -65,6 +65,21 @@ function M.setup()
   local api = require("spotlight")
   local lib = require("spotlight.util.lib")
 
+  -- A custom arg type so `:Spotlight sets switch <Tab>` / `delete <Tab>`
+  -- complete from whatever sets currently exist, read fresh on every press —
+  -- `sets.names()` is cheap (session-cached) and this is the composer's own
+  -- documented pattern for a dynamic completion source.
+  composer.register_type("SPOTLIGHT_SET_NAME", {
+    validate = function(raw)
+      return true, raw, nil
+    end,
+    complete = function(arg_lead)
+      return vim.tbl_filter(function(name)
+        return name:sub(1, #arg_lead) == arg_lead
+      end, require("spotlight.sets").names())
+    end,
+  })
+
   composer.verb("Spotlight", {
     desc = "Spotlight: persistent multi-token highlighting",
     -- Bare `:Spotlight` is the action reached most often, so it is the default
@@ -242,6 +257,41 @@ function M.setup()
         desc = "Toggle whether a spotlight keeps its palette slot permanently (TEXT, or the cursor token)",
         run = function(ctx)
           api.lock_toggle(ctx.args.text)
+        end,
+      },
+
+      {
+        path = { "sets", "save" },
+        args = { { name = "name", type = "STRING" } },
+        desc = "Save the active spotlights as a named set (overwrites if it already exists)",
+        run = function(ctx)
+          api.sets_save(ctx.args.name)
+        end,
+      },
+
+      {
+        path = { "sets", "switch" },
+        args = { { name = "name", type = "SPOTLIGHT_SET_NAME" } },
+        desc = "Clear the active spotlights and restore a saved set",
+        run = function(ctx)
+          api.sets_switch(ctx.args.name)
+        end,
+      },
+
+      {
+        path = { "sets", "delete" },
+        args = { { name = "name", type = "SPOTLIGHT_SET_NAME" } },
+        desc = "Delete a saved set (does not touch the active spotlights)",
+        run = function(ctx)
+          api.sets_delete(ctx.args.name)
+        end,
+      },
+
+      {
+        path = { "sets", "list" },
+        desc = "List every saved set and how many spotlights it holds",
+        run = function()
+          api.sets_list()
         end,
       },
 

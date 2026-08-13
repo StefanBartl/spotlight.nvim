@@ -62,6 +62,10 @@ typing and validation come from the route tree.
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
 | `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |
 | `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
+| `:Spotlight sets save` | `{name}` | no | `sets_save` | Save the active spotlights as a named set (overwrites) |
+| `:Spotlight sets switch` | `{name}` | no | `sets_switch` | Clear the active spotlights and restore a saved set |
+| `:Spotlight sets delete` | `{name}` | no | `sets_delete` | Delete a saved set (active spotlights untouched) |
+| `:Spotlight sets list` | — | no | `sets_list` | List every saved set and how many spotlights it holds |
 | `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
 | `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
 
@@ -128,6 +132,10 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").yank(text?)` | any | `boolean` | Matching lines in the current buffer → unnamed register |
 | `require("spotlight").lock_set(text, value)` | any | `boolean` | Set the slot lock for the spotlight matching `text` exactly |
 | `require("spotlight").lock_toggle(text?)` | any | `boolean` | Toggle the slot lock for `text`, or the cursor token |
+| `require("spotlight").sets_save(name)` | any | `boolean` | Save the active spotlights as a named set (overwrites) |
+| `require("spotlight").sets_switch(name)` | any | `boolean` | Clear the active spotlights and restore a saved set |
+| `require("spotlight").sets_delete(name)` | any | `boolean` | Delete a saved set |
+| `require("spotlight").sets_list()` | any | `nil` | Report every saved set and its spotlight count |
 | `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
 | `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
 | `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |

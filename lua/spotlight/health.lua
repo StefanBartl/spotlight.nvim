@@ -171,6 +171,18 @@ function M.check()
     info("persistence: off (persist.enable = false)")
   end
 
+  local sets = require("spotlight.sets")
+  local set_names = sets.names()
+  if #set_names == 0 then
+    info("sets: none saved")
+  else
+    local summaries = {}
+    for i, name in ipairs(set_names) do
+      summaries[i] = ("%s: %d"):format(name, sets.count(name) or 0)
+    end
+    info(("sets: %d saved (%s)"):format(#set_names, table.concat(summaries, ", ")))
+  end
+
   require("lib.nvim.usercmd.composer").checkhealth("Spotlight")
 end
 

@@ -23,6 +23,7 @@ local SPECS = {
   "dotrepeat_spec",
   "lock_spec",
   "yank_spec",
+  "sets_spec",
 }
 
 -- Notifications are outcome reports, not test output: silence them so a failure

@@ -15,12 +15,13 @@ CONTENTS                                                   *spotlight-contents*
  10. Quickfix filter .......................... |spotlight-quickfix|
  11. Yank to a register ....................... |spotlight-yank|
  12. Persistence .............................. |spotlight-persist|
- 13. Colors ................................... |spotlight-colors|
- 14. Lua API .................................. |spotlight-api|
- 15. Health ................................... |spotlight-health|
- 16. Debugging ................................ |spotlight-debug|
- 17. Security model ........................... |spotlight-security|
- 18. lib.nvim integration ..................... |spotlight-lib|
+ 13. Spotlight sets ........................... |spotlight-sets|
+ 14. Colors ................................... |spotlight-colors|
+ 15. Lua API .................................. |spotlight-api|
+ 16. Health ................................... |spotlight-health|
+ 17. Debugging ................................ |spotlight-debug|
+ 18. Security model ........................... |spotlight-security|
+ 19. lib.nvim integration ..................... |spotlight-lib|
 
 ==============================================================================
 1. INTRODUCTION                                        *spotlight-introduction*
@@ -210,6 +211,10 @@ the same route tree.
     :Spotlight lock [text]         toggle whether a spotlight keeps its slot
                                    permanently ({text}, or the cursor token)
     :Spotlight persist {state}     on | off | default | status
+    :Spotlight sets save {name}    save the active spotlights as {name}
+    :Spotlight sets switch {name}  clear + restore the saved set {name}
+    :Spotlight sets delete {name}  delete the saved set {name}
+    :Spotlight sets list           list every saved set
     :Spotlight refresh             redefine the palette, re-apply everything
 
 `:'<,'>Spotlight toggle` works from a visual selection: the selection is read
@@ -479,7 +484,40 @@ against the exact buffer state it was recorded from, and that guarantee does
 not survive a restart.
 
 ==============================================================================
-13. COLORS                                                   *spotlight-colors*
+13. SPOTLIGHT SETS                                              *spotlight-sets*
+
+Named, saved snapshots of the registry, switched one at a time:
+
+    :Spotlight sets save {name}     save the active spotlights as {name}
+                                    (overwrites if {name} already exists)
+    :Spotlight sets switch {name}   clear the active spotlights, restore
+                                    the saved set {name}
+    :Spotlight sets delete {name}   delete the saved set {name} (does not
+                                    touch the active spotlights)
+    :Spotlight sets list            report every saved set and how many
+                                    spotlights it holds
+
+Exclusive, not additive: `switch` replaces the active spotlights rather than
+layering one investigation's tokens on top of another's — closer to opening
+a saved workspace than to tagging. Nothing stops adding more spotlights
+*after* switching; only the switch itself replaces. `switch`/`delete`
+tab-complete from the names that currently exist.
+
+Switching to an unknown or mistyped name is refused outright — a no-op, not
+data loss — since the active registry would otherwise be fully replaced by
+nothing.
+
+Persisted under a second, independent |lib.nvim.store.project| key
+(`spotlight/sets`, alongside the main `spotlight/state` used by
+|spotlight-persist|), written synchronously on every `save`/`switch`/
+`delete` rather than debounced — these are rare, deliberate commands, not a
+hot toggle path. "This occurrence only" spotlights (|spotlight-here|) are
+excluded from a saved set, for the same reason they are excluded from
+regular persistence: a line/column pin means nothing outside the exact
+buffer state it was recorded from.
+
+==============================================================================
+14. COLORS                                                   *spotlight-colors*
 
                 *Spotlight1* *Spotlight2* *Spotlight3* *Spotlight4*
                 *Spotlight5* *Spotlight6* *Spotlight7* *Spotlight8*
@@ -516,7 +554,7 @@ terminal's 256-color cube and slots get harder to tell apart; |:checkhealth|
 warns about this.
 
 ==============================================================================
-14. LUA API                                                     *spotlight-api*
+15. LUA API                                                     *spotlight-api*
 
 Every action is a plain function on the `spotlight` module, so it can be bound
 to any key or called from your own code:
@@ -543,6 +581,10 @@ to any key or called from your own code:
     spotlight.yank(text|nil)       -- matching lines -> unnamed register
     spotlight.persist_set(bool|nil)-- per-file override for the current file
     spotlight.persist_status()     -- report it
+    spotlight.sets_save(name)      -- save the active spotlights as `name`
+    spotlight.sets_switch(name)    -- clear + restore the saved set `name`
+    spotlight.sets_delete(name)    -- delete the saved set `name`
+    spotlight.sets_list()          -- report every saved set
     spotlight.refresh()            -- redefine palette, re-apply everything
     spotlight.spotlights()         -- the live Spotlight.Item[] list
 <
@@ -553,7 +595,7 @@ outcome (suppress those messages with `notify = false`).
 current window's matches with `clearmatches()`.
 
 ==============================================================================
-15. HEALTH                                                   *spotlight-health*
+16. HEALTH                                                   *spotlight-health*
 >vim
     :checkhealth spotlight
 <
@@ -565,7 +607,7 @@ active spotlights with their slots, how many windows carry matches, the project
 root, and every per-file persistence override.
 
 ==============================================================================
-16. DEBUGGING                                                 *spotlight-debug*
+17. DEBUGGING                                                 *spotlight-debug*
 >lua
     require("spotlight").setup({ debug = true })
 <
@@ -593,7 +635,7 @@ With `debug = false` (the default) a log call costs one table lookup, so the
 instrumentation is not conditional on a build.
 
 ==============================================================================
-17. SECURITY MODEL                                         *spotlight-security*
+18. SECURITY MODEL                                         *spotlight-security*
 
 Not a claim of hardness — a plugin that highlights text is not a security
 boundary — but a statement of what is and is not trusted, so the limits below
@@ -651,7 +693,7 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 (see |spotlight-persist|).
 
 ==============================================================================
-18. LIB.NVIM INTEGRATION                                        *spotlight-lib*
+19. LIB.NVIM INTEGRATION                                        *spotlight-lib*
 
 "StefanBartl/lib.nvim" is a required dependency. Two modules are hard
 requirements:

@@ -24,26 +24,12 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Wanted, needs design](#wanted-needs-design)
-    - [Spotlight sets](#spotlight-sets)
     - [Occurrence count in the sign column or on the scrollbar](#occurrence-count-in-the-sign-column-or-on-the-scrollbar)
     - [Per-window opt-out](#per-window-opt-out)
 
 ---
 
 ## Wanted, needs design
-
----
-
-### Spotlight sets
-
-Named groups of spotlights, switched as a unit ("the auth investigation", "the
-timeout investigation"). This is the honest answer to several related asks —
-per-buffer scope, export/import, and "I have too many spotlights at once" are all
-really asking for sets.
-
-*Needs:* a naming and switching UX that does not turn into a second registry, a
-persistence shape that stores several sets without breaking the current snapshot
-format, and a decision on whether sets are additive or exclusive.
 
 ---
 

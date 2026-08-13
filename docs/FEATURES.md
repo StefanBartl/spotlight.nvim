@@ -254,6 +254,35 @@ recorded from.
   `true`), `persist.debounce_ms` (default `500`)
 - **Autocmds:** `VimEnter` (load), `VimLeavePre` (flush)
 
+## Spotlight sets
+
+Named, saved snapshots of the registry, switched one at a time —
+`:Spotlight sets save {name}` captures the currently active spotlights under
+a name; `:Spotlight sets switch {name}` clears the active spotlights and
+restores that saved set. Exclusive, not additive: switching replaces the
+active set rather than layering one investigation's tokens on top of
+another's, closer to opening a saved workspace than to tagging. Nothing
+stops adding more spotlights after switching — only the switch itself
+replaces. `:Spotlight sets delete {name}` removes a saved set without
+touching whatever is currently active; `:Spotlight sets list` reports every
+saved set and how many spotlights it holds. `switch`/`delete` tab-complete
+from the names that currently exist.
+
+Switching to an unknown or mistyped name is refused — a no-op, not data
+loss — since the active registry is otherwise fully replaced. Persisted
+under a second, independent project key (`spotlight/sets`, alongside the
+main `spotlight/state`), written synchronously on every `save`/`switch`/
+`delete` rather than debounced, since these are rare, deliberate commands
+rather than a hot toggle path. Buffer-scoped ("this occurrence only")
+spotlights are excluded from a saved set, for the same reason they are
+excluded from regular persistence.
+
+- **Module:** `sets.lua` (`M.save`, `M.switch`, `M.delete`, `M.names`,
+  `M.count`)
+- **Usercmds:** `:Spotlight sets save {name}`, `:Spotlight sets switch
+  {name}`, `:Spotlight sets delete {name}`, `:Spotlight sets list`
+- **Config:** none — always on, no debounce to tune
+
 ## Per-file persistence opt-out
 
 `:Spotlight persist off` marks the *current file* so spotlights created while

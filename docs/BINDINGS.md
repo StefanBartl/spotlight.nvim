@@ -23,8 +23,8 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 | `<leader>mL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
 | `<leader>mC` | n | `clear` | `keymaps.clear` | Remove every spotlight |
 | `<leader>mq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
-| `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence |
-| `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence |
+| `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence. A count prefix repeats the jump that many times (`3]k` = three one-step jumps, `unimpaired`-style), stopping early rather than erroring if fewer occurrences remain |
+| `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence. Same count support as `]k` |
 
 `<leader>mk` / `<leader>mK` are the pair the concept turns on: lowercase marks
 only the one occurrence the cursor/selection is on (a new spotlight, pinned to

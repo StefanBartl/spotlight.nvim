@@ -111,8 +111,8 @@ Bound when `keymaps.preset` is true (the default):
     <leader>mL       n  open the spotlight list
     <leader>mC       n  remove every spotlight
     <leader>mq       n  matching lines -> quickfix
-    ]k               n  next occurrence
-    [k               n  previous occurrence
+    ]k               n  next occurrence (count-repeatable, see |spotlight-nav|)
+    [k               n  previous occurrence (count-repeatable, see |spotlight-nav|)
 
 `<leader>mk`/`<leader>mK` are the pair the plugin is organized around: same
 key, lowercase for the narrower action (this occurrence only, pinned to that
@@ -320,6 +320,11 @@ match navigates *that* spotlight only: pressing `]k` on a request id means
 match, every spotlight is in scope, searched as one alternation.
 
 `nav.scope = "all"` always uses every spotlight.
+
+A count prefix repeats the jump that many times, unimpaired-style: `3]k` is
+three one-step jumps, not "search three times faster". A step that finds
+nothing (wrapping with no match, or reaching the end with `nav.wrap = false`)
+stops the loop early rather than erroring — a partial jump still counts.
 
 `nav.wrap = false` stops at the end of the buffer instead of wrapping.
 `nav.center = false` skips the |zz| after a jump.

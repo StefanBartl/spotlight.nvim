@@ -194,6 +194,15 @@ function M.setup()
       },
 
       {
+        path = { "qf", "all" },
+        args = { { name = "text", type = "STRING", optional = true } },
+        desc = "Matching lines across every loaded buffer to the quickfix list",
+        run = function(ctx)
+          api.quickfix_all(ctx.args.text)
+        end,
+      },
+
+      {
         path = { "persist" },
         args = { { name = "state", type = "STRING", enum = { "on", "off", "default", "status" }, optional = true } },
         desc = "Per-file persistence: on / off / default (clear override) / status",

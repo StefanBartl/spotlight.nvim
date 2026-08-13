@@ -163,9 +163,16 @@ if several spotlights hit it. Capped at `quickfix.max_entries`, with scanning
 stopped (not just truncated after the fact) once the cap is hit, and the
 truncation reported in both the notification and the quickfix title.
 
-- **Module:** `qf.lua`, `core/count.lua` (`M.matching_lines`)
+`:Spotlight qf all` is the multi-buffer counterpart: every loaded, ordinary
+file buffer is scanned and merged into one list. The cap is global rather
+than per-buffer — each buffer gets whatever budget is left after earlier
+ones, and the buffer loop itself stops (not just the entry, list) the moment
+one buffer's scan reports truncation.
+
+- **Module:** `qf.lua` (`M.fill`, `M.fill_all`), `core/count.lua`
+  (`M.matching_lines`, `M.scannable_buffers`)
 - **Keymaps:** `<leader>mq`
-- **Usercmds:** `:Spotlight qf [text]`
+- **Usercmds:** `:Spotlight qf [text]`, `:Spotlight qf all [text]`
 - **Config:** `quickfix.open` (default `true`), `quickfix.title`,
   `quickfix.max_entries` (default `10000`)
 

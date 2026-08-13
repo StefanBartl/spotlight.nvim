@@ -72,4 +72,72 @@ function M.fill(item)
   return #entries, nil, truncated
 end
 
+--- `M.fill`'s multi-buffer counterpart: every line matching in every loaded,
+--- ordinary file buffer (`core.count.scannable_buffers`), merged into one
+--- quickfix list.
+---
+--- The cap is global, not per-buffer: each buffer is scanned with whatever
+--- budget remains (`opts.max_entries` minus what earlier buffers already
+--- contributed), and the buffer loop stops outright — not just the append —
+--- the moment one buffer's scan reports truncation, mirroring
+--- `count.matching_lines`'s own "stop scanning, not just appending" rule one
+--- level up.
+---@param item Spotlight.Item|nil
+---@return integer found, string|nil err, boolean truncated
+function M.fill_all(item)
+  local items = item and { item } or registry.all()
+  if #items == 0 then
+    return 0, "no active spotlights", false
+  end
+
+  local pats = {}
+  for i, it in ipairs(items) do
+    pats[i] = it.pattern
+  end
+
+  local bufnr = vim.api.nvim_get_current_buf()
+  -- Same rationale as `M.fill`: don't start a scan from inside the very list
+  -- it would be filtering into.
+  if vim.bo[bufnr].buftype == "quickfix" then
+    return 0, "run this from the buffer you want to filter, not from the quickfix window", false
+  end
+
+  local opts = config.get("quickfix")
+  local entries, truncated = {}, false
+  for _, buf in ipairs(count.scannable_buffers()) do
+    local remaining = opts.max_entries - #entries
+    if remaining <= 0 then
+      truncated = true
+      break
+    end
+    local buf_entries, buf_truncated = count.matching_lines(buf, pats, remaining)
+    for _, e in ipairs(buf_entries) do
+      entries[#entries + 1] = e
+    end
+    if buf_truncated then
+      truncated = true
+      break
+    end
+  end
+
+  local title = item and ("%s: %s (all loaded buffers)"):format(opts.title, item.text)
+    or ("%s (all loaded buffers)"):format(opts.title)
+  if truncated then
+    title = ("%s (first %d)"):format(title, opts.max_entries)
+  end
+  vim.fn.setqflist({}, " ", { title = title, items = entries })
+
+  if #entries == 0 then
+    return 0, "no matching lines in any loaded buffer", false
+  end
+  if opts.open then
+    local from = vim.api.nvim_get_current_win()
+    vim.cmd("copen")
+    if vim.api.nvim_win_is_valid(from) then
+      pcall(vim.api.nvim_set_current_win, from)
+    end
+  end
+  return #entries, nil, truncated
+end
+
 return M

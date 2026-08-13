@@ -256,6 +256,35 @@ function M.quickfix(text)
   return true
 end
 
+--- `M.quickfix`'s multi-buffer counterpart: every matching line in every
+--- loaded, ordinary file buffer, merged into one quickfix list. With `text`,
+--- only that spotlight's matches.
+---@param text string|nil
+---@return boolean filled
+function M.quickfix_all(text)
+  local item = nil
+  if type(text) == "string" and text ~= "" then
+    item = registry.find_by_text(text)
+    if not item then
+      report(("no spotlight for: %s"):format(text), vim.log.levels.WARN)
+      return false
+    end
+  end
+  local found, err, truncated = qf.fill_all(item)
+  if found == 0 then
+    report(err or "no matching lines", vim.log.levels.WARN)
+    return false
+  end
+  if truncated then
+    report(
+      ("stopped at %d matching lines (quickfix.max_entries) — the list is truncated"):format(config.get("quickfix.max_entries")),
+      vim.log.levels.WARN
+    )
+  end
+  report(("%d matching line%s across all loaded buffers"):format(found, found == 1 and "" or "s"))
+  return true
+end
+
 -- ---------- persistence ----------
 
 --- Set the persistence decision for the current file.

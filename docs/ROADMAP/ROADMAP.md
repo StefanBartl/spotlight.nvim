@@ -24,7 +24,6 @@ Reviews rather than plans, kept beside this file because they are where the
 
   - [Companion documents](#companion-documents)
   - [Plausible next](#plausible-next)
-    - [Quickfix across all loaded buffers](#quickfix-across-all-loaded-buffers)
     - [`count` and `dot`-repeat on the toggle](#count-and-dot-repeat-on-the-toggle)
     - [A `Spotlight.Item` per-slot lock](#a-spotlightitem-per-slot-lock)
     - [`:Spotlight yank`](#spotlight-yank)
@@ -38,14 +37,6 @@ Reviews rather than plans, kept beside this file because they are where the
 ## Plausible next
 
 Ordered by expected value per line of code.
-
----
-
-### Quickfix across all loaded buffers
-
-Same idea for `:Spotlight qf`: `qf.fill` already builds quickfix-shaped entries
-with an explicit `bufnr`, so multi-buffer output needs no new plumbing — only a
-scope argument (`:Spotlight qf all`) and the same size guard.
 
 ---
 

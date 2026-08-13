@@ -192,7 +192,8 @@ the same route tree.
     :Spotlight list [jump|remove]  open the list; "remove" deletes on select
     :Spotlight next                jump to the next occurrence
     :Spotlight prev                jump to the previous occurrence
-    :Spotlight qf [text]           matching lines -> quickfix
+    :Spotlight qf [text]           matching lines -> quickfix (current buffer)
+    :Spotlight qf all [text]       same, across every loaded buffer
     :Spotlight persist {state}     on | off | default | status
     :Spotlight refresh             redefine the palette, re-apply everything
 
@@ -375,6 +376,12 @@ request id". With `:Spotlight qf {text}`, only that one spotlight's lines.
 A line matched by several spotlights appears once: the question is which lines,
 not which highlights.
 
+`:Spotlight qf all` is the same filter across every loaded, ordinary file
+buffer, merged into one list. `quickfix.max_entries` is a global cap here, not
+per-buffer: each buffer gets whatever budget is left after earlier ones, and
+scanning stops outright — not just the current buffer's contribution — the
+moment the cap is hit.
+
 `quickfix.open = true` (the default) runs |:copen| and then hands focus back to
 the window you ran it from, so the filtered list sits alongside the log. Running
 it from inside the quickfix window is refused rather than filtering the list
@@ -485,7 +492,8 @@ to any key or called from your own code:
     spotlight.list_remove()        -- the list, selection removes
     spotlight.next()               -- next occurrence
     spotlight.prev()               -- previous occurrence
-    spotlight.quickfix(text|nil)   -- matching lines -> quickfix
+    spotlight.quickfix(text|nil)   -- matching lines -> quickfix (current buffer)
+    spotlight.quickfix_all(text|nil) -- same, across every loaded buffer
     spotlight.persist_set(bool|nil)-- per-file override for the current file
     spotlight.persist_status()     -- report it
     spotlight.refresh()            -- redefine palette, re-apply everything

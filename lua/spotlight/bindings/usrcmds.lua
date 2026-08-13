@@ -243,6 +243,24 @@ function M.setup()
       },
 
       {
+        path = { "winopt" },
+        args = { { name = "state", type = "STRING", enum = { "on", "off", "toggle", "status" }, optional = true } },
+        desc = "Per-window opt-out: on / off / toggle (default) / status",
+        run = function(ctx)
+          local state = ctx.args.state or "toggle"
+          if state == "on" then
+            api.winopt_set(false)
+          elseif state == "off" then
+            api.winopt_set(true)
+          elseif state == "status" then
+            api.winopt_status()
+          else
+            api.winopt_toggle()
+          end
+        end,
+      },
+
+      {
         path = { "yank" },
         args = { { name = "text", type = "STRING", optional = true } },
         desc = "Yank matching lines to the unnamed register (all spotlights, or just TEXT's)",

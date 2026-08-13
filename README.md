@@ -605,7 +605,7 @@ forward slashes and compared case-insensitively on Windows, where `C:\Repos\x`
 and `c:\repos\x` are the same file and would otherwise produce two different
 exception keys.
 
-Tests: [`TESTS/`](TESTS/README.md) — 135 assertions, plain headless
+Tests: [`TESTS/`](TESTS/README.md) — 371 assertions, plain headless
 Neovim, no test framework to install.
 
 ---

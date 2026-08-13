@@ -68,6 +68,7 @@ typing and validation come from the route tree.
 | `:Spotlight sets switch` | `{name}` | no | `sets_switch` | Clear the active spotlights and restore a saved set |
 | `:Spotlight sets delete` | `{name}` | no | `sets_delete` | Delete a saved set (active spotlights untouched) |
 | `:Spotlight sets list` | — | no | `sets_list` | List every saved set and how many spotlights it holds |
+| `:Spotlight winopt` | `[on\|off\|toggle\|status]` | no | `winopt_set` / `winopt_toggle` / `winopt_status` | Per-window opt-out; no arg = `toggle` |
 | `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
 | `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
 
@@ -140,6 +141,9 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").sets_list()` | any | `nil` | Report every saved set and its spotlight count |
 | `require("spotlight").map(text?)` | any | `boolean` | Mark every matching line in the sign column |
 | `require("spotlight").map_clear()` | any | `boolean` | Clear the sign-column occurrence map |
+| `require("spotlight").winopt_set(value, win?)` | any | `boolean` | Set the per-window opt-out |
+| `require("spotlight").winopt_toggle(win?)` | any | `boolean` | Toggle the per-window opt-out |
+| `require("spotlight").winopt_status(win?)` | any | `nil` | Report whether spotlighting is on in `win` |
 | `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
 | `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
 | `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |

@@ -23,6 +23,7 @@ local persist = require("spotlight.persist")
 local qf = require("spotlight.qf")
 local registry = require("spotlight.core.registry")
 local sets = require("spotlight.sets")
+local winopt = require("spotlight.winopt")
 local yank = require("spotlight.yank")
 
 local M = {}
@@ -467,6 +468,43 @@ function M.map_clear()
   map.clear()
   report("cleared the occurrence map")
   return true
+end
+
+-- ---------- per-window opt-out ----------
+
+--- Set whether spotlights are shown in `win` (default: the current window).
+--- `true` strips its current matches immediately; `false` re-fills it from
+--- the live registry — neither waits for a later event to take effect.
+--- Window-sticky: the flag survives that window later showing a different
+--- buffer, since it lives on the window, not on whatever buffer is current
+--- when this is called.
+---@param value boolean
+---@param win integer|nil
+---@return boolean changed
+function M.winopt_set(value, win)
+  local already = winopt.is_disabled(win)
+  if already == value then
+    return false
+  end
+  winopt.set_disabled(value, win)
+  report(("spotlighting %s in this window"):format(value and "disabled" or "enabled"))
+  return true
+end
+
+--- Toggle whether spotlights are shown in `win` (default: the current window).
+---@param win integer|nil
+---@return boolean changed
+function M.winopt_toggle(win)
+  local now_disabled = winopt.toggle(win)
+  report(("spotlighting %s in this window"):format(now_disabled and "disabled" or "enabled"))
+  return true
+end
+
+--- Report whether spotlights are currently shown in `win`.
+---@param win integer|nil
+---@return nil
+function M.winopt_status(win)
+  lib.notify(("spotlighting is %s in this window"):format(winopt.is_disabled(win) and "off" or "on"))
 end
 
 -- ---------- persistence ----------

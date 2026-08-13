@@ -135,7 +135,18 @@ new tabs are all filled automatically, and a closed window's ledger entry is
 dropped rather than cleaned up with `matchdelete()` (the match already died
 with the window).
 
-- **Module:** `core/match.lua`, `bindings/autocmds.lua`
+A window can opt out of this entirely — "do not spotlight in this window",
+e.g. a reference file kept open in a split. The flag lives on the window
+itself (`vim.w[win].spotlight_disabled`), not on whichever buffer happened
+to be showing when it was set, so it is window-sticky: it survives that
+window later showing a different buffer, since the same `BufWinEnter` fill
+pass that already runs on every buffer switch re-checks the flag for free.
+Opting out strips the window's current matches immediately rather than only
+gating future fills; opting back in re-fills it immediately the same way.
+
+- **Module:** `core/match.lua` (`eligible`, `M.clear_window`),
+  `bindings/autocmds.lua`, `winopt.lua`
+- **Usercmds:** `:Spotlight winopt [on|off|toggle|status]`
 - **Autocmds:** `WinNew`, `BufWinEnter`, `TabNewEntered`, `WinClosed` — see
   [autocommands](../docs/BINDINGS.md#autocommands)
 

@@ -18,14 +18,23 @@ not hide the state of every check after it.
 
 ## Layout
 
-| File                | Covers                                                                              |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `harness.lua`       | The assertion helpers and buffer/cursor fixtures.                                   |
-| `cursor_spec.lua`   | Token resolution: structured log tokens, pattern priority, word/literal classification. |
-| `registry_spec.lua` | Toggle semantics, palette round-robin, `match.max`, snapshot/restore, per-window matches. |
-| `nav_spec.lua`      | `]k`/`[k`, `nav.scope = "auto"` narrowing, wrap, match counting, quickfix filtering. |
-| `persist_spec.lua`  | The per-file exception semantics, and the config layer's validation/fallbacks.       |
-| `commands_spec.lua` | Every `:Spotlight` route, the facade actions, and the preset keymaps.                |
+| File                       | Covers                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `harness.lua`              | The assertion helpers and buffer/cursor fixtures.                                   |
+| `cursor_spec.lua`          | Token resolution: structured log tokens, pattern priority, word/literal classification. |
+| `registry_spec.lua`        | Toggle semantics, palette round-robin, `match.max`, snapshot/restore, per-window matches. |
+| `nav_spec.lua`             | `]k`/`[k`, `nav.scope = "auto"` narrowing, wrap, match counting, quickfix filtering. |
+| `persist_spec.lua`         | The per-file exception semantics, and the config layer's validation/fallbacks.       |
+| `hardening_spec.lua`       | Security-model limits and config validation for adversarial/oversized input.        |
+| `commands_spec.lua`        | Every `:Spotlight` route, the facade actions, and the preset keymaps.                |
+| `list_count_scope_spec.lua`| `list.count_scope = "loaded"`: multi-buffer counting, config validation.            |
+| `qf_all_spec.lua`          | `:Spotlight qf all`: multi-buffer quickfix, the global entry cap.                    |
+| `dotrepeat_spec.lua`       | `.` after the normal-mode toggle: fresh re-resolution, not a captured closure.       |
+| `lock_spec.lua`            | Per-slot lock: the palette fallback fix, snapshot/restore, the all-locked case.      |
+| `yank_spec.lua`            | `:Spotlight yank`: register content, truncation, the facade convention.             |
+| `sets_spec.lua`            | Spotlight sets: exclusive save/switch/delete, the unknown-name no-op guard.         |
+| `map_spec.lua`             | Occurrence density: extmark placement, idempotent re-show, no live recompute.       |
+| `winopt_spec.lua`          | Per-window opt-out: window-sticky, immediate strip/refill, other windows unaffected. |
 
 ## What is deliberately not tested here
 

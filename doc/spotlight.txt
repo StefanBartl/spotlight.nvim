@@ -65,6 +65,19 @@ The price is that a match is window-local, so the plugin keeps a ledger
 autocommands (|WinNew|, |BufWinEnter|, |TabNewEntered|). That is the whole
 trade.
 
+                                                              *spotlight-winopt*
+A window can opt out of this entirely with `:Spotlight winopt off` — "do not
+spotlight in this window", e.g. a reference file kept open in a split. The
+flag is window-sticky (`vim.w[win].spotlight_disabled`): it lives on the
+window itself, not on whichever buffer happened to be current when it was
+set, so it survives that window later showing a different buffer for free —
+the same `BufWinEnter` fill pass that already runs on every buffer switch
+re-checks it. Opting out strips the window's current matches immediately
+rather than only gating future fills; `:Spotlight winopt on` re-fills it the
+same way. `:Spotlight winopt toggle` (the default with no argument) flips
+it; `:Spotlight winopt status` reports it. Session-only — a window id means
+nothing across a restart.
+
 Two consequences are visible in the interface:
 
   - Match counts are computed only when the list is opened (|spotlight-list|),
@@ -218,6 +231,7 @@ the same route tree.
     :Spotlight sets switch {name}  clear + restore the saved set {name}
     :Spotlight sets delete {name}  delete the saved set {name}
     :Spotlight sets list           list every saved set
+    :Spotlight winopt [state]      on | off | toggle (default) | status
     :Spotlight refresh             redefine the palette, re-apply everything
 
 `:'<,'>Spotlight toggle` works from a visual selection: the selection is read
@@ -622,6 +636,9 @@ to any key or called from your own code:
     spotlight.sets_list()          -- report every saved set
     spotlight.map(text|nil)        -- mark matching lines in the sign column
     spotlight.map_clear()          -- clear the sign-column occurrence map
+    spotlight.winopt_set(bool, win|nil)  -- set the per-window opt-out
+    spotlight.winopt_toggle(win|nil)     -- toggle it
+    spotlight.winopt_status(win|nil)     -- report it
     spotlight.refresh()            -- redefine palette, re-apply everything
     spotlight.spotlights()         -- the live Spotlight.Item[] list
 <

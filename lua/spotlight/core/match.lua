@@ -39,6 +39,14 @@ local ledger = {}
 --- into them means the highlight outlives nothing and has to be cleaned up when
 --- the float closes. Ordinary windows — including the quickfix window, where
 --- seeing the spotlight colors is the point of `:Spotlight qf` — are eligible.
+---
+--- The third check is the per-window opt-out (`spotlight.winopt`): a window
+--- carrying `vim.w[win].spotlight_disabled` is skipped regardless of buftype
+--- or which buffer it shows. Living here, rather than in a separate check
+--- each caller remembers to run, means every fill path — `M.apply_window`,
+--- `M.apply_all`/`all_windows` — honours it automatically, including the
+--- `BufWinEnter` re-fill that runs on every buffer switch in that window,
+--- which is what makes the opt-out survive a `:edit` for free.
 ---@param win integer
 ---@return boolean
 local function eligible(win)
@@ -47,6 +55,9 @@ local function eligible(win)
   end
   local ok, cfg = pcall(vim.api.nvim_win_get_config, win)
   if ok and type(cfg) == "table" and cfg.relative ~= nil and cfg.relative ~= "" then
+    return false
+  end
+  if vim.w[win].spotlight_disabled == true then
     return false
   end
   return true
@@ -214,6 +225,27 @@ end
 ---@param win integer
 ---@return nil
 function M.forget_window(win)
+  ledger[win] = nil
+end
+
+--- Strip every match `win` is carrying right now, without waiting for the next
+--- fill pass to skip it. Distinct from `M.forget_window`: that one is for a
+--- window that has already *closed*, where `matchdelete()` would only fail;
+--- this is for a window that is still open and needs its highlights actually
+--- removed — the opt-out case, where gating future fills alone would leave
+--- existing matches lit until something else happened to refresh them.
+---@param win integer
+---@return nil
+function M.clear_window(win)
+  local per_win = ledger[win]
+  if not per_win then
+    return
+  end
+  if vim.api.nvim_win_is_valid(win) then
+    for _, match_id in pairs(per_win) do
+      pcall(vim.fn.matchdelete, match_id, win)
+    end
+  end
   ledger[win] = nil
 end
 

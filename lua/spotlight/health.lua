@@ -158,6 +158,18 @@ function M.check()
     info(("  slot %d (%s): %s%s"):format(item.slot, item.hl, item.text, item.locked and " [locked]" or ""))
   end
 
+  -- Cheap live loop, not new persistent state — a window id means nothing
+  -- across a restart, so there is nothing to track beyond "right now".
+  local opted_out = 0
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.w[win].spotlight_disabled == true then
+      opted_out = opted_out + 1
+    end
+  end
+  if opted_out > 0 then
+    info(("%d window%s opted out of spotlighting"):format(opted_out, opted_out == 1 and "" or "s"))
+  end
+
   local persist = require("spotlight.persist")
   if config.get("persist.enable") then
     local path = require("spotlight.util.path")

@@ -228,6 +228,15 @@ function M.setup()
       },
 
       {
+        path = { "yank" },
+        args = { { name = "text", type = "STRING", optional = true } },
+        desc = "Yank matching lines to the unnamed register (all spotlights, or just TEXT's)",
+        run = function(ctx)
+          api.yank(ctx.args.text)
+        end,
+      },
+
+      {
         path = { "lock" },
         args = { { name = "text", type = "STRING", optional = true } },
         desc = "Toggle whether a spotlight keeps its palette slot permanently (TEXT, or the cursor token)",

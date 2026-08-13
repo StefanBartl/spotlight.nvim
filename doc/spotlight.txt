@@ -13,13 +13,14 @@ CONTENTS                                                   *spotlight-contents*
   8. Navigation ............................... |spotlight-nav|
   9. The list ................................. |spotlight-list|
  10. Quickfix filter .......................... |spotlight-quickfix|
- 11. Persistence .............................. |spotlight-persist|
- 12. Colors ................................... |spotlight-colors|
- 13. Lua API .................................. |spotlight-api|
- 14. Health ................................... |spotlight-health|
- 15. Debugging ................................ |spotlight-debug|
- 16. Security model ........................... |spotlight-security|
- 17. lib.nvim integration ..................... |spotlight-lib|
+ 11. Yank to a register ....................... |spotlight-yank|
+ 12. Persistence .............................. |spotlight-persist|
+ 13. Colors ................................... |spotlight-colors|
+ 14. Lua API .................................. |spotlight-api|
+ 15. Health ................................... |spotlight-health|
+ 16. Debugging ................................ |spotlight-debug|
+ 17. Security model ........................... |spotlight-security|
+ 18. lib.nvim integration ..................... |spotlight-lib|
 
 ==============================================================================
 1. INTRODUCTION                                        *spotlight-introduction*
@@ -205,6 +206,7 @@ the same route tree.
     :Spotlight prev                jump to the previous occurrence
     :Spotlight qf [text]           matching lines -> quickfix (current buffer)
     :Spotlight qf all [text]       same, across every loaded buffer
+    :Spotlight yank [text]         matching lines -> unnamed register
     :Spotlight lock [text]         toggle whether a spotlight keeps its slot
                                    permanently ({text}, or the cursor token)
     :Spotlight persist {state}     on | off | default | status
@@ -404,7 +406,25 @@ The spotlight colors render inside the quickfix window too — it is an ordinary
 window as far as the ledger is concerned.
 
 ==============================================================================
-11. PERSISTENCE                                             *spotlight-persist*
+11. YANK TO A REGISTER                                        *spotlight-yank*
+
+`:Spotlight yank` is the quickfix filter's sibling for "I just want the
+text, not a navigable list": every line in the current buffer matching a
+spotlight — or one specific spotlight's, with `:Spotlight yank {text}` —
+yanked into the unnamed register, one line per match, in buffer order.
+
+Reuses the exact same scan as `:Spotlight qf` (`core.count.matching_lines`),
+so the `quickfix.max_entries` cap and the "each line reported once, even if
+several spotlights hit it" guarantee are identical — only the destination
+differs.
+
+Deliberately narrow for now: always the unnamed register (`"`), always raw
+line text with no line-number prefix. A register argument or a
+line-numbered variant is a plausible follow-up, not something this needed to
+guess at up front.
+
+==============================================================================
+12. PERSISTENCE                                             *spotlight-persist*
 
 State lives in lib.nvim.store.project under the key `spotlight/state`, keyed by
 *git root* — so it works when you open the project from a subdirectory, and
@@ -459,7 +479,7 @@ against the exact buffer state it was recorded from, and that guarantee does
 not survive a restart.
 
 ==============================================================================
-12. COLORS                                                   *spotlight-colors*
+13. COLORS                                                   *spotlight-colors*
 
                 *Spotlight1* *Spotlight2* *Spotlight3* *Spotlight4*
                 *Spotlight5* *Spotlight6* *Spotlight7* *Spotlight8*
@@ -496,7 +516,7 @@ terminal's 256-color cube and slots get harder to tell apart; |:checkhealth|
 warns about this.
 
 ==============================================================================
-13. LUA API                                                     *spotlight-api*
+14. LUA API                                                     *spotlight-api*
 
 Every action is a plain function on the `spotlight` module, so it can be bound
 to any key or called from your own code:
@@ -520,6 +540,7 @@ to any key or called from your own code:
     spotlight.prev()               -- previous occurrence
     spotlight.quickfix(text|nil)   -- matching lines -> quickfix (current buffer)
     spotlight.quickfix_all(text|nil) -- same, across every loaded buffer
+    spotlight.yank(text|nil)       -- matching lines -> unnamed register
     spotlight.persist_set(bool|nil)-- per-file override for the current file
     spotlight.persist_status()     -- report it
     spotlight.refresh()            -- redefine palette, re-apply everything
@@ -532,7 +553,7 @@ outcome (suppress those messages with `notify = false`).
 current window's matches with `clearmatches()`.
 
 ==============================================================================
-14. HEALTH                                                   *spotlight-health*
+15. HEALTH                                                   *spotlight-health*
 >vim
     :checkhealth spotlight
 <
@@ -544,7 +565,7 @@ active spotlights with their slots, how many windows carry matches, the project
 root, and every per-file persistence override.
 
 ==============================================================================
-15. DEBUGGING                                                 *spotlight-debug*
+16. DEBUGGING                                                 *spotlight-debug*
 >lua
     require("spotlight").setup({ debug = true })
 <
@@ -572,7 +593,7 @@ With `debug = false` (the default) a log call costs one table lookup, so the
 instrumentation is not conditional on a build.
 
 ==============================================================================
-16. SECURITY MODEL                                         *spotlight-security*
+17. SECURITY MODEL                                         *spotlight-security*
 
 Not a claim of hardness — a plugin that highlights text is not a security
 boundary — but a statement of what is and is not trusted, so the limits below
@@ -630,7 +651,7 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 (see |spotlight-persist|).
 
 ==============================================================================
-17. LIB.NVIM INTEGRATION                                        *spotlight-lib*
+18. LIB.NVIM INTEGRATION                                        *spotlight-lib*
 
 "StefanBartl/lib.nvim" is a required dependency. Two modules are hard
 requirements:

@@ -201,6 +201,22 @@ one buffer's scan reports truncation.
 - **Config:** `quickfix.open` (default `true`), `quickfix.title`,
   `quickfix.max_entries` (default `10000`)
 
+## Yank matching lines to a register
+
+`:Spotlight yank` is the quickfix filter's sibling for "I just want the
+text": every line in the current buffer matching a spotlight — or one
+specific spotlight's matches — yanked into the unnamed register, one line
+per match, in buffer order. Reuses `core/count.lua`'s `M.matching_lines`
+verbatim, so the scanning cost, the `quickfix.max_entries` cap, and the
+"each line reported once" guarantee are identical to `:Spotlight qf`; only
+the destination differs. Deliberately narrow for now — always the unnamed
+register, always raw line text with no line-number prefix.
+
+- **Module:** `yank.lua` (`M.yank`), `core/count.lua` (`M.matching_lines`)
+- **Usercmds:** `:Spotlight yank [text]`
+- **Config:** `quickfix.max_entries` (default `10000`, shared with the
+  quickfix filter)
+
 ## Add / remove by explicit text
 
 `:Spotlight add {text}` and `:Spotlight remove {text}` work on a literal

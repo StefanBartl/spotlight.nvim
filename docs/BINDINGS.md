@@ -60,6 +60,7 @@ typing and validation come from the route tree.
 | `:Spotlight prev` | — | no | `prev` | Jump to the previous occurrence |
 | `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines in the current buffer → quickfix (all, or just `text`'s) |
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
+| `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |
 | `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
 | `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
 | `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
@@ -124,6 +125,7 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").prev()` | n | `boolean` | Previous occurrence |
 | `require("spotlight").quickfix(text?)` | n | `boolean` | Matching lines in the current buffer → quickfix |
 | `require("spotlight").quickfix_all(text?)` | n | `boolean` | Same, across every loaded buffer |
+| `require("spotlight").yank(text?)` | any | `boolean` | Matching lines in the current buffer → unnamed register |
 | `require("spotlight").lock_set(text, value)` | any | `boolean` | Set the slot lock for the spotlight matching `text` exactly |
 | `require("spotlight").lock_toggle(text?)` | any | `boolean` | Toggle the slot lock for `text`, or the cursor token |
 | `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |

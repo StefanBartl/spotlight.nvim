@@ -21,6 +21,7 @@ local path = require("spotlight.util.path")
 local persist = require("spotlight.persist")
 local qf = require("spotlight.qf")
 local registry = require("spotlight.core.registry")
+local yank = require("spotlight.yank")
 
 local M = {}
 
@@ -334,6 +335,36 @@ function M.quickfix_all(text)
     )
   end
   report(("%d matching line%s across all loaded buffers"):format(found, found == 1 and "" or "s"))
+  return true
+end
+
+-- ---------- yank ----------
+
+--- Yank every matching line in the current buffer into the unnamed register,
+--- one per line. With `text`, only that spotlight's matches.
+---@param text string|nil
+---@return boolean yanked
+function M.yank(text)
+  local item = nil
+  if type(text) == "string" and text ~= "" then
+    item = registry.find_by_text(text)
+    if not item then
+      report(("no spotlight for: %s"):format(text), vim.log.levels.WARN)
+      return false
+    end
+  end
+  local found, err, truncated = yank.yank(item)
+  if found == 0 then
+    report(err or "no matching lines", vim.log.levels.WARN)
+    return false
+  end
+  if truncated then
+    report(
+      ("stopped at %d matching lines (quickfix.max_entries) — the yank is truncated"):format(config.get("quickfix.max_entries")),
+      vim.log.levels.WARN
+    )
+  end
+  report(("yanked %d matching line%s"):format(found, found == 1 and "" or "s"))
   return true
 end
 

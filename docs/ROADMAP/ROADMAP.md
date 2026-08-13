@@ -23,26 +23,10 @@ Reviews rather than plans, kept beside this file because they are where the
 ## Table of content
 
   - [Companion documents](#companion-documents)
-  - [Plausible next](#plausible-next)
-    - [`:Spotlight yank`](#spotlight-yank)
   - [Wanted, needs design](#wanted-needs-design)
     - [Spotlight sets](#spotlight-sets)
     - [Occurrence count in the sign column or on the scrollbar](#occurrence-count-in-the-sign-column-or-on-the-scrollbar)
     - [Per-window opt-out](#per-window-opt-out)
-
----
-
-## Plausible next
-
-Ordered by expected value per line of code.
-
----
-
-### `:Spotlight yank`
-
-Copy every matching line to a register instead of the quickfix list. Reuses
-`count.matching_lines` entirely; the only new decision is which register and
-whether to include line numbers.
 
 ---
 
@@ -53,7 +37,7 @@ whether to include line numbers.
 ### Spotlight sets
 
 Named groups of spotlights, switched as a unit ("the auth investigation", "the
-timeout investigation"). This is the honest answer to several requests above —
+timeout investigation"). This is the honest answer to several related asks —
 per-buffer scope, export/import, and "I have too many spotlights at once" are all
 really asking for sets.
 

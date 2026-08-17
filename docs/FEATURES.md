@@ -202,6 +202,55 @@ extmarks with it, so this feature adds zero new autocmds.
   sign-text limit), `map.max_entries` (default `10000`, independent of
   `quickfix.max_entries`)
 
+## Whole-line highlighting
+
+`<leader>mW` (or `:Spotlight line [text]`) switches one spotlight from
+"color the token" to "color the whole line the token sits on" — for the case
+where the interesting unit is the log entry, not the id inside it. It is a
+per-spotlight toggle, so one spotlight can paint its lines while the others
+stay on their tokens.
+
+Implemented as a **rendering flag**, not as a different pattern.
+`Spotlight.Item.pattern` remains the token pattern; only the string handed to
+`matchadd()` is widened, by `core/pattern.lua`'s `M.line` — `\_^\.\*` … `\.\*\_$`
+around the pattern, using the `\_`-prefixed anchors because plain `^`/`$` are
+special only at the very start/end of a pattern and here they sit next to the
+pattern's own `\C\V` prefix. That split is what keeps every other consumer
+honest: the match count still counts occurrences rather than lines, the
+quickfix and yank scans still report the token's own column, and the
+occurrence map's earliest-column tie-break still works — a line pattern would
+always match at column 1 and collapse it.
+
+The widened match is registered **one priority below** `match.priority`. A
+whole-line highlight covers every token highlight on its line, and the palette
+exists precisely so several spotlights stay apart; at equal priority the line
+color would swallow the token colors of every other spotlight sharing that
+line. `:checkhealth spotlight` reports the effective priority per line-mode
+spotlight, since "my color vanished" is the one confusing symptom this can
+produce.
+
+Two limits are inherent to the `matchadd()` choice rather than oversights:
+the highlight ends where the line's text ends (it does not extend to the
+window's right edge — that needs `line_hl_group`, which is an extmark, which
+is a position, which is what the whole plugin avoids storing), and two
+line-mode spotlights on the *same* line resolve to one winner rather than
+blending.
+
+Works on a "this occurrence only" spotlight too — the position atoms
+`\%l`/`\%c` are zero-width, so the leading `.*` simply walks up to them and the
+whole line of *that one* occurrence lights up. Since such a spotlight has no
+text identity, it is reached through `:Spotlight list line` rather than
+`:Spotlight line {text}`. The flag is persisted (unlike a position pin, it
+means the same thing after a restart) and shown as `(whole line)` in the list.
+
+- **Module:** `core/pattern.lua` (`M.line`), `core/match.lua` (the one place it
+  is applied), `core/registry.lua` (`M.set_line`), `init.lua` (`M.line_set`,
+  `M.line_toggle`, `M.list_line`)
+- **Keymaps:** `<leader>mW` (normal mode) — no visual counterpart: the action
+  needs a spotlight that already exists, which a selection cannot resolve to
+- **Usercmds:** `:Spotlight line [text]`, `:Spotlight list line`
+- **Config:** `keymaps.line` (default `<leader>mW`)
+
 ## Next / previous navigation
 
 `]k` / `[k` jump one occurrence at a time, `unimpaired`-style (`3]k` is three

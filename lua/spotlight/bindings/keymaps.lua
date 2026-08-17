@@ -67,6 +67,13 @@ function M.setup(cfg)
     api.quickfix(nil)
   end, "spotlight: matching lines to quickfix")
 
+  -- Line mode acts on a spotlight that already exists, so there is no visual
+  -- counterpart to bind: a selection would resolve to text with no spotlight
+  -- attached, which this action refuses by design.
+  bind(k.line, "n", function()
+    api.line_toggle(nil)
+  end, "spotlight: toggle whole-line rendering for the token under cursor")
+
   bind(k.next, "n", api.next, "spotlight: next occurrence (×count)")
   bind(k.prev, "n", api.prev, "spotlight: previous occurrence (×count)")
 end

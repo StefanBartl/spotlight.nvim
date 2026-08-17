@@ -132,7 +132,7 @@ function M.check()
   local keymaps = config.get("keymaps")
   if keymaps.preset then
     local bound = {}
-    for _, name in ipairs({ "toggle_here", "toggle", "list", "clear", "quickfix", "next", "prev" }) do
+    for _, name in ipairs({ "toggle_here", "toggle", "list", "clear", "quickfix", "line", "next", "prev" }) do
       if type(keymaps[name]) == "string" and keymaps[name] ~= "" then
         bound[#bound + 1] = ("%s = %s"):format(name, keymaps[name])
       end
@@ -155,7 +155,16 @@ function M.check()
     )
   )
   for _, item in ipairs(registry.all()) do
-    info(("  slot %d (%s): %s%s"):format(item.slot, item.hl, item.text, item.locked and " [locked]" or ""))
+    info(("  slot %d (%s): %s%s%s"):format(
+      item.slot,
+      item.hl,
+      item.text,
+      item.locked and " [locked]" or "",
+      -- Worth reporting: a line-mode spotlight renders one priority lower
+      -- than the rest, which is the first thing to check when one color
+      -- appears to have vanished under another.
+      item.line and (" [whole line, priority %d]"):format(match_opts.priority - 1) or ""
+    ))
   end
 
   -- Cheap live loop, not new persistent state — a window id means nothing

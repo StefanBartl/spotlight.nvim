@@ -45,6 +45,10 @@
 ---@field row1 integer|nil      # `scope == "buffer"` only: 1-based line, part of its toggle identity.
 ---@field col1 integer|nil      # `scope == "buffer"` only: 1-based byte column, part of its toggle identity.
 ---@field locked boolean|nil    # True: `slot` is never handed to a different spotlight, even once the palette fills up.
+--- True: rendered across the whole line its match sits on. A *rendering* flag —
+--- `pattern` stays the token pattern, and only `core.match` widens the string it
+--- hands to `matchadd()` (`core.pattern.line`), one priority below the rest.
+---@field line boolean|nil
 
 --- The on-disk snapshot under the `spotlight/state` project key.
 ---@class Spotlight.Snapshot
@@ -62,6 +66,10 @@
 ---@field kind Spotlight.TokenKind
 ---@field origin string|nil
 ---@field locked boolean|nil
+--- Whole-line rendering. Persisted because it is a property of the spotlight,
+--- not of the buffer it was made in: unlike a `scope = "buffer"` position pin,
+--- it means exactly the same thing after a restart.
+---@field line boolean|nil
 
 --- What the resolver decided the token under the cursor is. Drives whether the
 --- generated regex gets word boundaries: a bare `<cword>` fallback wants them
@@ -157,6 +165,7 @@
 ---@field list string|false            # Open the spotlight list.
 ---@field clear string|false           # Remove every spotlight.
 ---@field quickfix string|false        # Send all matching lines to the quickfix list.
+---@field line string|false            # Toggle whole-line rendering for the spotlight under the cursor.
 ---@field next string|false            # Jump to the next occurrence.
 ---@field prev string|false            # Jump to the previous occurrence.
 

@@ -24,6 +24,7 @@
 --- reintroducing exactly the O(file size) scan that picking `matchadd()` avoided.
 
 local lib = require("spotlight.util.lib")
+local pattern = require("spotlight.core.pattern")
 
 local M = {}
 
@@ -90,6 +91,21 @@ end
 --- unrelated line that happens to share the same shape. Global items carry no
 --- such restriction, which is the whole point of them (the same request id
 --- lighting up in `worker.log` as in `app.log`).
+---
+--- Line mode (`item.line`) is applied here and nowhere else: `item.pattern`
+--- stays the token pattern for every other consumer — counting, quickfix,
+--- yank, the occurrence map, navigation — and only the string actually handed
+--- to `matchadd()` is widened to the whole line (`core.pattern.line`). Writing
+--- the widened form into the item instead would silently redefine what a
+--- "match" is for all of them: the count would become lines-not-occurrences,
+--- and `core.count.matching_lines_by_item`'s earliest-column tie-break would
+--- collapse, since a line pattern always matches at column 1.
+---
+--- The widened match is also registered one priority below the others. A
+--- whole-line highlight covers every token highlight on its line, and the
+--- palette exists precisely so several spotlights stay distinguishable — at
+--- equal priority the line color would swallow the token colors of every
+--- other spotlight sharing that line.
 ---@param win integer
 ---@param item Spotlight.Item
 ---@param priority integer
@@ -105,17 +121,19 @@ local function add(win, item, priority)
   if per_win and per_win[item.id] then
     return
   end
+  local pat = item.line and pattern.line(item.pattern) or item.pattern
+  local prio = item.line and (priority - 1) or priority
   -- matchadd() acts on the current window and takes no window argument, so the
   -- window is entered for the duration of the call.
   local ok, id = pcall(vim.api.nvim_win_call, win, function()
-    return vim.fn.matchadd(item.hl, item.pattern, priority)
+    return vim.fn.matchadd(item.hl, pat, prio)
   end)
   if not ok or type(id) ~= "number" or id <= 0 then
     -- The one way a spotlight can silently fail to appear: Vim rejected the
     -- pattern, or the window went away between the eligibility check and here.
     lib.debug(
       "match: matchadd failed",
-      { win = win, spotlight = item.id, pattern = item.pattern, err = not ok and tostring(id) or nil }
+      { win = win, spotlight = item.id, pattern = pat, line = item.line, err = not ok and tostring(id) or nil }
     )
     return
   end

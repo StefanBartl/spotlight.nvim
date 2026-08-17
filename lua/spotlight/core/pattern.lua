@@ -64,6 +64,35 @@ function M.build_at(text, row1, col1, opts)
   return case .. "\\%" .. tostring(row1) .. "l\\%" .. tostring(col1) .. "c\\V" .. body
 end
 
+--- Widen a complete pattern to the whole line it matches on, for a spotlight
+--- rendered in line mode (`Spotlight.Item.line`).
+---
+--- Takes an already-built pattern rather than a token, so it works unchanged
+--- for both `M.build` and `M.build_at` output — a position-anchored pattern
+--- widened this way lights up the whole line of *that one* occurrence, because
+--- `\%l`/`\%c` are zero-width assertions the leading `\.\*` simply walks up to.
+---
+--- `\_^`/`\_$` rather than plain `^`/`$`: those are special only at the very
+--- start/end of a pattern, and here they sit next to the caller's own `\C\V`
+--- prefix. The `\_` forms are position atoms — special after a backslash
+--- regardless of magic state, the same way `\<`/`\>` still work after `\V`.
+--- `\.\*` is "any character, any number of times" spelled for `\V`, where `.`
+--- and `*` are ordinary characters. Re-stating `\C\V` in front is safe and
+--- necessary for the same reason `M.alternation` re-states nothing: magic and
+--- case are positional switches, and the input's own inner `\V` re-establishes
+--- nomagic for its body.
+---
+--- What this does **not** do is fill the line to the window's right edge:
+--- `matchadd()` colors text, and a short line simply stops where its text
+--- stops. Painting to the edge needs `line_hl_group`, which is an extmark, and
+--- an extmark is a position — the one thing `spotlight.core.match` exists to
+--- not store.
+---@param pat string # A complete pattern from `M.build`/`M.build_at`.
+---@return string
+function M.line(pat)
+  return "\\C\\V\\_^\\.\\*" .. pat .. "\\.\\*\\_$"
+end
+
 --- Combine several complete patterns into one alternation, for a single
 --- `search()` call over every spotlight at once.
 ---

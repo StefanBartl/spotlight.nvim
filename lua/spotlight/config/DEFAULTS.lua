@@ -178,6 +178,11 @@ local DEFAULTS = {
     list = "<leader>mL",
     clear = "<leader>mC",
     quickfix = "<leader>mq",
+    -- Whole-line rendering for the spotlight the cursor token belongs to.
+    -- Shifted, following the same rule as `mk`/`mK`: the wider, louder action
+    -- takes the shifted key. `<leader>mw` stays free rather than being given
+    -- the opposite meaning — there is no narrower counterpart to pair it with.
+    line = "<leader>mW",
     next = "]k",
     prev = "[k",
   },

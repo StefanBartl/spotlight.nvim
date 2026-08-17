@@ -213,6 +213,15 @@ function M.list_lock()
   require("spotlight.ui.list").open("lock")
 end
 
+--- Open the spotlight list in line mode; selecting an entry toggles whether it
+--- is rendered across the whole line (see `M.line_toggle`). The only way to
+--- reach a buffer-scoped spotlight's line mode, since that one has no text
+--- identity to name it by.
+---@return nil
+function M.list_line()
+  require("spotlight.ui.list").open("line")
+end
+
 -- ---------- per-slot lock ----------
 
 --- Set whether the spotlight matching `text` exactly keeps its palette slot
@@ -256,6 +265,53 @@ function M.lock_toggle(text)
     return false
   end
   return M.lock_set(item.text, not item.locked)
+end
+
+-- ---------- whole-line rendering ----------
+
+--- Set whether the spotlight matching `text` exactly is rendered across the
+--- whole line its match sits on, rather than over the matched text alone.
+---@param text string
+---@param value boolean
+---@return boolean changed
+function M.line_set(text, value)
+  local item = registry.find_by_text(text)
+  if not item then
+    report(("no spotlight for: %s"):format(tostring(text)), vim.log.levels.WARN)
+    return false
+  end
+  registry.set_line(item.id, value)
+  report(("%s: %s"):format(value and "whole line" or "token only", item.text))
+  return true
+end
+
+--- Toggle whole-line rendering on the spotlight matching `text` exactly, or —
+--- with no `text` — on whatever spotlight the cursor token resolves to.
+---
+--- Resolves the same way `M.lock_toggle` does, and for the same reason: line
+--- mode is a property of a spotlight that already exists, so pointing at an
+--- unspotlighted token is refused rather than silently creating one. A
+--- buffer-scoped ("this occurrence only") spotlight is reached through the
+--- list (`:Spotlight list line`), since it is not addressable by text.
+---@param text string|nil
+---@return boolean changed
+function M.line_toggle(text)
+  local item
+  if type(text) == "string" and text ~= "" then
+    item = registry.find_by_text(text)
+  else
+    local token = cursor.token()
+    if not token then
+      report("no token under the cursor", vim.log.levels.WARN)
+      return false
+    end
+    item = registry.find_by_text(token.text)
+  end
+  if not item then
+    report(("no spotlight for: %s"):format(tostring(text)), vim.log.levels.WARN)
+    return false
+  end
+  return M.line_set(item.text, not item.line)
 end
 
 -- ---------- navigation ----------

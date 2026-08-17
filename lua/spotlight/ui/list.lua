@@ -44,6 +44,9 @@ local function row(item, n, swatch, partial)
   if item.locked then
     label = label .. "  (locked)"
   end
+  if item.line then
+    label = label .. "  (whole line)"
+  end
   local line = ("%s %-40s %s"):format(swatch, label, shown)
   return {
     value = item,
@@ -61,11 +64,14 @@ end
 --- not used for removal because kit's chooser reserves it for multi-select —
 --- instead the list is re-opened in "remove" mode via `:Spotlight list remove`
 --- (and by `mode = "remove"` here). `"lock"` toggles the selected entry's
---- `Spotlight.Item.locked` flag instead of jumping or removing.
----@param mode "jump"|"remove"|"lock"|nil # Defaults to "jump".
+--- `Spotlight.Item.locked` flag instead of jumping or removing; `"line"` does
+--- the same for `Spotlight.Item.line`, and is the only way to reach a
+--- buffer-scoped spotlight's line mode — that one has no text identity for
+--- `:Spotlight line {text}` to name it by.
+---@param mode "jump"|"remove"|"lock"|"line"|nil # Defaults to "jump".
 ---@return nil
 function M.open(mode)
-  mode = (mode == "remove" or mode == "lock") and mode or "jump"
+  mode = (mode == "remove" or mode == "lock" or mode == "line") and mode or "jump"
 
   local items = registry.all()
   if #items == 0 then
@@ -105,6 +111,7 @@ function M.open(mode)
   local title = ({
     remove = "Spotlights — select to remove",
     lock = "Spotlights — select to toggle lock",
+    line = "Spotlights — select to toggle whole-line rendering",
   })[mode] or "Spotlights — select to jump"
   if loaded_scope then
     title = title .. " (counting across all loaded buffers)"
@@ -143,6 +150,13 @@ function M.open(mode)
         local now_locked = not item.locked
         if registry.set_locked(item.id, now_locked) and config.get("notify") then
           lib.notify(("%s: %s"):format(now_locked and "locked" or "unlocked", item.text))
+        end
+        return
+      end
+      if mode == "line" then
+        local now_line = not item.line
+        if registry.set_line(item.id, now_line) and config.get("notify") then
+          lib.notify(("%s: %s"):format(now_line and "whole line" or "token only", item.text))
         end
         return
       end

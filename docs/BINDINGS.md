@@ -23,6 +23,7 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 | `<leader>mL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
 | `<leader>mC` | n | `clear` | `keymaps.clear` | Remove every spotlight |
 | `<leader>mq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
+| `<leader>mW` | n | `line_toggle` | `keymaps.line` | Toggle **whole-line** rendering for the spotlight the token under the cursor belongs to. Refused if that token has no spotlight yet — line mode is a property of one that exists |
 | `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence. A count prefix repeats the jump that many times (`3]k` = three one-step jumps, `unimpaired`-style), stopping early rather than erroring if fewer occurrences remain |
 | `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence. Same count support as `]k` |
 
@@ -42,6 +43,11 @@ Collision-checked against the existing `<leader>m*` group in the author's config
 (`<leader>man`, `<leader>ms`, `<leader>mc`, `<leader>mn*`, `<leader>ml*`,
 `<leader>mv*`) and against `]`/`[` motions (`]q`, `]l`, `]d`, `]w`).
 
+`<leader>mW` follows the same lowercase/uppercase rule: whole-line rendering is
+the wider, louder of the two ways to show a spotlight, so it takes the shifted
+key. `<leader>mw` is deliberately left free rather than given the opposite
+meaning — "token only" is not a separate action, it is this one toggled off.
+
 ## User commands
 
 One verb, built with `lib.nvim.usercmd.composer` — `<Tab>` completion, argument
@@ -55,12 +61,13 @@ typing and validation come from the route tree.
 | `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
 | `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
 | `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
-| `:Spotlight list` | `[jump\|remove\|lock]` | no | `list` / `list_remove` / `list_lock` | Open the list; `remove` deletes on select, `lock` toggles the lock on select |
+| `:Spotlight list` | `[jump\|remove\|lock\|line]` | no | `list` / `list_remove` / `list_lock` / `list_line` | Open the list; `remove` deletes on select, `lock` toggles the lock, `line` toggles whole-line rendering |
 | `:Spotlight next` | — | no | `next` | Jump to the next occurrence |
 | `:Spotlight prev` | — | no | `prev` | Jump to the previous occurrence |
 | `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines in the current buffer → quickfix (all, or just `text`'s) |
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
 | `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |
+| `:Spotlight line` | `[text]` | no | `line_toggle` | Toggle whole-line rendering for a spotlight (`text`, or the cursor token) |
 | `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
 | `:Spotlight map` | `[text]` | no | `map` | Mark every matching line in the sign column (all spotlights, or just `text`'s) |
 | `:Spotlight map clear` | — | no | `map_clear` | Clear the sign-column occurrence map in the current buffer |
@@ -128,6 +135,7 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").list()` | n | `nil` | Open the list; selection jumps |
 | `require("spotlight").list_remove()` | n | `nil` | Open the list; selection removes |
 | `require("spotlight").list_lock()` | n | `nil` | Open the list; selection toggles the lock |
+| `require("spotlight").list_line()` | n | `nil` | Open the list; selection toggles whole-line rendering |
 | `require("spotlight").next()` | n | `boolean` | Next occurrence |
 | `require("spotlight").prev()` | n | `boolean` | Previous occurrence |
 | `require("spotlight").quickfix(text?)` | n | `boolean` | Matching lines in the current buffer → quickfix |
@@ -135,6 +143,8 @@ Every action, for binding your own keys with `keymaps.preset = false`.
 | `require("spotlight").yank(text?)` | any | `boolean` | Matching lines in the current buffer → unnamed register |
 | `require("spotlight").lock_set(text, value)` | any | `boolean` | Set the slot lock for the spotlight matching `text` exactly |
 | `require("spotlight").lock_toggle(text?)` | any | `boolean` | Toggle the slot lock for `text`, or the cursor token |
+| `require("spotlight").line_set(text, value)` | any | `boolean` | Set whole-line rendering for the spotlight matching `text` exactly |
+| `require("spotlight").line_toggle(text?)` | any | `boolean` | Toggle whole-line rendering for `text`, or the cursor token |
 | `require("spotlight").sets_save(name)` | any | `boolean` | Save the active spotlights as a named set (overwrites) |
 | `require("spotlight").sets_switch(name)` | any | `boolean` | Clear the active spotlights and restore a saved set |
 | `require("spotlight").sets_delete(name)` | any | `boolean` | Delete a saved set |

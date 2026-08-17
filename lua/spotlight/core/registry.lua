@@ -285,6 +285,31 @@ function M.set_locked(id, value)
   return true
 end
 
+--- Set whether the spotlight with id `id` is rendered across the whole line
+--- its match sits on, rather than over the matched text alone.
+---
+--- Unlike `M.set_locked`, this changes something baked into the `matchadd()`
+--- call itself — the pattern handed over and the priority it is registered at
+--- (see `core.match`) — and `matchadd()` has no update form. So the item's
+--- matches are dropped from every window and re-added, rather than only the
+--- bookkeeping being touched. Only this one item is re-applied: a blanket
+--- `match.refresh` would re-add every other spotlight for a change that
+--- concerns none of them.
+---@param id integer
+---@param value boolean
+---@return boolean ok
+function M.set_line(id, value)
+  local item = M.get(id)
+  if not item then
+    return false
+  end
+  item.line = value or nil
+  match.remove(id)
+  match.apply_all({ item }, config.get("match.priority"))
+  notify_change()
+  return true
+end
+
 --- Toggle a spotlight for `token`: remove it if that exact text is already
 --- spotlighted, otherwise add it.
 ---@param token Spotlight.Token
@@ -403,6 +428,9 @@ function M.restore(stored)
         hl = palette.group(slot),
         origin = type(s.origin) == "string" and s.origin or nil,
         locked = s.locked == true or nil,
+        -- `== true`, not truthiness: the snapshot is hand-editable, and a
+        -- string "yes" must not restore as a rendering mode nobody asked for.
+        line = s.line == true or nil,
       }
     end
   end
@@ -428,6 +456,7 @@ function M.snapshot()
         kind = item.pattern:find("\\<", 1, true) and "word" or "literal",
         origin = item.origin,
         locked = item.locked,
+        line = item.line,
       }
     end
   end

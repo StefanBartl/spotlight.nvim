@@ -231,6 +231,7 @@ whole preset.
 | `<leader>mL`      | n    | `list`                  | Open the spotlight list.                                  |
 | `<leader>mC`      | n    | `clear`                 | Remove every spotlight.                                   |
 | `<leader>mq`      | n    | `quickfix`               | Matching lines → quickfix.                                |
+| `<leader>mW`      | n    | `line_toggle`           | Toggle whole-line rendering for the token's spotlight.    |
 | `]k`              | n    | `next`                  | Next occurrence.                                           |
 | `[k`              | n    | `prev`                  | Previous occurrence.                                       |
 
@@ -286,6 +287,7 @@ from the same route tree.
 | `:Spotlight remove {text}`       | Remove the spotlight matching `text` exactly.                           |
 | `:Spotlight clear`               | Remove every spotlight.                                                 |
 | `:Spotlight list [jump\|remove]` | Open the list; `remove` makes selection delete instead of jump.          |
+| `:Spotlight line [text]`         | Toggle whole-line rendering for a spotlight (`text`, or the cursor token). |
 | `:Spotlight next` / `prev`       | Jump one occurrence.                                                    |
 | `:Spotlight qf [text]`           | Matching lines → quickfix; with `text`, only that spotlight's.           |
 | `:Spotlight persist on\|off\|default\|status` | Per-file persistence — see below.                           |
@@ -369,6 +371,7 @@ require("spotlight").setup({
     list = "<leader>mL",
     clear = "<leader>mC",
     quickfix = "<leader>mq",
+    line = "<leader>mW",         -- whole-line rendering for one spotlight
     next = "]k",
     prev = "[k",
   },

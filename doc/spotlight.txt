@@ -128,6 +128,7 @@ Bound when `keymaps.preset` is true (the default):
     <leader>mL       n  open the spotlight list
     <leader>mC       n  remove every spotlight
     <leader>mq       n  matching lines -> quickfix
+    <leader>mW       n  toggle whole-line rendering for one spotlight
     ]k               n  next occurrence (count-repeatable, see |spotlight-nav|)
     [k               n  previous occurrence (count-repeatable, see |spotlight-nav|)
 
@@ -198,6 +199,46 @@ the *same* occurrence removes it; a different occurrence of the same word is
 an independent spotlight, even alongside a `<leader>mK` spotlight for the
 same text.
 
+                                                              *spotlight-line*
+`<leader>mW` (or `:Spotlight line [text]`) switches one spotlight from "color
+the token" to "color the whole line the token sits on" — for when the unit you
+are actually reading is the log entry, not the id inside it. Per spotlight, so
+one can paint its lines while the others stay on their tokens. It acts on a
+spotlight that already exists: pointing at an unlit token is refused rather
+than silently creating one.
+
+It is a *rendering* flag, not a different spotlight. `Spotlight.Item.pattern`
+stays the token pattern; only the string handed to |matchadd()| is widened
+(`\_^\.\*` ... `\.\*\_$` around it — the `\_` anchors, because plain `^`/`$`
+are special only at the very start and end of a pattern). That split is what
+keeps the rest of the plugin honest: match counts still count occurrences and
+not lines, the quickfix and yank scans still report the token's own column,
+and the occurrence map's earliest-column tie-break still works — a line
+pattern always matches at column 1 and would collapse it.
+
+The widened match is registered one priority *below* `match.priority`. A
+whole-line highlight covers every token highlight on its line, and the palette
+exists precisely so several spotlights stay apart; at equal priority the line
+color would swallow the token colors of every other spotlight on that line.
+|:checkhealth| reports the effective priority per line-mode spotlight, since
+"my other color vanished" is the one confusing symptom this can produce.
+
+Two limits follow from |spotlight-matchadd| rather than from oversight:
+
+  - The highlight ends where the line's text ends. It does not run to the
+    window's right edge — that needs `line_hl_group`, which is an extmark,
+    which is a position, which is the one thing this plugin does not store.
+  - Two line-mode spotlights on the same line resolve to one winner rather
+    than blending.
+
+Works on a "this occurrence only" spotlight (|spotlight-here|) too: `\%l`/`\%c`
+are zero-width assertions, so the leading `.*` walks up to them and the whole
+line of *that* occurrence lights up. Such a spotlight has no text identity, so
+it is reached with `:Spotlight list line` rather than `:Spotlight line {text}`.
+
+The flag is persisted (|spotlight-persist|) — unlike a position pin, it means
+the same thing after a restart — and shown as `(whole line)` in the list.
+
 ==============================================================================
 5. COMMANDS                                                *spotlight-commands*
 
@@ -214,9 +255,10 @@ the same route tree.
     :Spotlight add {text}          add a spotlight for the literal {text}
     :Spotlight remove {text}       remove the spotlight matching {text}
     :Spotlight clear               remove every spotlight
-    :Spotlight list [jump|remove|lock]
+    :Spotlight list [jump|remove|lock|line]
                                    open the list; "remove" deletes on select,
-                                   "lock" toggles the lock on select
+                                   "lock" toggles the lock, "line" toggles
+                                   whole-line rendering
     :Spotlight next                jump to the next occurrence
     :Spotlight prev                jump to the previous occurrence
     :Spotlight qf [text]           matching lines -> quickfix (current buffer)
@@ -226,6 +268,8 @@ the same route tree.
     :Spotlight map clear           clear the sign-column occurrence map
     :Spotlight lock [text]         toggle whether a spotlight keeps its slot
                                    permanently ({text}, or the cursor token)
+    :Spotlight line [text]         toggle whole-line rendering for a spotlight
+                                   ({text}, or the cursor token)
     :Spotlight persist {state}     on | off | default | status
     :Spotlight sets save {name}    save the active spotlights as {name}
     :Spotlight sets switch {name}  clear + restore the saved set {name}
@@ -297,6 +341,7 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
         list = "<leader>mL",
         clear = "<leader>mC",
         quickfix = "<leader>mq",
+        line = "<leader>mW",         -- whole-line rendering
         next = "]k",
         prev = "[k",
       },
@@ -381,9 +426,13 @@ stops the loop early rather than erroring — a partial jump still counts.
 
 Selecting a row jumps to that spotlight's first occurrence in the current
 buffer. `:Spotlight list remove` opens the same list with selection bound to
-removal instead. A "this occurrence only" spotlight (|spotlight-here|) is
+removal instead, `:Spotlight list lock` with it bound to the slot lock, and
+`:Spotlight list line` with it bound to whole-line rendering
+(|spotlight-line|). A "this occurrence only" spotlight (|spotlight-here|) is
 tagged `(this occurrence only)` in its row, since it is otherwise
-indistinguishable from a global one with the same text.
+indistinguishable from a global one with the same text; a locked slot is
+tagged `(locked)` and a line-mode spotlight `(whole line)`, for the same
+reason.
 
 The swatch is painted in the spotlight's own |Spotlight1| ... group, via
 lib.nvim.ui.kit.select's rich items, so there is no rendering code in this
@@ -623,6 +672,9 @@ to any key or called from your own code:
     spotlight.list_lock()          -- the list, selection toggles the lock
     spotlight.lock_set(text, value)   -- set the slot lock for `text`
     spotlight.lock_toggle(text|nil)   -- toggle it, for `text` or the cursor token
+    spotlight.list_line()          -- the list, selection toggles whole-line mode
+    spotlight.line_set(text, value)   -- set whole-line rendering for `text`
+    spotlight.line_toggle(text|nil)   -- toggle it, for `text` or the cursor token
     spotlight.next()               -- next occurrence
     spotlight.prev()               -- previous occurrence
     spotlight.quickfix(text|nil)   -- matching lines -> quickfix (current buffer)

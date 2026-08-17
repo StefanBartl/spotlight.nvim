@@ -26,6 +26,7 @@ local SPECS = {
   "sets_spec",
   "map_spec",
   "winopt_spec",
+  "line_spec",
 }
 
 -- Notifications are outcome reports, not test output: silence them so a failure

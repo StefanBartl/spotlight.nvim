@@ -89,12 +89,19 @@ whole-buffer scan that choosing `matchadd()` avoided.
 | **Quickfix filter**    | Every line matching a spotlight → quickfix. "Show me only the lines with this request id."        |
 | **Per-project persistence** | Restored on the next session, keyed by git root. On by default.                             |
 | **Per-file opt-out**   | `:Spotlight persist off` for a file whose tokens should not be written to disk.                   |
+| **Per-window opt-out** | `:Spotlight winopt` excludes one window (e.g. a reference split kept open) from spotlighting.     |
+| **Slot locking**       | Pin a spotlight to its palette color permanently, so a later reuse never takes it away.            |
+| **Occurrence map**     | `:Spotlight map` marks every matching line in the sign column — the shape `matchadd()` can't show. |
+| **Named sets**         | Save and restore the active spotlights as a named set: `:Spotlight sets save/switch/delete/list`. |
+| **Yank matches**       | `:Spotlight yank` sends matching lines to the unnamed register (the quickfix filter's sibling).    |
 | **Case pinned**        | `\C` baked into the pattern, so a spotlight does not change meaning when you toggle `'ignorecase'`. |
 | **`:checkhealth`**     | Per-module `lib.nvim` status, `'termguicolors'`, config validation results, live state.           |
 | **Debug switch**       | `debug = true` logs the four decisions that answer "why did nothing light up", via `lib.nvim.logger`. |
 
 Everything is reachable three ways: a preset keymap, a `:Spotlight` subcommand,
-and a plain function on the `spotlight` module.
+and a plain function on the `spotlight` module. See
+[`docs/FEATURES.md`](docs/FEATURES.md) for every feature with its module,
+keymap, usercmd and config references.
 
 ---
 
@@ -286,11 +293,21 @@ from the same route tree.
 | `:Spotlight add {text}`          | Add a spotlight for the literal `text`.                                |
 | `:Spotlight remove {text}`       | Remove the spotlight matching `text` exactly.                           |
 | `:Spotlight clear`               | Remove every spotlight.                                                 |
-| `:Spotlight list [jump\|remove]` | Open the list; `remove` makes selection delete instead of jump.          |
+| `:Spotlight list [jump\|remove\|lock\|line]` | Open the list; `remove`/`lock`/`line` make selection act on that field instead of jumping. |
 | `:Spotlight line [text]`         | Toggle whole-line rendering for a spotlight (`text`, or the cursor token). |
+| `:Spotlight lock [text]`         | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token). |
 | `:Spotlight next` / `prev`       | Jump one occurrence.                                                    |
 | `:Spotlight qf [text]`           | Matching lines → quickfix; with `text`, only that spotlight's.           |
+| `:Spotlight qf all [text]`       | Matching lines across every loaded buffer → quickfix.                    |
+| `:Spotlight yank [text]`         | Matching lines → unnamed register; with `text`, only that spotlight's.   |
+| `:Spotlight map [text]`          | Mark every matching line in the sign column (`text`, or all spotlights). |
+| `:Spotlight map clear`           | Clear the sign-column occurrence map in the current buffer.              |
+| `:Spotlight sets save {name}`    | Save the active spotlights as a named set.                               |
+| `:Spotlight sets switch {name}`  | Clear the active spotlights and restore a saved set.                     |
+| `:Spotlight sets delete {name}`  | Delete a saved set (does not touch the active spotlights).               |
+| `:Spotlight sets list`           | List every saved set and how many spotlights it holds.                   |
 | `:Spotlight persist on\|off\|default\|status` | Per-file persistence — see below.                           |
+| `:Spotlight winopt on\|off\|toggle\|status` | Per-window opt-out: exclude this window from spotlighting.    |
 | `:Spotlight refresh`             | Redefine the palette and re-apply everything to every window.            |
 
 `:'<,'>Spotlight toggle` works from a visual selection: the selection is read

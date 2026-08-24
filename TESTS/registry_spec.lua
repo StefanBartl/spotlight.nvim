@@ -142,11 +142,11 @@ function M.run()
   t.eq("find_at: finds the item at that exact position", found and found.id, first.id)
   t.eq("find_at: a position with nothing there is nil", registry.find_at(bufA, 2, 1), nil)
 
-  local action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
-  t.eq("toggle_at: an existing position is removed", action, "removed")
+  local at_action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
+  t.eq("toggle_at: an existing position is removed", at_action, "removed")
   t.eq("toggle_at: back to two", registry.count(), 2)
-  action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
-  t.eq("toggle_at: an absent position is added", action, "added")
+  at_action = registry.toggle_at({ text = "aaa", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 5 })
+  t.eq("toggle_at: an absent position is added", at_action, "added")
 
   -- Rendering is pinned to windows showing the origin buffer: a window on a
   -- *different* buffer must not pick up the position-anchored matches, only

@@ -472,6 +472,22 @@ When which-key is installed, the preset's `<leader>m` prefix is labelled as a
 
 - **Module:** `bindings/which_key.lua`
 
+## Right-click context menu
+
+`spotlight.integrations.menu` contributes the normal-mode subset of the
+preset actions — spotlight this occurrence, spotlight every occurrence,
+next/previous, toggle whole-line rendering, quickfix, open the list, clear
+all — as entries in the shape [nvzone/menu](https://github.com/nvzone/menu)
+expects. The `_selection` variants are left out: a menu callback fires
+after nvzone/menu has already closed the menu and restored the triggering
+buffer, so there is no active Visual selection by the time it runs.
+spotlight.nvim has no dependency on `menu` and never opens a context menu
+itself — a host (typically your own `<RightMouse>` dispatcher) composes
+the entries into its own menu.
+
+- **Module:** `integrations/menu.lua` (`M.items`, `M.submenu`)
+- **Config:** `opts.menu.enable` (default `true`)
+
 ## Cross-platform persistence keys
 
 Per-file exception and origin keys are project-relative paths normalized to

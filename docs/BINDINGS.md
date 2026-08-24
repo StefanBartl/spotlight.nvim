@@ -48,6 +48,17 @@ the wider, louder of the two ways to show a spotlight, so it takes the shifted
 key. `<leader>mw` is deliberately left free rather than given the opposite
 meaning — "token only" is not a separate action, it is this one toggled off.
 
+### Right-click context menu
+
+`spotlight.integrations.menu` contributes the normal-mode rows above
+(`toggle_here`, `toggle`, `next`, `prev`, `line_toggle`, `quickfix`, `list`,
+`clear` — not the `x`-mode `_selection` variants) as entries in the shape
+[nvzone/menu](https://github.com/nvzone/menu) expects. spotlight.nvim has no
+dependency on `menu` and never opens a context menu itself — a host
+(typically your own `<RightMouse>` dispatcher) composes the entries into
+its own menu. See [FEATURES.md](FEATURES.md#right-click-context-menu).
+`opts.menu.enable = false` opts out.
+
 ## User commands
 
 One verb, built with `lib.nvim.usercmd.composer` — `<Tab>` completion, argument

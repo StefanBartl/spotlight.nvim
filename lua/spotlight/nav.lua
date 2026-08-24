@@ -74,12 +74,17 @@ end
 ---@internal
 --- The pattern to navigate by, honouring `nav.scope`.
 ---@return string|nil
-local function nav_pattern()
+---@param all_scopes boolean|nil  # ignore `nav.scope` for this call
+local function nav_pattern(all_scopes)
   local items = registry.all()
   if #items == 0 then
     return nil
   end
-  if config.get("nav.scope") == "auto" then
+  -- `!` forces the session-wide search. With `nav.scope = "auto"` the whole
+  -- point is that `]k` narrows to the spotlight under the cursor -- which is
+  -- right until the moment you want the opposite, and then the only way out
+  -- was to change the config and reload.
+  if not all_scopes and config.get("nav.scope") == "auto" then
     local here = M.under_cursor()
     if here then
       -- "Auto narrowed to one spotlight" vs "searched them all" is the whole
@@ -103,11 +108,12 @@ end
 --- early rather than erroring — a partial jump is still a real jump.
 ---@param dir 1|-1 # 1 forward, -1 backward.
 ---@param count integer|nil # defaults to 1.
+---@param all_scopes boolean|nil # ignore `nav.scope`, search every spotlight.
 ---@return boolean moved, string|nil err
-function M.jump(dir, count)
+function M.jump(dir, count, all_scopes)
   count = (type(count) == "number" and count > 0) and count or 1
 
-  local pat = nav_pattern()
+  local pat = nav_pattern(all_scopes)
   if not pat then
     return false, "no active spotlights"
   end
@@ -141,15 +147,15 @@ end
 --- Jump to the next occurrence, `count` times.
 ---@param count integer|nil # defaults to 1.
 ---@return boolean moved, string|nil err
-function M.next(count)
-  return M.jump(1, count)
+function M.next(count, all_scopes)
+  return M.jump(1, count, all_scopes)
 end
 
 --- Jump to the previous occurrence, `count` times.
 ---@param count integer|nil # defaults to 1.
 ---@return boolean moved, string|nil err
-function M.prev(count)
-  return M.jump(-1, count)
+function M.prev(count, all_scopes)
+  return M.jump(-1, count, all_scopes)
 end
 
 --- Move the cursor to the first occurrence of one specific spotlight, from the

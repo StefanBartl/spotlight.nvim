@@ -56,6 +56,32 @@ function M.run()
   vim.api.nvim_win_set_cursor(0, { 2, 0 })
   t.eq("nav/auto: nothing under the cursor on line 2", nav.under_cursor(), nil)
 
+  -- ---------- all_scopes forces the session-wide search ----------
+  --
+  -- `auto` narrowing is right until the moment you want the opposite, and the
+  -- only way out used to be editing `nav.scope` and reloading. `!` on
+  -- `:Spotlight next`/`prev` passes this through.
+  --
+  -- The registry holds `aaa` (lines 1 and 3) and `10.0.0.4` (line 4), so the
+  -- two modes only differ when standing on the LAST `aaa`: narrowed, the next
+  -- hit wraps back to line 1; unnarrowed, it is the `10.0.0.4` on line 4.
+  -- From line 1 both would land on line 3, which would have proved nothing.
+  config.setup({ nav = { scope = "auto", center = false } })
+  registry.rebuild()
+
+  t.ok("nav/all_scopes: cursor on the last aaa", t.cursor_on(3, "aaa"))
+  t.ok("nav/all_scopes: narrowed jump moves", nav.next())
+  t.eq("nav/all_scopes: narrowed wraps back to the first aaa", vim.api.nvim_win_get_cursor(0)[1], 1)
+
+  t.ok("nav/all_scopes: cursor on the last aaa again", t.cursor_on(3, "aaa"))
+  t.ok("nav/all_scopes: unnarrowed jump moves", nav.next(1, true))
+  t.eq("nav/all_scopes: unnarrowed reaches the other spotlight on line 4", vim.api.nvim_win_get_cursor(0)[1], 4)
+
+  -- Per call, not a mode: the very next plain jump narrows again.
+  t.ok("nav/all_scopes: cursor on the last aaa once more", t.cursor_on(3, "aaa"))
+  t.ok("nav/all_scopes: plain jump again", nav.next())
+  t.eq("nav/all_scopes: ...and it is narrowed once more", vim.api.nvim_win_get_cursor(0)[1], 1)
+
   -- ---------- no wrap ----------
   config.setup({ nav = { scope = "all", wrap = false, center = false } })
   registry.rebuild()

@@ -169,8 +169,24 @@ from the sum rather than making the whole count unknown — the row then shows
 
 - **Module:** `ui/list.lua`, `core/count.lua` (`M.count`, `M.count_loaded`,
   `M.scannable_buffers`)
+### Filtering the list (2026-08-24)
+
+`:Spotlight list [action] [filter]` narrows before showing. Once several
+spotlights are active, `remove` mode over twenty entries is a scroll rather
+than a choice — the flag/option audit's entry.
+
+One filter argument rather than separate `--color`/`--origin` flags: the
+fields never collide in practice (a slot is a number, an origin is a path,
+the text is neither), so one token answers both questions. It matches the
+palette slot, the highlight group, the origin path, and the spotlight's text.
+
+A **numeric** query is only a slot query, with no substring fallback.
+Falling through would make `1` match slot 10 as well — via the `1` in its own
+highlight group name `Spotlight10` — undoing the exact test it just passed.
+
+- **Module:** `ui/list.lua` (`M.filter`, `M.open`)
 - **Keymaps:** `<leader>sL` (list/jump)
-- **Usercmds:** `:Spotlight list [jump|remove|lock]`
+- **Usercmds:** `:Spotlight list [jump|remove|lock|line] [filter]`
 - **Config:** `list.count` (default `true`), `list.count_max_lines` (default
   `200000`), `list.count_scope` (default `"buffer"`, or `"loaded"`),
   `list.swatch`
@@ -261,9 +277,20 @@ deliberately never touches the search register or `'hlsearch'`. With
 match navigates only that spotlight; off any match, all spotlights are
 searched together.
 
+### Forcing the session-wide search (2026-08-24)
+
+`:Spotlight! next` / `! prev` ignore `nav.scope` and search every spotlight.
+`auto` narrowing is right until the moment you want the opposite, and the
+only way out was editing the config and reloading — the flag/option audit's
+entry.
+
+It is **per call, not a mode**: the next plain jump narrows again. The
+override is a parameter threaded to `nav_pattern`, not stored state, so there
+is nothing to reset and nothing to leak into a later jump.
+
 - **Module:** `nav.lua` (`M.jump`, `M.next`, `M.prev`, `M.under_cursor`)
 - **Keymaps:** `]k`, `[k`
-- **Usercmds:** `:Spotlight next`, `:Spotlight prev`
+- **Usercmds:** `:Spotlight[!] next`, `:Spotlight[!] prev`
 - **Config:** `nav.scope` (default `"auto"`), `nav.wrap` (default `true`),
   `nav.center` (default `true`)
 

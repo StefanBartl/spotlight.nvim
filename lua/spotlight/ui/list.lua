@@ -70,13 +70,68 @@ end
 --- `:Spotlight line {text}` to name it by.
 ---@param mode "jump"|"remove"|"lock"|"line"|nil # Defaults to "jump".
 ---@return nil
-function M.open(mode)
+---@param mode string|nil
+---@param filter string|nil  # narrow the list before showing it; see `matches`
+---Spotlights matching `query`.
+---
+--- Matches the palette slot (`3`), the highlight group (`Spotlight3`), the
+--- origin path, and the spotlight's own text — the four things you would
+--- actually name one by. Slot matching is exact so `1` does not also select
+--- slot 10 or 11; the rest are plain substring, case-insensitive.
+---@param items Spotlight.Item[]
+---@param query string
+---@return Spotlight.Item[]
+function M.filter(items, query)
+  local q = query:lower()
+  local as_slot = tonumber(query)
+
+  local out = {}
+  for _, item in ipairs(items) do
+    local hit
+    if as_slot then
+      -- A numeric query is *only* a slot query, with no substring fallback.
+      -- Falling through would make `1` match slot 10 as well, via the "1" in
+      -- its own highlight group name `Spotlight10` -- an exact test that the
+      -- fallback then undoes.
+      hit = item.slot == as_slot
+    else
+      hit = false
+      for _, field in ipairs({ item.hl, item.origin, item.text }) do
+        if type(field) == "string" and field:lower():find(q, 1, true) then
+          hit = true
+          break
+        end
+      end
+    end
+    if hit then
+      out[#out + 1] = item
+    end
+  end
+  return out
+end
+
+function M.open(mode, filter)
   mode = (mode == "remove" or mode == "lock" or mode == "line") and mode or "jump"
 
   local items = registry.all()
   if #items == 0 then
     lib.notify("no active spotlights", vim.log.levels.INFO)
     return
+  end
+
+  -- Narrowing the list is the point of having one once several spotlights
+  -- are active: `remove` mode over twenty entries is a scroll, not a choice.
+  --
+  -- One filter argument rather than separate --color/--origin flags: the
+  -- fields never collide in practice (a slot is a number, an origin is a
+  -- path, the text is neither), so matching all three keeps the surface to
+  -- one token and still answers both questions the audit asked.
+  if type(filter) == "string" and filter ~= "" then
+    items = M.filter(items, filter)
+    if #items == 0 then
+      lib.notify(("no spotlight matching %q"):format(filter), vim.log.levels.WARN)
+      return
+    end
   end
 
   local list_opts = config.get("list")

@@ -92,9 +92,31 @@ typing and validation come from the route tree.
 | `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
 | `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
 | `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
-| `:Spotlight list` | `[jump\|remove\|lock\|line]` | no | `list` / `list_remove` / `list_lock` / `list_line` | Open the list; `remove` deletes on select, `lock` toggles the lock, `line` toggles whole-line rendering |
-| `:Spotlight next` | — | no | `next` | Jump to the next occurrence |
-| `:Spotlight prev` | — | no | `prev` | Jump to the previous occurrence |
+| `:Spotlight list` | `[jump\|remove\|lock\|line] [filter]` | no | `list` / `list_remove` / `list_lock` / `list_line` | Open the list; `remove` deletes on select, `lock` toggles the lock, `line` toggles whole-line rendering. `filter` narrows the list first |
+| `:Spotlight next` | — | **yes** | `next` | Jump to the next occurrence. `!` ignores `nav.scope` for that jump |
+| `:Spotlight prev` | — | **yes** | `prev` | Jump to the previous occurrence. `!` ignores `nav.scope` for that jump |
+
+### `!` on next/prev, and the list filter (2026-08-24)
+
+**`:Spotlight! next` / `! prev` search every spotlight**, whatever
+`nav.scope` says. With `scope = "auto"` the whole point is that `]k` follows
+the token under the cursor — which is right until the moment you want the
+opposite, and the only way out was editing the config and reloading. The flag
+is **per call**, not a mode: the next plain jump narrows again.
+
+**`:Spotlight list [action] [filter]`** narrows the list before showing it.
+Once several spotlights are active, `remove` mode over twenty entries is a
+scroll rather than a choice.
+
+One filter argument rather than separate `--color`/`--origin` flags: the
+fields never collide in practice, so a single token answers both questions.
+It matches the palette slot, the highlight group (`Spotlight3`), the origin
+path, and the spotlight's own text.
+
+A **numeric** query is only ever a slot query, with no substring fallback —
+otherwise `1` would also match slot 10, via the `1` in its own highlight
+group name `Spotlight10`, undoing the exact test. Everything else is plain
+substring, case-insensitive.
 | `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines in the current buffer → quickfix (all, or just `text`'s) |
 | `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
 | `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |

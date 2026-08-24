@@ -177,34 +177,42 @@ function M.setup()
 
       {
         path = { "list" },
-        args = { { name = "action", type = "STRING", enum = { "jump", "remove", "lock", "line" }, optional = true } },
-        desc = "Open the spotlight list (swatch + pattern + match count)",
+        args = {
+          { name = "action", type = "STRING", enum = { "jump", "remove", "lock", "line" }, optional = true },
+          { name = "filter", type = "STRING", optional = true },
+        },
+        desc = "Open the spotlight list (swatch + pattern + match count)  [filter]",
         run = function(ctx)
+          -- The filter matches slot / highlight group / origin / text, so one
+          -- token answers both "which colour" and "from which file".
+          local filter = ctx.args.filter
           if ctx.args.action == "remove" then
-            api.list_remove()
+            api.list_remove(filter)
           elseif ctx.args.action == "lock" then
-            api.list_lock()
+            api.list_lock(filter)
           elseif ctx.args.action == "line" then
-            api.list_line()
+            api.list_line(filter)
           else
-            api.list()
+            api.list(filter)
           end
         end,
       },
 
       {
         path = { "next" },
-        desc = "Jump to the next spotlight occurrence",
-        run = function()
-          api.next()
+        bang = true,
+        desc = "Jump to the next spotlight occurrence  (! ignores nav.scope)",
+        run = function(ctx)
+          api.next(ctx.bang)
         end,
       },
 
       {
         path = { "prev" },
-        desc = "Jump to the previous spotlight occurrence",
-        run = function()
-          api.prev()
+        bang = true,
+        desc = "Jump to the previous spotlight occurrence  (! ignores nav.scope)",
+        run = function(ctx)
+          api.prev(ctx.bang)
         end,
       },
 

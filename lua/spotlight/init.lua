@@ -196,21 +196,24 @@ end
 
 --- Open the spotlight list; selecting an entry jumps to its first occurrence.
 ---@return nil
-function M.list()
-  require("spotlight.ui.list").open("jump")
+---@param filter string|nil  # narrow the list to matching spotlights
+function M.list(filter)
+  require("spotlight.ui.list").open("jump", filter)
 end
 
 --- Open the spotlight list in removal mode; selecting an entry removes it.
 ---@return nil
-function M.list_remove()
-  require("spotlight.ui.list").open("remove")
+---@param filter string|nil
+function M.list_remove(filter)
+  require("spotlight.ui.list").open("remove", filter)
 end
 
 --- Open the spotlight list in lock mode; selecting an entry toggles whether
 --- its palette slot is locked (see `M.lock_toggle`).
 ---@return nil
-function M.list_lock()
-  require("spotlight.ui.list").open("lock")
+---@param filter string|nil
+function M.list_lock(filter)
+  require("spotlight.ui.list").open("lock", filter)
 end
 
 --- Open the spotlight list in line mode; selecting an entry toggles whether it
@@ -218,8 +221,9 @@ end
 --- reach a buffer-scoped spotlight's line mode, since that one has no text
 --- identity to name it by.
 ---@return nil
-function M.list_line()
-  require("spotlight.ui.list").open("line")
+---@param filter string|nil
+function M.list_line(filter)
+  require("spotlight.ui.list").open("line", filter)
 end
 
 -- ---------- per-slot lock ----------
@@ -319,8 +323,9 @@ end
 --- Jump to the next spotlight occurrence. A count prefix (`3]k`) jumps that
 --- many occurrences forward, `unimpaired`-style.
 ---@return boolean moved
-function M.next()
-  local moved, err = nav.next(vim.v.count1)
+---@param all_scopes boolean|nil  # ignore `nav.scope`, search every spotlight
+function M.next(all_scopes)
+  local moved, err = nav.next(vim.v.count1, all_scopes)
   if not moved then
     report(err or "no further occurrence", vim.log.levels.WARN)
   end
@@ -330,8 +335,9 @@ end
 --- Jump to the previous spotlight occurrence. A count prefix (`3[k`) jumps
 --- that many occurrences backward, `unimpaired`-style.
 ---@return boolean moved
-function M.prev()
-  local moved, err = nav.prev(vim.v.count1)
+---@param all_scopes boolean|nil  # ignore `nav.scope`, search every spotlight
+function M.prev(all_scopes)
+  local moved, err = nav.prev(vim.v.count1, all_scopes)
   if not moved then
     report(err or "no further occurrence", vim.log.levels.WARN)
   end

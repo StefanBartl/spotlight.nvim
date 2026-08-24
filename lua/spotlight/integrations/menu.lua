@@ -27,7 +27,9 @@ local M = {}
 ---@return Lib.ContextMenu.Item[]
 function M.items()
   local mcfg = require("spotlight.config").get("menu")
-  if mcfg and mcfg.enable == false then return {} end
+  if mcfg and mcfg.enable == false then
+    return {}
+  end
 
   local k = require("spotlight.config").get("keymaps") or {}
   local api = require("spotlight")
@@ -43,8 +45,12 @@ function M.items()
 
   contextmenu.group(
     out,
-    contextmenu.entry(true, "  Toggle whole-line rendering", function() api.line_toggle(nil) end, k.line),
-    contextmenu.entry(true, "  Send matches to quickfix", function() api.quickfix(nil) end, k.quickfix)
+    contextmenu.entry(true, "  Toggle whole-line rendering", function()
+      api.line_toggle(nil)
+    end, k.line),
+    contextmenu.entry(true, "  Send matches to quickfix", function()
+      api.quickfix(nil)
+    end, k.quickfix)
   )
 
   contextmenu.group(

@@ -206,18 +206,18 @@ require("spotlight").setup()
 
 ## Quickstart
 
-Open a log. Put the cursor on a request id and press `<leader>mK`: every other
+Open a log. Put the cursor on a request id and press `<leader>sK`: every other
 occurrence lights up, in the whole buffer and in every window showing it.
-`<leader>mk` (lowercase) does the narrower thing — only *this* occurrence,
+`<leader>sk` (lowercase) does the narrower thing — only *this* occurrence,
 pinned to this exact spot, for when the text is too common to light up
 everywhere.
 
 Point at a PID, press it again: a second color. An IP: a third.
 
 - `]k` / `[k` — walk the occurrences of the token you are on.
-- `<leader>mL` — the list: swatch, token, match count. Pick one to jump to it.
-- `<leader>mq` — every line matching any spotlight, into the quickfix list.
-- `<leader>mC` — clear them all.
+- `<leader>sL` — the list: swatch, token, match count. Pick one to jump to it.
+- `<leader>sq` — every line matching any spotlight, into the quickfix list.
+- `<leader>sC` — clear them all.
 
 Quit and come back tomorrow: they are still there.
 
@@ -231,20 +231,20 @@ whole preset.
 
 | lhs               | mode | action                  | description                                             |
 | ----------------- | ---- | ----------------------- | -------------------------------------------------------- |
-| `<leader>mk`      | n    | `toggle_here`           | Toggle a spotlight on only this occurrence of the token. |
-| `<leader>mk`      | x    | `toggle_here_selection` | Toggle a spotlight on only this occurrence of the selection. |
-| `<leader>mK`      | n    | `toggle`                | Toggle a spotlight on every occurrence of the token.      |
-| `<leader>mK`      | x    | `toggle_selection`      | Toggle a spotlight on every occurrence of the selection.  |
-| `<leader>mL`      | n    | `list`                  | Open the spotlight list.                                  |
-| `<leader>mC`      | n    | `clear`                 | Remove every spotlight.                                   |
-| `<leader>mq`      | n    | `quickfix`               | Matching lines → quickfix.                                |
-| `<leader>mW`      | n    | `line_toggle`           | Toggle whole-line rendering for the token's spotlight.    |
+| `<leader>sk`      | n    | `toggle_here`           | Toggle a spotlight on only this occurrence of the token. |
+| `<leader>sk`      | x    | `toggle_here_selection` | Toggle a spotlight on only this occurrence of the selection. |
+| `<leader>sK`      | n    | `toggle`                | Toggle a spotlight on every occurrence of the token.      |
+| `<leader>sK`      | x    | `toggle_selection`      | Toggle a spotlight on every occurrence of the selection.  |
+| `<leader>sL`      | n    | `list`                  | Open the spotlight list.                                  |
+| `<leader>sC`      | n    | `clear`                 | Remove every spotlight.                                   |
+| `<leader>sq`      | n    | `quickfix`               | Matching lines → quickfix.                                |
+| `<leader>sW`      | n    | `line_toggle`           | Toggle whole-line rendering for the token's spotlight.    |
 | `]k`              | n    | `next`                  | Next occurrence.                                           |
 | `[k`              | n    | `prev`                  | Previous occurrence.                                       |
 
 Note that none of these is a prefix of another: a mapping that is also the prefix
-of a longer one costs a `'timeoutlen'` pause on *every* press. `<leader>mk` and
-`<leader>mK` are fine side by side — `k`/`K` diverge at that very character.
+of a longer one costs a `'timeoutlen'` pause on *every* press. `<leader>sk` and
+`<leader>sK` are fine side by side — `k`/`K` diverge at that very character.
 
 To rebind, either set the config values:
 
@@ -287,9 +287,9 @@ from the same route tree.
 
 | Command                          | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `:Spotlight`                     | Toggle every occurrence of the token under the cursor (same as `<leader>mK`). |
+| `:Spotlight`                     | Toggle every occurrence of the token under the cursor (same as `<leader>sK`). |
 | `:Spotlight toggle [text]`       | Toggle every occurrence: the cursor token, a `'<,'>` range selection, or explicit `text`. |
-| `:Spotlight here`                | Toggle only this occurrence: the cursor token, or a `'<,'>` range selection (same as `<leader>mk`). |
+| `:Spotlight here`                | Toggle only this occurrence: the cursor token, or a `'<,'>` range selection (same as `<leader>sk`). |
 | `:Spotlight add {text}`          | Add a spotlight for the literal `text`.                                |
 | `:Spotlight remove {text}`       | Remove the spotlight matching `text` exactly.                           |
 | `:Spotlight clear`               | Remove every spotlight.                                                 |
@@ -383,12 +383,12 @@ require("spotlight").setup({
 
   keymaps = {
     preset = true,
-    toggle_here = "<leader>mk",  -- only this occurrence
-    toggle = "<leader>mK",       -- every occurrence
-    list = "<leader>mL",
-    clear = "<leader>mC",
-    quickfix = "<leader>mq",
-    line = "<leader>mW",         -- whole-line rendering for one spotlight
+    toggle_here = "<leader>sk",  -- only this occurrence
+    toggle = "<leader>sK",       -- every occurrence
+    list = "<leader>sL",
+    clear = "<leader>sC",
+    quickfix = "<leader>sq",
+    line = "<leader>sW",         -- whole-line rendering for one spotlight
     next = "]k",
     prev = "[k",
   },

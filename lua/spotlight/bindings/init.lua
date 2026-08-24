@@ -15,7 +15,7 @@ function M.setup(cfg)
   require("spotlight.bindings.usrcmds").setup()
   if cfg.keymaps and cfg.keymaps.preset then
     require("spotlight.bindings.keymaps").setup(cfg)
-    -- Label the <leader>m prefix in which-key (no-op if not installed).
+    -- Label the <leader>s prefix in which-key (no-op if not installed).
     require("spotlight.bindings.which_key").setup(cfg)
   end
   require("spotlight.bindings.autocmds").setup(cfg)

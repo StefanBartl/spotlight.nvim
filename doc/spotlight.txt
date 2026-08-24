@@ -120,34 +120,34 @@ should not stop the plugin from loading.
 
 Bound when `keymaps.preset` is true (the default):
 
-    <leader>mk       n  toggle a spotlight on only this occurrence
-    <leader>mk       x  toggle a spotlight on only this occurrence (selection)
-    <leader>mK       n  toggle a spotlight on every occurrence of the token
+    <leader>sk       n  toggle a spotlight on only this occurrence
+    <leader>sk       x  toggle a spotlight on only this occurrence (selection)
+    <leader>sK       n  toggle a spotlight on every occurrence of the token
                         (dot-repeatable, `.` re-resolves the cursor token)
-    <leader>mK       x  toggle a spotlight on every occurrence (selection)
-    <leader>mL       n  open the spotlight list
-    <leader>mC       n  remove every spotlight
-    <leader>mq       n  matching lines -> quickfix
-    <leader>mW       n  toggle whole-line rendering for one spotlight
+    <leader>sK       x  toggle a spotlight on every occurrence (selection)
+    <leader>sL       n  open the spotlight list
+    <leader>sC       n  remove every spotlight
+    <leader>sq       n  matching lines -> quickfix
+    <leader>sW       n  toggle whole-line rendering for one spotlight
     ]k               n  next occurrence (count-repeatable, see |spotlight-nav|)
     [k               n  previous occurrence (count-repeatable, see |spotlight-nav|)
 
-`<leader>mk`/`<leader>mK` are the pair the plugin is organized around: same
+`<leader>sk`/`<leader>sK` are the pair the plugin is organized around: same
 key, lowercase for the narrower action (this occurrence only, pinned to that
 exact spot — see |spotlight-here|), shifted for the wider one (every
 occurrence, everywhere the text appears).
 
 None of these is a prefix of another, deliberately: a mapping that is also the
 prefix of a longer one costs a 'timeoutlen' pause on every press. `k`/`K`
-diverge at that very character, so `<leader>mk` and `<leader>mK` sit fine
+diverge at that very character, so `<leader>sk` and `<leader>sK` sit fine
 side by side.
 
-The normal-mode `<leader>mK` (and the bare `:Spotlight`/`:Spotlight toggle`
+The normal-mode `<leader>sK` (and the bare `:Spotlight`/`:Spotlight toggle`
 command path) is dot-repeatable via `lib.nvim.dotrepeat`: press it on one
 token, move elsewhere, and `.` toggles whatever the cursor is on *then* — it
 re-resolves fresh rather than repeating the original toggle, so `.` on an
 already-lit token removes it, same as pressing the key on it again would.
-There is deliberately no count multiplier (`3<leader>mK` does nothing special)
+There is deliberately no count multiplier (`3<leader>sK` does nothing special)
 — unlike `3]k`, a count on a toggle has no established meaning to borrow.
 
 Each key is its own config value. Setting one to `false` frees that lhs while
@@ -172,9 +172,9 @@ labelled as a "Spotlight" group; per-key descriptions come from each mapping's
 own `desc`, so nothing else is registered.
 
                                                               *spotlight-here*
-`toggle_here` (`<leader>mk`) marks only the exact occurrence the cursor or
+`toggle_here` (`<leader>sk`) marks only the exact occurrence the cursor or
 selection is on — not every occurrence of that text, which is what `toggle`
-(`<leader>mK`) does. Useful when the text is common enough (`error`, `null`, a
+(`<leader>sK`) does. Useful when the text is common enough (`error`, `null`, a
 short reused id) that lighting up every instance would be noise.
 
 The pattern handed to |matchadd()| is anchored to the exact line and column
@@ -194,13 +194,13 @@ out or a window switches away from that buffer. Everything else — the list,
 already operate on the item's pattern generically, and a position-anchored
 one is still just a valid Vim regex to them.
 
-Toggle identity is the position, not the text: pressing `<leader>mk` again on
+Toggle identity is the position, not the text: pressing `<leader>sk` again on
 the *same* occurrence removes it; a different occurrence of the same word is
-an independent spotlight, even alongside a `<leader>mK` spotlight for the
+an independent spotlight, even alongside a `<leader>sK` spotlight for the
 same text.
 
                                                               *spotlight-line*
-`<leader>mW` (or `:Spotlight line [text]`) switches one spotlight from "color
+`<leader>sW` (or `:Spotlight line [text]`) switches one spotlight from "color
 the token" to "color the whole line the token sits on" — for when the unit you
 are actually reading is the log entry, not the id inside it. Per spotlight, so
 one can paint its lines while the others stay on their tokens. It acts on a
@@ -336,12 +336,12 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
       },
       keymaps = {
         preset = true,
-        toggle_here = "<leader>mk",  -- only this occurrence
-        toggle = "<leader>mK",       -- every occurrence
-        list = "<leader>mL",
-        clear = "<leader>mC",
-        quickfix = "<leader>mq",
-        line = "<leader>mW",         -- whole-line rendering
+        toggle_here = "<leader>sk",  -- only this occurrence
+        toggle = "<leader>sK",       -- every occurrence
+        list = "<leader>sL",
+        clear = "<leader>sC",
+        quickfix = "<leader>sq",
+        line = "<leader>sW",         -- whole-line rendering
         next = "]k",
         prev = "[k",
       },
@@ -420,7 +420,7 @@ stops the loop early rather than erroring — a partial jump still counts.
 ==============================================================================
 9. THE LIST                                                    *spotlight-list*
 
-`<leader>mL` or `:Spotlight list` opens a chooser with one row per spotlight:
+`<leader>sL` or `:Spotlight list` opens a chooser with one row per spotlight:
 
     <color swatch>  <token>                       <match count>
 
@@ -487,7 +487,7 @@ cells — Neovim's own sign-text limit — and validated against it at setup().
 ==============================================================================
 11. QUICKFIX FILTER                                        *spotlight-quickfix*
 
-`<leader>mq` or `:Spotlight qf` puts every line of the current buffer that
+`<leader>sq` or `:Spotlight qf` puts every line of the current buffer that
 matches a spotlight into the quickfix list — "show me only the lines with this
 request id". With `:Spotlight qf {text}`, only that one spotlight's lines.
 

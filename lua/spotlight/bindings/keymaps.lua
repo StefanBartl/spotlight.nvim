@@ -9,7 +9,7 @@
 --- `spotlight` module.
 ---
 --- Maps bind directly onto the facade actions — no `<Plug>` indirection.
---- which-key (when installed) labels the `<leader>m` prefix; the per-key labels
+--- which-key (when installed) labels the `<leader>s` prefix; the per-key labels
 --- come from each mapping's own `desc`.
 
 local lib = require("spotlight.util.lib")

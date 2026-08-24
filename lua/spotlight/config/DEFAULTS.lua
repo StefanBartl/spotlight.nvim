@@ -166,23 +166,23 @@ local DEFAULTS = {
   -- ---------- keymaps ----------
   keymaps = {
     preset = true,
-    -- `<leader>mk` / `<leader>mK` are the two keys the concept fixes:
+    -- `<leader>sk` / `<leader>sK` are the two keys the concept fixes:
     -- lowercase marks only the one occurrence under the cursor/selection,
     -- uppercase marks every occurrence of that text in the buffer — same
     -- key, shifted, for the wider action. Neither is a prefix of the other
     -- (`k` and `K` diverge at that very character), and none of the rest sit
-    -- on the `<leader>mk`/`<leader>mK` prefix either: a mapping that is also
+    -- on the `<leader>sk`/`<leader>sK` prefix either: a mapping that is also
     -- the prefix of a longer one costs a 'timeoutlen' pause on every press.
-    toggle_here = "<leader>mk",
-    toggle = "<leader>mK",
-    list = "<leader>mL",
-    clear = "<leader>mC",
-    quickfix = "<leader>mq",
+    toggle_here = "<leader>sk",
+    toggle = "<leader>sK",
+    list = "<leader>sL",
+    clear = "<leader>sC",
+    quickfix = "<leader>sq",
     -- Whole-line rendering for the spotlight the cursor token belongs to.
-    -- Shifted, following the same rule as `mk`/`mK`: the wider, louder action
-    -- takes the shifted key. `<leader>mw` stays free rather than being given
+    -- Shifted, following the same rule as `sk`/`sK`: the wider, louder action
+    -- takes the shifted key. `<leader>sw` stays free rather than being given
     -- the opposite meaning — there is no narrower counterpart to pair it with.
-    line = "<leader>mW",
+    line = "<leader>sW",
     next = "]k",
     prev = "[k",
   },

@@ -223,7 +223,7 @@ function M.debounce(fn, ms)
 end
 
 --- Wrap `fn` so pressing `.` afterwards re-invokes it — used for the
---- normal-mode toggle keymap so `.` after `<leader>mK` re-resolves and
+--- normal-mode toggle keymap so `.` after `<leader>sK` re-resolves and
 --- toggles whatever is under the cursor *now*, not a captured closure over
 --- the original spot. Uses `lib.nvim.dotrepeat.repeatable` if available, else
 --- returns `fn` unchanged (dot-repeat becomes a no-op, not a broken keymap).

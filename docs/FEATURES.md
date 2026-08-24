@@ -14,21 +14,21 @@ lit. `matchadd()` highlights the text everywhere it appears — every window,
 every buffer whose content happens to contain it — which is the point: a
 request id you spotted in `app.log` is the same request id in `worker.log`.
 
-The normal-mode keymap is dot-repeatable: press `<leader>mK` on one token,
+The normal-mode keymap is dot-repeatable: press `<leader>sK` on one token,
 move to another, and `.` toggles that one too — "spotlight this one as well",
 via `lib.nvim.dotrepeat`. Each firing re-resolves the cursor token fresh
 rather than repeating the original action, so `.` on an already-lit token
-removes it, exactly like pressing `<leader>mK` on it again would. The
+removes it, exactly like pressing `<leader>sK` on it again would. The
 `:Spotlight` command path (bare `:Spotlight` and `:Spotlight toggle` with no
 explicit text or range) is dot-repeatable the same way; a count prefix
-(`3<leader>mK`) is deliberately not given a meaning — unlike `3]k`, "toggle
+(`3<leader>sK`) is deliberately not given a meaning — unlike `3]k`, "toggle
 three tokens from one keypress" has no established convention to borrow.
 
 - **Module:** `init.lua` (`M.toggle`), `cursor.lua` (`M.token`),
   `util/lib.lua` (`M.dot_repeatable`, `M.dot_run`)
-- **Keymaps:** `<leader>mK` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
+- **Keymaps:** `<leader>sK` (normal mode) — see [keymaps](../docs/BINDINGS.md#keymaps)
 - **Usercmds:** `:Spotlight`, `:Spotlight toggle [text]` — see [user commands](../docs/BINDINGS.md#user-commands)
-- **Config:** `keymaps.toggle` (default `<leader>mK`)
+- **Config:** `keymaps.toggle` (default `<leader>sK`)
 
 ## Toggle a visual selection
 
@@ -38,12 +38,12 @@ for a multi-line or whole-line (`V`) selection, since a pattern containing a
 newline cannot match anything `matchadd()` sees.
 
 - **Module:** `init.lua` (`M.toggle_selection`), `cursor.lua` (`M.selection`)
-- **Keymaps:** `<leader>mK` (visual mode)
+- **Keymaps:** `<leader>sK` (visual mode)
 - **Usercmds:** `:'<,'>Spotlight toggle`
 
 ## Toggle a spotlight on only this occurrence
 
-The narrower sibling of the action above: `<leader>mk` (lowercase) marks
+The narrower sibling of the action above: `<leader>sk` (lowercase) marks
 *only* the specific occurrence the cursor or selection is on, not every place
 the same text appears. Useful when the text is common (`error`, `null`, a
 short id reused across unrelated log lines) and lighting up every instance
@@ -66,18 +66,18 @@ previous navigation, the quickfix filter, counting — needs no special
 handling at all: they already operate on `item.pattern` generically, and a
 position-anchored pattern is still just a valid Vim regex to them.
 
-Toggle identity is the exact position, not the text — pressing `<leader>mk`
-again on the *same* occurrence removes it, but a second `<leader>mk` on a
+Toggle identity is the exact position, not the text — pressing `<leader>sk`
+again on the *same* occurrence removes it, but a second `<leader>sk` on a
 different occurrence of the same word adds an independent spotlight, even
-while a global spotlight for that same text (from `<leader>mK`) is active.
+while a global spotlight for that same text (from `<leader>sK`) is active.
 
 - **Module:** `init.lua` (`M.toggle_here`, `M.toggle_here_selection`,
   `M.toggle_here_at`), `core/registry.lua` (`M.add_at`, `M.find_at`,
   `M.toggle_at`, `M.remove_for_buffer`), `core/pattern.lua` (`M.build_at`),
   `core/match.lua` (the buffer-scope guard in `add()`, `M.reconcile_window`)
-- **Keymaps:** `<leader>mk` (normal + visual mode)
+- **Keymaps:** `<leader>sk` (normal + visual mode)
 - **Usercmds:** `:Spotlight here`, `:'<,'>Spotlight here`
-- **Config:** `keymaps.toggle_here` (default `<leader>mk`)
+- **Config:** `keymaps.toggle_here` (default `<leader>sk`)
 
 ## Log-aware cursor resolver
 
@@ -169,7 +169,7 @@ from the sum rather than making the whole count unknown — the row then shows
 
 - **Module:** `ui/list.lua`, `core/count.lua` (`M.count`, `M.count_loaded`,
   `M.scannable_buffers`)
-- **Keymaps:** `<leader>mL` (list/jump)
+- **Keymaps:** `<leader>sL` (list/jump)
 - **Usercmds:** `:Spotlight list [jump|remove|lock]`
 - **Config:** `list.count` (default `true`), `list.count_max_lines` (default
   `200000`), `list.count_scope` (default `"buffer"`, or `"loaded"`),
@@ -204,7 +204,7 @@ extmarks with it, so this feature adds zero new autocmds.
 
 ## Whole-line highlighting
 
-`<leader>mW` (or `:Spotlight line [text]`) switches one spotlight from
+`<leader>sW` (or `:Spotlight line [text]`) switches one spotlight from
 "color the token" to "color the whole line the token sits on" — for the case
 where the interesting unit is the log entry, not the id inside it. It is a
 per-spotlight toggle, so one spotlight can paint its lines while the others
@@ -246,10 +246,10 @@ means the same thing after a restart) and shown as `(whole line)` in the list.
 - **Module:** `core/pattern.lua` (`M.line`), `core/match.lua` (the one place it
   is applied), `core/registry.lua` (`M.set_line`), `init.lua` (`M.line_set`,
   `M.line_toggle`, `M.list_line`)
-- **Keymaps:** `<leader>mW` (normal mode) — no visual counterpart: the action
+- **Keymaps:** `<leader>sW` (normal mode) — no visual counterpart: the action
   needs a spotlight that already exists, which a selection cannot resolve to
 - **Usercmds:** `:Spotlight line [text]`, `:Spotlight list line`
-- **Config:** `keymaps.line` (default `<leader>mW`)
+- **Config:** `keymaps.line` (default `<leader>sW`)
 
 ## Next / previous navigation
 
@@ -283,7 +283,7 @@ one buffer's scan reports truncation.
 
 - **Module:** `qf.lua` (`M.fill`, `M.fill_all`), `core/count.lua`
   (`M.matching_lines`, `M.scannable_buffers`)
-- **Keymaps:** `<leader>mq`
+- **Keymaps:** `<leader>sq`
 - **Usercmds:** `:Spotlight qf [text]`, `:Spotlight qf all [text]`
 - **Config:** `quickfix.open` (default `true`), `quickfix.title`,
   `quickfix.max_entries` (default `10000`)
@@ -320,7 +320,7 @@ the round-robin color cursor so the next set starts again from slot 1.
 
 - **Module:** `init.lua` (`M.clear`), `core/registry.lua` (`M.clear`),
   `core/palette.lua` (`M.reset`)
-- **Keymaps:** `<leader>mC`
+- **Keymaps:** `<leader>sC`
 - **Usercmds:** `:Spotlight clear`
 
 ## Per-project persistence
@@ -466,7 +466,7 @@ scripted check.
 
 ## which-key integration
 
-When which-key is installed, the preset's `<leader>m` prefix is labelled as a
+When which-key is installed, the preset's `<leader>s` prefix is labelled as a
 "Spotlight" group; individual key descriptions come from each mapping's own
 `desc`. Entirely soft — nothing breaks if which-key is absent.
 

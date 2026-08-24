@@ -12,9 +12,9 @@ You open a log because something in it is wrong, not because you want to
 admire it. The loop is almost always:
 
 ```
-<leader>mK   " cursor on a request id -> every occurrence -> spotlight 1, color 1
+<leader>sK   " cursor on a request id -> every occurrence -> spotlight 1, color 1
 /next-suspect-thing<CR>
-<leader>mK   " cursor on a PID -> spotlight 2, color 2
+<leader>sK   " cursor on a PID -> spotlight 2, color 2
 ]k ]k ]k     " walk this PID's occurrences
 ```
 
@@ -26,11 +26,11 @@ timestamp two characters to its left), `]k` silently widens to all of them.
 When that matters, retoggle onto the token first, then navigate — the auto
 scope only works from inside the match.
 
-## `<leader>mk` vs `<leader>mK`: one occurrence or every occurrence
+## `<leader>sk` vs `<leader>sK`: one occurrence or every occurrence
 
-The case is the whole decision. Lowercase (`<leader>mk`, `M.toggle_here`)
+The case is the whole decision. Lowercase (`<leader>sk`, `M.toggle_here`)
 pins the highlight to the exact spot the cursor or selection is on and
-nowhere else; uppercase (`<leader>mK`, `M.toggle`) is the "every occurrence"
+nowhere else; uppercase (`<leader>sK`, `M.toggle`) is the "every occurrence"
 behavior above. Reach for lowercase when the text is common enough that
 lighting up every instance would be noise rather than signal — `error`,
 `null`, a short id reused across unrelated lines — and uppercase when you
@@ -38,7 +38,7 @@ actually want to follow one value everywhere it appears, which is the more
 frequent case and the reason it kept `]k`/`[k` navigation, the quickfix
 filter, and persistence all working the way they always have.
 
-A `<leader>mk` spotlight is otherwise a first-class spotlight — same palette,
+A `<leader>sk` spotlight is otherwise a first-class spotlight — same palette,
 same list, same `clear` — with two differences worth knowing before you rely
 on it: it does not survive `:qa` (see the persistence note further down), and
 retoggling it removes *that occurrence*, not a second one of the same text
@@ -46,17 +46,17 @@ elsewhere, even one right next to it.
 
 ## Toggle removes — so pressing the same key twice is not "add again"
 
-`<leader>mK` on an already-spotlighted token *removes* it — `registry.toggle`
-keys on the exact text, not on position (`<leader>mk`'s `registry.toggle_at`
+`<leader>sK` on an already-spotlighted token *removes* it — `registry.toggle`
+keys on the exact text, not on position (`<leader>sk`'s `registry.toggle_at`
 keys on position instead, for the reason above). `.` afterward repeats this:
 it re-resolves whatever the cursor is on *then*, not the original token, so
-`.` on an already-lit token removes it too, the same as pressing `<leader>mK`
+`.` on an already-lit token removes it too, the same as pressing `<leader>sK`
 on it again would — there is no capture of "the token from before". There is
 still no "toggle 3 different tokens" from a single keypress, and a count
-prefix (`3<leader>mK`) is deliberately not given a meaning, unlike `3]k`.
+prefix (`3<leader>sK`) is deliberately not given a meaning, unlike `3]k`.
 
 The corollary: `:Spotlight add error` and later putting the cursor on an
-`error` and pressing `<leader>mK` operate on the *same* spotlight if the text
+`error` and pressing `<leader>sK` operate on the *same* spotlight if the text
 matches exactly — `find_by_text` compares raw text, not the built regex. So
 `:Spotlight add error` (word-bounded, from the cursor path) and a visually
 selected `error` (always literal) would collide as "the same spotlight" only
@@ -67,21 +67,21 @@ case-folded.
 
 ## Selection bypasses the resolver — including word boundaries
 
-`<leader>mK` in visual mode (or `:'<,'>Spotlight toggle`) always takes the
+`<leader>sK` in visual mode (or `:'<,'>Spotlight toggle`) always takes the
 selected bytes literally, with **no** word-boundary wrapping, regardless of
 `match.word_boundaries`. Selecting `err` out of a wall of `error`/`errors`
 text lights up `err` everywhere, including inside `error`. That's correct —
 selecting is an explicit "match exactly this" — but it's the opposite of what
-`<leader>mK` on `err` under the cursor would give you (cursor resolution would
+`<leader>sK` on `err` under the cursor would give you (cursor resolution would
 likely resolve the wider identifier via `<cword>`, get word-bounded, and never
 match `errors` at all). If a spotlight is matching more than you expected,
-check whether it came from a selection. `<leader>mk` (this occurrence only)
+check whether it came from a selection. `<leader>sk` (this occurrence only)
 sidesteps the whole question — it never widens past the one spot you pointed
 at, selection or not.
 
 ## The list's match count is per-buffer by default, not per-project
 
-`<leader>mL` opens the list with a count column — computed, by default,
+`<leader>sL` opens the list with a count column — computed, by default,
 against the **current buffer only**. A spotlight active across `app.log`,
 `worker.log`, and `auth.log` shows its count for whichever one you have open
 when you press the key. This is the honest tradeoff behind the whole plugin
@@ -101,21 +101,21 @@ isn't coming.
 ## `:Spotlight qf` refuses to run from its own output
 
 Filling the quickfix list moves focus to `:copen` and then hands it straight
-back to the buffer you filtered — specifically so that pressing `<leader>mq`
+back to the buffer you filtered — specifically so that pressing `<leader>sq`
 again from muscle memory doesn't try to filter the quickfix window into
 itself. If you deliberately move into the quickfix window and then press
-`<leader>mq` there, it refuses with "run this from the buffer you want to
+`<leader>sq` there, it refuses with "run this from the buffer you want to
 filter, not from the quickfix window" rather than producing a nested,
 confusing second-generation list. Switch back to the log window first.
 
 ## A concrete combo: narrow with `qf`, keep highlighting while you read it
 
 ```
-<leader>mK    " spotlight every occurrence of the request id
-<leader>mq    " every line with it -> quickfix, :copen opens automatically
+<leader>sK    " spotlight every occurrence of the request id
+<leader>sq    " every line with it -> quickfix, :copen opens automatically
 ```
 
-(`<leader>mk`'s "this occurrence only" spotlights work with `:Spotlight qf`
+(`<leader>sk`'s "this occurrence only" spotlights work with `:Spotlight qf`
 too, but there is only ever one line to find — the combo above is what you
 want when the point is folding the log down to every line a value touches.)
 
@@ -141,10 +141,10 @@ switch is per **file**, decided *before* or *while* you spotlight it:
 
 ```
 :Spotlight persist off      " this file's future spotlights: don't persist
-<leader>mK                  " now safe to toggle away
+<leader>sK                  " now safe to toggle away
 ```
 
-`<leader>mk` spotlights ("this occurrence only") never touch disk in the first
+`<leader>sk` spotlights ("this occurrence only") never touch disk in the first
 place, persistence setting or not — see the note in
 [FEATURES.md](FEATURES.md#toggle-a-spotlight-on-only-this-occurrence).
 
@@ -180,11 +180,11 @@ fire itself.
 
 ## Keymap collisions: nothing here is a prefix of anything else
 
-`<leader>mC` (clear-all) and `<leader>mL` (list), not `<leader>mkc`/
-`<leader>mkl`, are deliberate: a binding that's also the prefix of a longer
+`<leader>sC` (clear-all) and `<leader>sL` (list), not `<leader>skc`/
+`<leader>skl`, are deliberate: a binding that's also the prefix of a longer
 one costs a `'timeoutlen'` pause on *every* keystroke that starts with it,
 including the ones that were never going for the longer mapping. Worth
-remembering if you rebind — reusing `<leader>mk` as a prefix for a new custom
+remembering if you rebind — reusing `<leader>sk` as a prefix for a new custom
 action reintroduces that pause on the existing "this occurrence only" toggle.
 
 ## Restart discipline: `VimEnter` loads once, `VimLeavePre` flushes once

@@ -16,36 +16,56 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 
 | lhs | mode | action | config key | desc |
 | --- | --- | --- | --- | --- |
-| `<leader>mk` | n | `toggle_here` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the token under the cursor |
-| `<leader>mk` | x | `toggle_here_selection` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the exact visual selection |
-| `<leader>mK` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the token under the cursor. Dot-repeatable: `.` re-resolves and toggles the token under the cursor at that later moment |
-| `<leader>mK` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the exact visual selection |
-| `<leader>mL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
-| `<leader>mC` | n | `clear` | `keymaps.clear` | Remove every spotlight |
-| `<leader>mq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
-| `<leader>mW` | n | `line_toggle` | `keymaps.line` | Toggle **whole-line** rendering for the spotlight the token under the cursor belongs to. Refused if that token has no spotlight yet — line mode is a property of one that exists |
+| `<leader>sk` | n | `toggle_here` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the token under the cursor |
+| `<leader>sk` | x | `toggle_here_selection` | `keymaps.toggle_here` | Toggle a spotlight on **only this occurrence** of the exact visual selection |
+| `<leader>sK` | n | `toggle` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the token under the cursor. Dot-repeatable: `.` re-resolves and toggles the token under the cursor at that later moment |
+| `<leader>sK` | x | `toggle_selection` | `keymaps.toggle` | Toggle a spotlight on **every occurrence** of the exact visual selection |
+| `<leader>sL` | n | `list` | `keymaps.list` | Open the spotlight list (swatch + token + count) |
+| `<leader>sC` | n | `clear` | `keymaps.clear` | Remove every spotlight |
+| `<leader>sq` | n | `quickfix` | `keymaps.quickfix` | Matching lines → quickfix list |
+| `<leader>sW` | n | `line_toggle` | `keymaps.line` | Toggle **whole-line** rendering for the spotlight the token under the cursor belongs to. Refused if that token has no spotlight yet — line mode is a property of one that exists |
 | `]k` | n | `next` | `keymaps.next` | Jump to the next occurrence. A count prefix repeats the jump that many times (`3]k` = three one-step jumps, `unimpaired`-style), stopping early rather than erroring if fewer occurrences remain |
 | `[k` | n | `prev` | `keymaps.prev` | Jump to the previous occurrence. Same count support as `]k` |
 
-`<leader>mk` / `<leader>mK` are the pair the concept turns on: lowercase marks
+`<leader>sk` / `<leader>sK` are the pair the concept turns on: lowercase marks
 only the one occurrence the cursor/selection is on (a new spotlight, pinned to
 that exact buffer position — see [FEATURES.md](FEATURES.md#toggle-a-spotlight-on-only-this-occurrence)),
 uppercase marks every occurrence of that text, same as before this pair
-existed. `<leader>mL`/`<leader>mC` moved off `<leader>mK`/`<leader>m<C-k>` to
+existed. `<leader>sL`/`<leader>sC` moved off `<leader>sK`/`<leader>s<C-k>` to
 free the shifted key for the "every occurrence" toggle.
 
 **No `lhs` above is a prefix of another.** This is deliberate: a mapping that is
 also the prefix of a longer one costs a `'timeoutlen'` pause on *every* press.
-`<leader>mk` and `<leader>mK` are fine together — `k`/`K` diverge at that very
+`<leader>sk` and `<leader>sK` are fine together — `k`/`K` diverge at that very
 character, neither extends the other.
 
-Collision-checked against the existing `<leader>m*` group in the author's config
-(`<leader>man`, `<leader>ms`, `<leader>mc`, `<leader>mn*`, `<leader>ml*`,
-`<leader>mv*`) and against `]`/`[` motions (`]q`, `]l`, `]d`, `]w`).
+Prefix moved from `<leader>m` to `<leader>s` (2026; the letters -- `k`/`K`/`L`/`C`/`q`/`W`
+-- are unchanged, only the group changed). `<leader>s` is a busier prefix than
+`<leader>m` was: it is already a bare leaf binding in the author's config
+(`search.nvim`'s tabbed UI), and carries real bindings at `sh`, `sM`, `sS`, `sT`
+plus the two-level `sp` (`spf`/`spg`, pickers.nvim) and a filetree.nvim buffer-local
+`sm`. None of those collide with `sk`/`sK`/`sL`/`sC`/`sq`/`sW` -- confirmed against
+every sibling plugin repo directly, not just this cheatsheet folder, since several
+`<leader>s*` mentions elsewhere turned out to be commented-out/aspirational code
+rather than live bindings. Three of the six letters used here have a commented
+(inactive) `snacks.lua` picker slot at the exact same chord: `<leader>sk`
+(`snacks.picker.keymaps()`), `<leader>sq` (`snacks.picker.qflist()`) and
+`<leader>sC` (`snacks.picker.commands()`) -- none currently registered, so there
+is no live conflict, but uncommenting any of those three later would silently
+shadow (or be shadowed by, depending on load order) the matching spotlight
+mapping. `<leader>sw` (lowercase) is a fourth commented slot -- left free here
+for the same reason it always was (no narrower counterpart to pair it with),
+which also keeps that one clear if it is ever activated.
+Also checked against `]`/`[` motions (`]q`, `]l`, `]d`, `]w`).
 
-`<leader>mW` follows the same lowercase/uppercase rule: whole-line rendering is
+Living with the bare `<leader>s` leaf binding: every `<leader>s*` mapping,
+spotlight's included, waits out `'timeoutlen'` before firing, in case the user
+meant the bare prefix. That trade already existed for the ~7 other real
+`<leader>s*` bindings before spotlight moved here; this does not introduce it.
+
+`<leader>sW` follows the same lowercase/uppercase rule: whole-line rendering is
 the wider, louder of the two ways to show a spotlight, so it takes the shifted
-key. `<leader>mw` is deliberately left free rather than given the opposite
+key. `<leader>sw` is deliberately left free rather than given the opposite
 meaning — "token only" is not a separate action, it is this one toggled off.
 
 ### Right-click context menu

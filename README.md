@@ -132,9 +132,7 @@ none at all.
   "StefanBartl/spotlight.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
   event = "VeryLazy",
-  config = function()
-    require("spotlight").setup()
-  end,
+  opts = {},
 }
 ```
 

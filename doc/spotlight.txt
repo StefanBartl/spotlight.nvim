@@ -233,7 +233,7 @@ Two limits follow from |spotlight-matchadd| rather than from oversight:
 
 Works on a "this occurrence only" spotlight (|spotlight-here|) too: `\%l`/`\%c`
 are zero-width assertions, so the leading `.*` walks up to them and the whole
-line of *that* occurrence lights up. Such a spotlight has no text identity, so
+line of that occurrence lights up. Such a spotlight has no text identity, so
 it is reached with `:Spotlight list line` rather than `:Spotlight line {text}`.
 
 The flag is persisted (|spotlight-persist|) — unlike a position pin, it means
@@ -403,7 +403,7 @@ distance travelled, not the size of the file. The search register and 'hlsearch'
 are left untouched; spotlights are a parallel marking system.
 
 With `nav.scope = "auto"` (the default), a cursor sitting inside one spotlight's
-match navigates *that* spotlight only: pressing `]k` on a request id means
+match navigates that spotlight only: pressing `]k` on a request id means
 "follow this id", not "land on the next unrelated PID two lines down". Off any
 match, every spotlight is in scope, searched as one alternation.
 

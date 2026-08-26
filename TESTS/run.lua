@@ -20,6 +20,7 @@ local SPECS = {
   "commands_spec",
   "list_count_scope_spec",
   "qf_all_spec",
+  "qf_buffer_scope_spec",
   "dotrepeat_spec",
   "lock_spec",
   "yank_spec",

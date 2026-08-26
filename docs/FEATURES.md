@@ -61,10 +61,13 @@ It follows that a "this occurrence only" spotlight is **session-only**: it is
 excluded from the persisted snapshot (a line/column pin does not survive a
 restart the way a text pattern does), and it is dropped automatically if its
 buffer is wiped out (`BufWipeout`/`BufDelete`) or a window switches away from
-that buffer (`BufWinEnter` reconciliation). Everything else — the list, next/
-previous navigation, the quickfix filter, counting — needs no special
-handling at all: they already operate on `item.pattern` generically, and a
-position-anchored pattern is still just a valid Vim regex to them.
+that buffer (`BufWinEnter` reconciliation). Whether the rest needs special
+handling depends on which engine reads the pattern: `matchadd()` and
+`search()` evaluate `\%l`/`\%c`, so rendering and next/previous navigation
+need nothing. `vim.regex` does **not** evaluate them — it reports no match on
+every line, the pinned one included — so counting, the quickfix filter and
+the map resolve such an item from the position recorded on it rather than
+scanning for its pattern.
 
 Toggle identity is the exact position, not the text — pressing `<leader>sk`
 again on the *same* occurrence removes it, but a second `<leader>sk` on a

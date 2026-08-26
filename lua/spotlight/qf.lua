@@ -33,11 +33,6 @@ function M.fill(item)
     return 0, "no active spotlights", false
   end
 
-  local pats = {}
-  for i, it in ipairs(items) do
-    pats[i] = it.pattern
-  end
-
   local bufnr = vim.api.nvim_get_current_buf()
   -- Filtering the quickfix list into itself is never what was meant, and it is
   -- easy to trigger: `quickfix.open` puts the cursor in that window, so the
@@ -48,7 +43,7 @@ function M.fill(item)
   end
 
   local opts = config.get("quickfix")
-  local entries, truncated = count.matching_lines(bufnr, pats, opts.max_entries)
+  local entries, truncated = count.matching_lines_for(bufnr, items, opts.max_entries)
 
   local title = item and ("%s: %s"):format(opts.title, item.text) or opts.title
   if truncated then
@@ -90,11 +85,6 @@ function M.fill_all(item)
     return 0, "no active spotlights", false
   end
 
-  local pats = {}
-  for i, it in ipairs(items) do
-    pats[i] = it.pattern
-  end
-
   local bufnr = vim.api.nvim_get_current_buf()
   -- Same rationale as `M.fill`: don't start a scan from inside the very list
   -- it would be filtering into.
@@ -110,7 +100,10 @@ function M.fill_all(item)
       truncated = true
       break
     end
-    local buf_entries, buf_truncated = count.matching_lines(buf, pats, remaining)
+    -- The full `items` list every time: `matching_lines_for` keeps only the
+    -- buffer-scoped ones pinned to `buf`, so a spotlight pinned elsewhere is
+    -- simply skipped for this buffer rather than wrongly reported in it.
+    local buf_entries, buf_truncated = count.matching_lines_for(buf, items, remaining)
     for _, e in ipairs(buf_entries) do
       entries[#entries + 1] = e
     end

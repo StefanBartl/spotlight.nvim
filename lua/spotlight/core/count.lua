@@ -16,6 +16,29 @@ local pattern = require("spotlight.core.pattern")
 
 local M = {}
 
+--- Is `item` a buffer-scoped spotlight pinned to `bufnr`?
+---
+--- **Why every scan in this module has to ask.** A buffer-scoped ("this
+--- occurrence only", `core.registry.add_at`) item's pattern carries `\%l\%c`
+--- position atoms. Those are evaluated by Vim's own search and render
+--- machinery -- `search()`, `matchadd()` -- and by nothing else. In
+--- particular `vim.regex:match_str`, which is the only engine the chunked
+--- scans below can drive, does not evaluate them: it returns nil on *every*
+--- line, the pinned one included. Verified, not assumed.
+---
+--- So such an item cannot be searched for; it can only be looked up. Its
+--- match is a single point already recorded on the item (`buf`/`row1`/`col1`)
+--- at the moment it was created. Left unhandled the effect is quiet and
+--- confusing: the spotlight is plainly visible on screen, because `matchadd`
+--- does understand the pattern, while every count reads 0 and every list
+--- comes back empty.
+---@param item Spotlight.Item
+---@param bufnr integer
+---@return boolean
+local function pinned_to(item, bufnr)
+  return item.scope == "buffer" and item.buf == bufnr
+end
+
 ---@internal
 --- Count matches of `re` in one line. Loops because a request id can appear
 --- twice in the same log line, and `vim.regex:match_str` only reports the first.
@@ -59,6 +82,12 @@ end
 ---@param max_lines integer
 ---@return integer|nil count, integer lines_scanned
 function M.count(bufnr, item, max_lines)
+  if item.scope == "buffer" then
+    -- One known point, or nothing. No scan can answer this -- see `pinned_to`.
+    -- `1` for lines_scanned rather than `0`: the caller distinguishes "we did
+    -- not look" (nil) from a real count, and this is a real count.
+    return pinned_to(item, bufnr) and 1 or 0, 1
+  end
   local total = vim.api.nvim_buf_line_count(bufnr)
   if total > max_lines then
     return nil, 0
@@ -170,6 +199,72 @@ function M.matching_lines(bufnr, patterns, max_entries)
   return out, false
 end
 
+--- `M.matching_lines`'s item-aware counterpart, for `spotlight.qf`.
+---
+--- Same output and same cap as `M.matching_lines`, but takes items rather
+--- than bare patterns, which is what it takes to notice a buffer-scoped one.
+--- Global items still go through `M.matching_lines` unchanged -- one call,
+--- one pass over the buffer; pinned items are resolved from their recorded
+--- position afterwards (see `pinned_to`) and merged in.
+---
+--- "One entry per matching line" holds across the two sources, not only
+--- within the regex pass: a pinned line that a global pattern already
+--- reported is not repeated. The merged result is re-sorted because the
+--- pinned entries are appended after the scan and a quickfix list reads
+--- top-to-bottom like the buffer it came from.
+---@param bufnr integer
+---@param items Spotlight.Item[]
+---@param max_entries integer|nil # Defaults to `quickfix.max_entries`.
+---@return table[] entries # `{ bufnr, lnum, col, text }`, quickfix shaped.
+---@return boolean truncated
+function M.matching_lines_for(bufnr, items, max_entries)
+  if type(max_entries) ~= "number" or max_entries < 1 then
+    max_entries = require("spotlight.config").get("quickfix.max_entries")
+  end
+
+  local patterns = {}
+  ---@type Spotlight.Item[]
+  local pinned = {}
+  for _, it in ipairs(items) do
+    if it.scope == "buffer" then
+      -- A spotlight pinned to another buffer can never match in this one --
+      -- the same guard `core.match` applies when rendering.
+      if pinned_to(it, bufnr) then
+        pinned[#pinned + 1] = it
+      end
+    else
+      patterns[#patterns + 1] = it.pattern
+    end
+  end
+
+  local out, truncated = M.matching_lines(bufnr, patterns, max_entries)
+  if truncated or #pinned == 0 then
+    return out, truncated
+  end
+
+  local have = {}
+  for _, e in ipairs(out) do
+    have[e.lnum] = true
+  end
+
+  for _, it in ipairs(pinned) do
+    if not have[it.row1] then
+      if #out >= max_entries then
+        return out, true
+      end
+      local line = vim.api.nvim_buf_get_lines(bufnr, it.row1 - 1, it.row1, false)[1] or ""
+      out[#out + 1] = { bufnr = bufnr, lnum = it.row1, col = it.col1, text = line }
+      have[it.row1] = true
+    end
+  end
+
+  table.sort(out, function(a, b)
+    return a.lnum < b.lnum
+  end)
+
+  return out, false
+end
+
 --- `M.matching_lines`'s sibling for `spotlight.map`: one shared buffer scan
 --- (not one scan per `item`, which would multiply the cost by however many
 --- spotlights are active) that additionally records *which* item's pattern
@@ -190,14 +285,26 @@ function M.matching_lines_by_item(bufnr, items, max_entries)
 
   ---@type { re: vim.regex, item: Spotlight.Item }[]
   local compiled = {}
+  ---@type Spotlight.Item[]
+  local pinned = {}
   for _, item in ipairs(items) do
-    local re = pattern.compile(item.pattern)
-    if re then
-      compiled[#compiled + 1] = { re = re, item = item }
+    if item.scope == "buffer" then
+      -- Not compilable into a working regex -- see `pinned_to`. Without this
+      -- the map silently loses its sign for every "this occurrence only"
+      -- spotlight, which is the same defect `M.matching_lines_for` exists to
+      -- avoid one module over.
+      if pinned_to(item, bufnr) then
+        pinned[#pinned + 1] = item
+      end
+    else
+      local re = pattern.compile(item.pattern)
+      if re then
+        compiled[#compiled + 1] = { re = re, item = item }
+      end
     end
   end
   local out = {}
-  if #compiled == 0 then
+  if #compiled == 0 and #pinned == 0 then
     return out, false
   end
 
@@ -226,6 +333,26 @@ function M.matching_lines_by_item(bufnr, items, max_entries)
       end
     end
   end
+
+  if #pinned > 0 then
+    local have = {}
+    for _, e in ipairs(out) do
+      have[e.lnum] = true
+    end
+    for _, it in ipairs(pinned) do
+      if not have[it.row1] then
+        if #out >= max_entries then
+          return out, true
+        end
+        out[#out + 1] = { bufnr = bufnr, lnum = it.row1, col = it.col1, item = it }
+        have[it.row1] = true
+      end
+    end
+    table.sort(out, function(a, b)
+      return a.lnum < b.lnum
+    end)
+  end
+
   return out, false
 end
 

@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual re-run. Added after a GitHub Actions incident swallowed the
+  # dispatch for two pushes to main: missed runs are not backfilled, so
+  # without this the only way to get a gate to run over an already-pushed
+  # commit is an empty commit on top of it.
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -16,7 +16,7 @@
 --- `here` is `toggle`'s "this occurrence only" counterpart (see
 --- `spotlight.M.toggle_here`), range-aware on the same terms.
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 
 local M = {}
 

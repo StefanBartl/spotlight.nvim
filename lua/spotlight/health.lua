@@ -12,15 +12,15 @@ local M = {}
 --- The lib.nvim modules spotlight genuinely needs, and what each one is for.
 ---@type { module: string, purpose: string, required: boolean }[]
 local LIB_MODULES = {
-  { module = "lib.nvim.usercmd.composer", purpose = "the :Spotlight verb", required = true },
+  { module = "lib.nvim.bindings.usercmd.composer", purpose = "the :Spotlight verb", required = true },
   { module = "lib.nvim.ui.kit.select", purpose = "the spotlight list", required = true },
   { module = "lib.nvim.store.project", purpose = "per-project persistence", required = false },
   { module = "lib.nvim.debounce", purpose = "coalesced state saves", required = false },
   { module = "lib.nvim.notify", purpose = "namespaced notifications", required = false },
   { module = "lib.nvim.logger", purpose = "structured debug logs (spotlight.debug)", required = false },
-  { module = "lib.nvim.map", purpose = "keymap registration", required = false },
+  { module = "lib.nvim.bindings.keymap", purpose = "the keymap preset", required = true },
   { module = "lib.nvim.dotrepeat", purpose = "`.` repeats the normal-mode toggle", required = false },
-  { module = "lib.nvim.autocmd", purpose = "guarded autocommands", required = false },
+  { module = "lib.nvim.bindings.autocmd", purpose = "guarded autocommands", required = false },
   { module = "lib.nvim.ui.hl", purpose = "highlight definition", required = false },
 }
 
@@ -64,7 +64,11 @@ function M.check()
     end
   end
 
-  if require("spotlight.bindings.which_key").available() then
+  -- which-key needs no registration to show these mappings: it reads the
+  -- keymaps itself and labels them from each mapping's own `desc`. The only
+  -- thing it cannot infer is the group label for the prefix, which the keymap
+  -- spec hands it when which-key is present.
+  if pcall(require, "which-key") then
     ok("which-key detected — the preset's prefix is labelled as a group")
   else
     info("which-key not found — mappings still carry their own descriptions")
@@ -208,7 +212,7 @@ function M.check()
     info(("sets: %d saved (%s)"):format(#set_names, table.concat(summaries, ", ")))
   end
 
-  require("lib.nvim.usercmd.composer").checkhealth("Spotlight")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("Spotlight")
 end
 
 return M

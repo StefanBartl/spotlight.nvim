@@ -2,7 +2,7 @@
 ---@brief Soft, guarded bridge to a handful of `lib.nvim` helpers.
 ---@description
 --- `lib.nvim` is a **required** dependency — the `:Spotlight` verb is built on
---- `lib.nvim.usercmd.composer`, persistence on `lib.nvim.store.project`, the
+--- `lib.nvim.bindings.usercmd.composer`, persistence on `lib.nvim.store.project`, the
 --- list on `lib.nvim.ui.kit.select`. These specific accessors nonetheless stay
 --- soft-guarded, because each has a usable native equivalent: a missing
 --- `lib.nvim.notify` should degrade a message to `vim.notify`, not break the
@@ -13,8 +13,7 @@ local M = {}
 
 ---@internal
 --- Resolve a sub-module of `lib` once, swallowing load errors. Accepts both
---- table modules (`lib.nvim.notify`) and bare function modules (`lib.nvim.map`
---- returns a function, not a table).
+--- table modules (`lib.nvim.notify`) and bare function modules.
 ---@param name string
 ---@return table|function|nil
 local function try_require(name)
@@ -110,28 +109,11 @@ function M.has_logger()
   return logger() ~= false
 end
 
---- Set a keymap. Uses `lib.nvim.map` if available, else `vim.keymap.set`.
----@param mode string|string[]
----@param lhs string
----@param rhs string|function
----@param opts table|nil
----@return nil
-function M.map(mode, lhs, rhs, opts)
-  opts = opts or {}
-  local lib = try_require("lib.nvim.map")
-  if type(lib) == "function" then
-    if pcall(lib, mode, lhs, rhs, opts) then
-      return
-    end
-  end
-  vim.keymap.set(mode, lhs, rhs, opts)
-end
-
 --- Create (and clear) an autocommand group. Returns the group id.
 ---@param name string
 ---@return integer
 function M.augroup(name)
-  local lib = try_require("lib.nvim.autocmd.augroup")
+  local lib = try_require("lib.nvim.bindings.autocmd.augroup")
   if lib and type(lib.create) == "table" and type(lib.create.clear) == "function" then
     local ok, id = pcall(lib.create.clear, name)
     if ok and type(id) == "number" then
@@ -141,14 +123,14 @@ function M.augroup(name)
   return vim.api.nvim_create_augroup(name, { clear = true })
 end
 
---- Register an autocommand. Uses `lib.nvim.autocmd` (which wraps the callback
+--- Register an autocommand. Uses `lib.nvim.bindings.autocmd` (which wraps the callback
 --- in a `pcall` and reports failures) if available, else the native API.
 ---@param event string|string[]
 ---@param callback fun(args: table)
 ---@param opts table
 ---@return nil
 function M.autocmd(event, callback, opts)
-  local lib = try_require("lib.nvim.autocmd")
+  local lib = try_require("lib.nvim.bindings.autocmd")
   if lib and type(lib.create) == "function" then
     if pcall(lib.create, event, callback, opts) then
       return

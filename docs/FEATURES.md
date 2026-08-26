@@ -497,10 +497,14 @@ scripted check.
 ## which-key integration
 
 When which-key is installed, the preset's `<leader>s` prefix is labelled as a
-"Spotlight" group; individual key descriptions come from each mapping's own
-`desc`. Entirely soft — nothing breaks if which-key is absent.
+"Spotlight" group. Individual key descriptions need no registration at all:
+which-key reads the keymaps itself and labels each from its own `desc`, which
+the keymap spec always sets. Only the group label is outside what it can
+infer, so only that is handed over. Entirely soft — nothing breaks if
+which-key is absent.
 
-- **Module:** `bindings/which_key.lua`
+- **Module:** declared in `bindings/keymaps.lua`'s spec (`which_key = { group
+  = "Spotlight" }`), applied by `lib.nvim.bindings.keymap`.
 
 ## Right-click context menu
 

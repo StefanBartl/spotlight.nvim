@@ -4,7 +4,8 @@
 --- The `:Spotlight` verb and the autocommands are always registered — the verb
 --- because it is the complete, keymap-independent interface to every action, and
 --- the autocommands because they are what makes window-local `matchadd()` behave
---- like a global marking system. Only the keymap preset is optional.
+--- like a global marking system. Only the keymap preset is optional -- and even
+--- that is a question for the keymap registry, not for this file.
 
 local M = {}
 
@@ -13,11 +14,14 @@ local M = {}
 ---@return nil
 function M.setup(cfg)
   require("spotlight.bindings.usrcmds").setup()
-  if cfg.keymaps and cfg.keymaps.preset then
-    require("spotlight.bindings.keymaps").setup(cfg)
-    -- Label the <leader>s prefix in which-key (no-op if not installed).
-    require("spotlight.bindings.which_key").setup(cfg)
-  end
+
+  -- Called unconditionally, including with `keymaps.preset = false`: the
+  -- registry honours `preset` itself, and binding nothing is not the same as
+  -- declaring nothing. `:checkhealth` and the generated bindings page ask
+  -- `keymap.registered("spotlight")` what EXISTS, which stays true whether or
+  -- not the preset is on. Labelling the which-key prefix moved in there too.
+  require("spotlight.bindings.keymaps").setup(cfg)
+
   require("spotlight.bindings.autocmds").setup(cfg)
 end
 

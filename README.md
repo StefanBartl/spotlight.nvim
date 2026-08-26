@@ -108,7 +108,7 @@ keymap, usercmd and config references.
 ## Installation
 
 `lib.nvim` is a **required** dependency — the `:Spotlight` verb is built on
-`lib.nvim.usercmd.composer` and the list on `lib.nvim.ui.kit.select`. The
+`lib.nvim.bindings.usercmd.composer` and the list on `lib.nvim.ui.kit.select`. The
 persistence, notify, keymap, autocmd and debounce helpers degrade to native
 equivalents if absent; `:checkhealth spotlight` reports each one separately.
 

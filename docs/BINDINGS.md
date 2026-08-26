@@ -81,7 +81,7 @@ its own menu. See [FEATURES.md](FEATURES.md#right-click-context-menu).
 
 ## User commands
 
-One verb, built with `lib.nvim.usercmd.composer` — `<Tab>` completion, argument
+One verb, built with `lib.nvim.bindings.usercmd.composer` — `<Tab>` completion, argument
 typing and validation come from the route tree.
 
 | Command | Args | Range | Action | Desc |

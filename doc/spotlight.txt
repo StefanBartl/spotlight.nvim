@@ -809,7 +809,7 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 "StefanBartl/lib.nvim" is a required dependency. Two modules are hard
 requirements:
 
-    lib.nvim.usercmd.composer   the :Spotlight verb
+    lib.nvim.bindings.usercmd.composer   the :Spotlight verb
     lib.nvim.ui.kit.select      the spotlight list (rich items)
 
 The rest are used when present and fall back to a native equivalent otherwise,
@@ -820,8 +820,8 @@ breaking a feature:
     lib.nvim.debounce           coalesced state saves
     lib.nvim.notify             namespaced notifications
     lib.nvim.logger             structured debug logs (|spotlight-debug|)
-    lib.nvim.map                keymap registration
-    lib.nvim.autocmd            guarded autocommands
+    lib.nvim.bindings.keymap                keymap registration
+    lib.nvim.bindings.autocmd            guarded autocommands
     lib.nvim.ui.hl              highlight definition
     lib.nvim.cross.platform     Windows path-case detection
     lib.nvim.dotrepeat          `.` repeats the normal-mode toggle

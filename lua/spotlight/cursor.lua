@@ -134,7 +134,15 @@ function M.token(bufnr)
       len = #line,
       limit = opts.max_line_len,
     })
-    local cword = vim.fn.expand("<cword>")
+    -- pcall, because `expand("<cword>")` does not return "" when there is no
+    -- word under the cursor -- it raises E348. The guard below reads as if it
+    -- did, and on a line past `max_line_len` with the cursor on whitespace
+    -- that error escaped the keymap callback as a bare "E348: No string under
+    -- cursor", with nothing pointing at this plugin.
+    local got, cword = pcall(vim.fn.expand, "<cword>")
+    if not got then
+      cword = ""
+    end
     if opts.fallback_cword and type(cword) == "string" and cword ~= "" then
       local col1 = plain_spanning(line, col0, cword)
       if not col1 then
@@ -157,7 +165,15 @@ function M.token(bufnr)
   end
 
   if opts.fallback_cword then
-    local cword = vim.fn.expand("<cword>")
+    -- Same pcall as the long-line path above, and this is the one that gets
+    -- hit in ordinary use: no pattern matched, the cursor sits on whitespace
+    -- or an empty line, and `expand("<cword>")` raises E348 instead of
+    -- returning "". Nothing here caught it, so the error surfaced from
+    -- whichever keymap called `cursor.token()` -- naming Vim, not spotlight.
+    local got, cword = pcall(vim.fn.expand, "<cword>")
+    if not got then
+      cword = ""
+    end
     if type(cword) == "string" and cword ~= "" then
       lib.debug("cursor: no pattern matched, fell back to <cword>", { text = cword, kind = kind_of(cword) })
       local col1 = plain_spanning(line, col0, cword)

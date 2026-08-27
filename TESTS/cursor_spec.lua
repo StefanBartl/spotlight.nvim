@@ -69,6 +69,22 @@ function M.run()
   t.eq("pos/word: resolves the second occurrence's text", tok_w.text, "error")
   t.eq("pos/word: column points at the second occurrence, not the first", pos_w.col1, ("error and "):len() + 1)
 
+  -- ---------- nothing under the cursor ----------
+  -- `expand("<cword>")` does not return "" there, it raises E348. Both
+  -- fallback paths in cursor.lua read as if it returned "", so the error used
+  -- to escape whichever keymap called token() -- and it named Vim, not this
+  -- plugin, which is the worst kind of report to receive.
+  t.fixture({ "" })
+  local empty_ok, empty_tok = pcall(cursor.token)
+  t.ok("empty line: token() does not raise", empty_ok)
+  t.eq("empty line: nothing resolved", empty_ok and empty_tok or nil, nil)
+
+  t.fixture({ "        " })
+  vim.api.nvim_win_set_cursor(0, { 1, 3 })
+  local ws_ok, ws_tok = pcall(cursor.token)
+  t.ok("whitespace-only line: token() does not raise", ws_ok)
+  t.eq("whitespace-only line: nothing resolved", ws_ok and ws_tok or nil, nil)
+
   local sel_tok, sel_err, sel_pos = cursor.selection()
   t.eq("pos/selection: outside visual mode there is no position either", sel_pos, nil)
   t.eq("pos/selection: outside visual mode there is no token", sel_tok, nil)

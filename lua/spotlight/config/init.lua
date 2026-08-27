@@ -5,10 +5,16 @@
 --- handful of values that can break rendering or matching if wrong, and exposes
 --- a single `get(path)` accessor (dot-separated) so no other module ever reads a
 --- raw options table. This keeps fallback semantics in one place.
+---
+--- The merge and the dot-path lookup are `lib.lua.config`'s: this module used
+--- to carry its own byte-identical copies of both (cascade.nvim had the other
+--- copy) — see that lib module's doc comment for why the merge isn't
+--- `lib.lua.tables.core.deep_merge`.
 
 require("spotlight.@types")
 
 local DEFAULTS = require("spotlight.config.DEFAULTS")
+local lib_config = require("lib.lua.config")
 
 ---@class Spotlight.ConfigModule
 ---@field options Spotlight.Config
@@ -21,29 +27,6 @@ M.options = DEFAULTS
 --- to its default, not stop the plugin from loading.
 ---@type string[]
 M.issues = {}
-
----@internal
---- Recursively merge `override` into a copy of `base`. Arrays (list-like
---- tables) are replaced wholesale rather than concatenated, so a user can fully
---- redefine e.g. `cursor.patterns` or `palette.colors` without inheriting the
---- defaults they meant to drop.
----@param base table
----@param override table
----@return table
-local function deep_merge(base, override)
-  local out = {}
-  for k, v in pairs(base) do
-    out[k] = v
-  end
-  for k, v in pairs(override) do
-    if type(v) == "table" and type(out[k]) == "table" and not vim.islist(v) then
-      out[k] = deep_merge(out[k], v)
-    else
-      out[k] = v
-    end
-  end
-  return out
-end
 
 ---@internal
 --- Whether `c` is a usable palette entry (both channels present, `#rrggbb`).
@@ -217,7 +200,7 @@ end
 ---@return nil
 function M.setup(opts)
   M.issues = {}
-  M.options = deep_merge(DEFAULTS, type(opts) == "table" and opts or {})
+  M.options = lib_config.deep_merge(DEFAULTS, type(opts) == "table" and opts or {})
   normalize_palette(M.options, "colors")
   normalize_palette(M.options, "colors_light")
   normalize_cursor_patterns(M.options)
@@ -232,17 +215,7 @@ end
 ---@param path string
 ---@return any
 function M.get(path)
-  if type(path) ~= "string" then
-    return nil
-  end
-  local node = M.options
-  for key in path:gmatch("[^.]+") do
-    if type(node) ~= "table" then
-      return nil
-    end
-    node = node[key]
-  end
-  return node
+  return lib_config.get(M.options, path)
 end
 
 return M

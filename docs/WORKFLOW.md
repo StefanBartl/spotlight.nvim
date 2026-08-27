@@ -162,6 +162,19 @@ argument) tells you what actually applies to the current file and why —
 worth running once when you're not sure whether a global default or a
 per-file override is in effect, rather than guessing from memory.
 
+## Switching investigations: `:Spotlight sets` instead of `clear` + re-toggle
+
+Juggling two unrelated things in the same log — yesterday's timeout
+investigation, today's new one — used to mean either leaving yesterday's
+spotlights lit as noise or `:Spotlight clear`-ing them and losing the setup.
+`:Spotlight sets save {name}` snapshots the currently active spotlights under
+a name; `:Spotlight sets switch {name}` clears the active set and restores a
+saved one. It's exclusive, not additive — closer to swapping a saved
+workspace than to tagging — so switching *to* a set you haven't saved
+anything under is a refused no-op, not data loss. `sets delete`/`sets list`
+round it out; `switch`/`delete` tab-complete from the names that already
+exist.
+
 ## `:Spotlight refresh` is the "something looks wrong" escape hatch
 
 Two different situations both look like "the highlighting broke," and

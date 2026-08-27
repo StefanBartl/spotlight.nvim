@@ -136,6 +136,7 @@ function M.autocmd(event, callback, opts)
       return
     end
   end
+  -- lib-docs: fallback
   vim.api.nvim_create_autocmd(event, {
     group = opts.group,
     pattern = opts.pattern,

@@ -14,6 +14,7 @@
 local config = require("spotlight.config")
 local count = require("spotlight.core.count")
 local registry = require("spotlight.core.registry")
+local list = require("lib.nvim.ui.list")
 
 local M = {}
 
@@ -49,22 +50,20 @@ function M.fill(item)
   if truncated then
     title = ("%s (first %d)"):format(title, opts.max_entries)
   end
-  vim.fn.setqflist({}, " ", { title = title, items = entries })
+  -- `focus = "source"` hands the cursor back to where the filter was run from:
+  -- the list is there to be read alongside the log, and leaving the cursor in
+  -- it would also make the next `:Spotlight qf` hit the guard above.
+  -- `"auto"` sets the list either way -- an empty result clears a stale one --
+  -- but does not open a window on nothing.
+  local n = list.qf(entries, title, {
+    open = opts.open and "auto" or false,
+    focus = "source",
+  })
 
-  if #entries == 0 then
+  if n == 0 then
     return 0, "no matching lines in this buffer", false
   end
-  if opts.open then
-    local from = vim.api.nvim_get_current_win()
-    vim.cmd("copen")
-    -- Hand focus back to where the filter was run from: the list is there to be
-    -- read alongside the log, and leaving the cursor in it would also make the
-    -- next `:Spotlight qf` hit the guard above.
-    if vim.api.nvim_win_is_valid(from) then
-      pcall(vim.api.nvim_set_current_win, from)
-    end
-  end
-  return #entries, nil, truncated
+  return n, nil, truncated
 end
 
 --- `M.fill`'s multi-buffer counterpart: every line matching in every loaded,
@@ -118,19 +117,15 @@ function M.fill_all(item)
   if truncated then
     title = ("%s (first %d)"):format(title, opts.max_entries)
   end
-  vim.fn.setqflist({}, " ", { title = title, items = entries })
+  local n = list.qf(entries, title, {
+    open = opts.open and "auto" or false,
+    focus = "source",
+  })
 
-  if #entries == 0 then
+  if n == 0 then
     return 0, "no matching lines in any loaded buffer", false
   end
-  if opts.open then
-    local from = vim.api.nvim_get_current_win()
-    vim.cmd("copen")
-    if vim.api.nvim_win_is_valid(from) then
-      pcall(vim.api.nvim_set_current_win, from)
-    end
-  end
-  return #entries, nil, truncated
+  return n, nil, truncated
 end
 
 return M

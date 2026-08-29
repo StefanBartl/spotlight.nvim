@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- Several cases deliberately hand in malformed stored items -- a missing
+-- `text`, a wrong type, a non-table -- to check that restore drops them.
 -- TESTS/registry_spec.lua
 -- The registry: toggle semantics, palette round-robin, the `match.max` guard,
 -- the snapshot/restore round trip, and that matchadd() actually lands in every

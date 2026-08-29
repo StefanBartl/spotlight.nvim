@@ -87,18 +87,18 @@
 ---@alias Spotlight.NavScope "auto"|"all"
 
 ---@class Spotlight.Config
----@field palette Spotlight.PaletteOpts
----@field match Spotlight.MatchOpts
----@field cursor Spotlight.CursorOpts
----@field nav Spotlight.NavOpts
----@field list Spotlight.ListOpts
----@field map Spotlight.MapOpts
----@field quickfix Spotlight.QuickfixOpts
----@field persist Spotlight.PersistOpts
----@field keymaps Spotlight.KeymapOpts
----@field menu Spotlight.MenuOpts # `spotlight.integrations.menu` (nvzone/menu context-menu contribution) opt-out.
----@field notify boolean # Report added/removed/cleared spotlights via `lib.nvim.notify`.
----@field debug boolean # Structured debug logging at the decision points, via `lib.nvim.logger`.
+---@field palette? Spotlight.PaletteOpts
+---@field match? Spotlight.MatchOpts
+---@field cursor? Spotlight.CursorOpts
+---@field nav? Spotlight.NavOpts
+---@field list? Spotlight.ListOpts
+---@field map? Spotlight.MapOpts
+---@field quickfix? Spotlight.QuickfixOpts
+---@field persist? Spotlight.PersistOpts
+---@field keymaps? Spotlight.KeymapOpts
+---@field menu? Spotlight.MenuOpts # `spotlight.integrations.menu` (nvzone/menu context-menu contribution) opt-out.
+---@field notify? boolean # Report added/removed/cleared spotlights via `lib.nvim.notify`.
+---@field debug? boolean # Structured debug logging at the decision points, via `lib.nvim.logger`.
 
 --- Opt-out for `spotlight.integrations.menu`. spotlight.nvim has no
 --- nvzone/menu dependency itself; this only gates whether `M.items()`/
@@ -110,31 +110,31 @@
 --- guaranteed in light and dark themes alike, rather than inheriting an
 --- unknown foreground from the colorscheme.
 ---@class Spotlight.PaletteOpts
----@field colors Spotlight.Color[]        # Used when `&background == "dark"`.
----@field colors_light Spotlight.Color[]  # Used when `&background == "light"`.
----@field bold boolean                    # Render matches bold.
----@field reapply_on_colorscheme boolean  # Redefine the groups after `:colorscheme`.
+---@field colors? Spotlight.Color[]        # Used when `&background == "dark"`.
+---@field colors_light? Spotlight.Color[]  # Used when `&background == "light"`.
+---@field bold? boolean                    # Render matches bold.
+---@field reapply_on_colorscheme? boolean  # Redefine the groups after `:colorscheme`.
 
 ---@class Spotlight.Color
 ---@field bg string # "#rrggbb"
 ---@field fg string # "#rrggbb"
 
 ---@class Spotlight.MatchOpts
----@field priority integer     # |matchadd()| priority. >0 renders above 'hlsearch'.
----@field ignore_case boolean  # false pins `\C` (case-sensitive) regardless of 'ignorecase'.
----@field word_boundaries boolean # Wrap `word`-kind tokens in `\<`/`\>`.
----@field max integer          # Refuse to add more than this many spotlights at once.
----@field max_text_len integer # Longest token accepted, in bytes. Bounds the pattern handed to `matchadd()`.
+---@field priority? integer     # |matchadd()| priority. >0 renders above 'hlsearch'.
+---@field ignore_case? boolean  # false pins `\C` (case-sensitive) regardless of 'ignorecase'.
+---@field word_boundaries? boolean # Wrap `word`-kind tokens in `\<`/`\>`.
+---@field max? integer          # Refuse to add more than this many spotlights at once.
+---@field max_text_len? integer # Longest token accepted, in bytes. Bounds the pattern handed to `matchadd()`.
 
 ---@class Spotlight.CursorOpts
----@field patterns string[] # Lua patterns, highest priority first; first one whose match spans the cursor wins.
----@field fallback_cword boolean # Fall back to `<cword>` when no pattern matches.
----@field max_line_len integer # Above this line length, skip the pattern scan and use `<cword>` directly.
+---@field patterns? string[] # Lua patterns, highest priority first; first one whose match spans the cursor wins.
+---@field fallback_cword? boolean # Fall back to `<cword>` when no pattern matches.
+---@field max_line_len? integer # Above this line length, skip the pattern scan and use `<cword>` directly.
 
 ---@class Spotlight.NavOpts
----@field scope Spotlight.NavScope # "auto": the spotlight under the cursor if there is one, else all.
----@field wrap boolean             # Wrap around the end of the buffer.
----@field center boolean           # `zz` after jumping.
+---@field scope? Spotlight.NavScope # "auto": the spotlight under the cursor if there is one, else all.
+---@field wrap? boolean             # Wrap around the end of the buffer.
+---@field center? boolean           # `zz` after jumping.
 
 --- "buffer": count only in the buffer the list was opened from. "loaded": sum
 --- matches across every loaded buffer (`vim.api.nvim_list_bufs()`, ordinary
@@ -143,38 +143,38 @@
 ---@alias Spotlight.ListCountScope "buffer"|"loaded"
 
 ---@class Spotlight.ListOpts
----@field count boolean          # Compute match counts when the list opens (on demand, never live).
----@field count_max_lines integer # Skip counting above this buffer line count; the list shows "?" instead.
----@field count_scope Spotlight.ListCountScope # "buffer" (default) or "loaded" — see `Spotlight.ListCountScope`.
----@field swatch string          # Text painted in the spotlight's own colors as the row's color chip.
+---@field count? boolean          # Compute match counts when the list opens (on demand, never live).
+---@field count_max_lines? integer # Skip counting above this buffer line count; the list shows "?" instead.
+---@field count_scope? Spotlight.ListCountScope # "buffer" (default) or "loaded" — see `Spotlight.ListCountScope`.
+---@field swatch? string          # Text painted in the spotlight's own colors as the row's color chip.
 
 --- One-shot, opt-in occurrence density: `:Spotlight map` places a sign per
 --- matching line in the current buffer's sign column, painted in the
 --- matching spotlight's own group. Never live — see `spotlight-map`.
 ---@class Spotlight.MapOpts
----@field sign_text string  # ≤2 display cells (Neovim's own sign-text limit).
----@field max_entries integer # Stop after this many marks; independent of `quickfix.max_entries`.
+---@field sign_text? string  # ≤2 display cells (Neovim's own sign-text limit).
+---@field max_entries? integer # Stop after this many marks; independent of `quickfix.max_entries`.
 
 ---@class Spotlight.QuickfixOpts
----@field open boolean  # `:copen` after filling the list.
----@field title string  # Quickfix list title.
----@field max_entries integer # Stop after this many matching lines; the title says it was truncated.
+---@field open? boolean  # `:copen` after filling the list.
+---@field title? string  # Quickfix list title.
+---@field max_entries? integer # Stop after this many matching lines; the title says it was truncated.
 
 ---@class Spotlight.PersistOpts
----@field enable boolean   # Master switch for the whole persistence layer.
----@field default boolean  # Per-file default; `:Spotlight persist off` overrides it for one file.
----@field debounce_ms integer # Coalescing window for the debounced save.
+---@field enable? boolean   # Master switch for the whole persistence layer.
+---@field default? boolean  # Per-file default; `:Spotlight persist off` overrides it for one file.
+---@field debounce_ms? integer # Coalescing window for the debounced save.
 
 ---@class Spotlight.KeymapOpts
----@field preset boolean               # Bind the default keys.
----@field toggle_here string|false     # Normal + visual: toggle only this occurrence of the token/selection.
----@field toggle string|false          # Normal + visual: toggle every occurrence of the token/selection.
----@field list string|false            # Open the spotlight list.
----@field clear string|false           # Remove every spotlight.
----@field quickfix string|false        # Send all matching lines to the quickfix list.
----@field line string|false            # Toggle whole-line rendering for the spotlight under the cursor.
----@field next string|false            # Jump to the next occurrence.
----@field prev string|false            # Jump to the previous occurrence.
+---@field preset? boolean               # Bind the default keys.
+---@field toggle_here? string|false     # Normal + visual: toggle only this occurrence of the token/selection.
+---@field toggle? string|false          # Normal + visual: toggle every occurrence of the token/selection.
+---@field list? string|false            # Open the spotlight list.
+---@field clear? string|false           # Remove every spotlight.
+---@field quickfix? string|false        # Send all matching lines to the quickfix list.
+---@field line? string|false            # Toggle whole-line rendering for the spotlight under the cursor.
+---@field next? string|false            # Jump to the next occurrence.
+---@field prev? string|false            # Jump to the previous occurrence.
 
 -- Annotations only — no runtime values. `require("spotlight.@types")` exists so
 -- lua_ls loads this file when it resolves the require, which is what makes the

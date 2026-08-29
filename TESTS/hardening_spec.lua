@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- Several cases deliberately hand in malformed stored items -- a missing
+-- `text`, a wrong type, a non-table -- to check that restore drops them.
 -- TESTS/hardening_spec.lua
 -- The guards from the security pass. Each one exists because an input this
 -- plugin genuinely does not control — a restored snapshot, a visual selection

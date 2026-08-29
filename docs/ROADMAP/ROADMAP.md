@@ -1,4 +1,0 @@
-# spotlight.nvim — Roadmap
-
----
-

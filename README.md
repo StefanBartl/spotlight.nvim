@@ -630,13 +630,6 @@ Neovim, no test framework to install.
 
 ## Roadmap
 
-See [`docs/ROADMAP/ROADMAP.md`](docs/ROADMAP/ROADMAP.md), and the three
-checklist walkthroughs beside it —
-[Arch&Coding](docs/ROADMAP/Arch%26Coding.md),
-[Zentral-Prinzipien](docs/ROADMAP/Zentral-Prinzipien.md),
-[Checklist](docs/ROADMAP/Checklist.md) — which record what was assessed and
-*declined*, with the trigger for revisiting each.
-
 Deliberately *not*
 planned, and why: a regex mode, per-buffer or per-filetype scoping, automatic
 rules (`ERROR`/`WARN` highlighted for you), and set export/import. Each is

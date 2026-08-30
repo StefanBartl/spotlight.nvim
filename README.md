@@ -639,3 +639,7 @@ planned, and why: a regex mode, per-buffer or per-filetype scoping, automatic
 rules (`ERROR`/`WARN` highlighted for you), and set export/import. Each is
 plausible and each would double the command surface; they go in when a real need
 shows up, not before.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

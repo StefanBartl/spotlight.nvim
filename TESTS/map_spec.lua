@@ -1,3 +1,7 @@
+-- Test code: when something here comes back nil -- a `pcall(require, ...)`,
+-- a fixture read, a uv handle -- this file must crash and name it. The nil
+-- guards LuaLS asks for below would hide the very failure it exists to report.
+---@diagnostic disable: need-check-nil
 -- TESTS/map_spec.lua
 -- Occurrence density (sign column): `map.show`/`map.clear`, one-shot and
 -- never live — rendering itself is never asserted (matches the suite's own

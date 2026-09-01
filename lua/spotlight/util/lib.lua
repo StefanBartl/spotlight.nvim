@@ -189,6 +189,14 @@ function M.debounce(fn, ms)
       else
         timer = uv.new_timer()
       end
+      if not timer then
+        -- Out of libuv handles. Debouncing is the nicety, running the callback
+        -- is the contract, so drop the delay rather than the call.
+        vim.schedule(function()
+          fn(unpack(args, 1, n))
+        end)
+        return
+      end
       timer:start(ms, 0, function()
         vim.schedule(function()
           fn(unpack(args, 1, n))

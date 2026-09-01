@@ -45,6 +45,9 @@ function M.run()
   -- running as this user, and hand-editable. It is the plugin's only external
   -- input.
   registry.clear()
+  -- Every entry below is wrong on purpose -- this is the store as a hand-edited
+  -- file can present it, and surviving it is the behaviour under test.
+  ---@diagnostic disable: assign-type-mismatch
   local restored = registry.restore({
     { text = too_long, slot = 1, kind = "literal" }, -- over the length cap
     { text = "fine", slot = 1, kind = "literal" },
@@ -53,6 +56,7 @@ function M.run()
     "not a table", -- wrong shape entirely
     { slot = 1, kind = "literal" }, -- no text at all
   })
+  ---@diagnostic enable: assign-type-mismatch
   t.eq("snapshot: only the one valid entry survives", restored, 1)
   t.eq("snapshot: and it is the right one", registry.all()[1].text, "fine")
 
@@ -139,15 +143,20 @@ function M.run()
   t.eq("swatch: the newline is replaced, not passed through", config.get("list.swatch"), "a b")
   t.ok("swatch: and the substitution is reported", #config.issues >= 1)
 
+  -- A non-string swatch is the input the fallback exists for.
+  ---@diagnostic disable-next-line: assign-type-mismatch
   config.setup({ list = { swatch = 42 } })
   t.eq("swatch: a non-string falls back to the default", config.get("list.swatch"), "  ")
 
   -- ---------- the new numeric guards validate ----------
+  -- Zero, negative and non-numeric: one invalid value per guard under test.
+  ---@diagnostic disable: assign-type-mismatch
   config.setup({
     match = { max_text_len = 0 },
     cursor = { max_line_len = -1 },
     quickfix = { max_entries = "lots" },
   })
+  ---@diagnostic enable: assign-type-mismatch
   t.eq("validate: a zero max_text_len falls back", config.get("match.max_text_len"), 512)
   t.eq("validate: a negative max_line_len falls back", config.get("cursor.max_line_len"), 8192)
   t.eq("validate: a non-numeric max_entries falls back", config.get("quickfix.max_entries"), 10000)

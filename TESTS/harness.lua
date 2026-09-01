@@ -59,9 +59,11 @@ function M.neq(name, got, want)
   return false
 end
 
---- Assert `haystack` contains the literal substring `needle`.
+--- Assert `haystack` contains the literal substring `needle`. A non-string
+--- `haystack` (typically a `string|nil` error that was never set) fails the
+--- assertion rather than raising.
 ---@param name string
----@param haystack string
+---@param haystack string|nil
 ---@param needle string
 ---@return boolean
 function M.contains(name, haystack, needle)

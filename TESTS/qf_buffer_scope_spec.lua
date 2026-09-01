@@ -41,7 +41,8 @@ function M.run()
   local bufB = real_buffer({ "another buffer" })
   vim.api.nvim_set_current_buf(bufA)
 
-  local item = registry.add_at({ text = "foo", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 7 })
+  local item =
+    assert(registry.add_at({ text = "foo", kind = "literal" }, { buf = bufA, row1 = 1, col1 = 7 }), "add_at on a fresh registry")
   t.eq("add_at: pattern is position-anchored", item.pattern, "\\C\\%1l\\%7c\\Vfoo")
 
   t.eq("count.count: 1 in the buffer it is pinned to", count.count(bufA, item, 200000), 1)

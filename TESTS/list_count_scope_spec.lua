@@ -74,6 +74,7 @@ function M.run()
   vim.cmd("bwipeout! " .. bufD)
 
   -- ---------- config validation ----------
+  ---@diagnostic disable-next-line: assign-type-mismatch
   config.setup({ list = { count_scope = "bogus" } })
   t.eq("config: invalid count_scope falls back to 'buffer'", config.get("list.count_scope"), "buffer")
   local reported = false

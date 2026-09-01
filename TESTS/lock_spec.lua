@@ -96,6 +96,7 @@ function M.run()
 
   -- A malformed stored value must not restore as truthy.
   registry.clear()
+  ---@diagnostic disable-next-line: assign-type-mismatch
   registry.restore({ { text = "bad-lock", slot = 1, kind = "literal", locked = "yes" } })
   t.eq("restore: a non-boolean locked field restores as unlocked, not truthy", registry.all()[1].locked, nil)
 

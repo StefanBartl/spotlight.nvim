@@ -60,7 +60,7 @@ local saver = nil
 ---@return table|nil
 local function store()
   local mod = lib.try_require("lib.nvim.store.project")
-  if mod and type(mod.save) == "function" and type(mod.load) == "function" then
+  if type(mod) == "table" and type(mod.save) == "function" and type(mod.load) == "function" then
     return mod
   end
   return nil

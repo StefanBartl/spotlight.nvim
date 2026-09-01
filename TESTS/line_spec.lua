@@ -74,7 +74,8 @@ function M.run()
   -- The invariant the whole design rests on: counting still counts
   -- occurrences, not matching lines. Fixture has "err" three times (line 1
   -- once, line 4 twice) — "errors" on line 2 is excluded by the word boundary.
-  t.eq("count: unchanged by line mode (occurrences, not lines)", (count.count(0, registry.get(item.id), 10000)), 3)
+  local stored = assert(registry.get(item.id), "the item is still registered")
+  t.eq("count: unchanged by line mode (occurrences, not lines)", (count.count(0, stored, 10000)), 3)
 
   local lines = count.matching_lines(0, { registry.get(item.id).pattern }, 100)
   t.eq("quickfix scan: still reports one entry per matching line", #lines, 2)
@@ -116,6 +117,7 @@ function M.run()
   t.eq("restore: line survives the round trip", registry.all()[1].line, true)
 
   registry.clear()
+  ---@diagnostic disable-next-line: assign-type-mismatch
   registry.restore({ { text = "bad-line", slot = 1, kind = "literal", line = "yes" } })
   t.eq("restore: a non-boolean line field restores as off, not truthy", registry.all()[1].line, nil)
 

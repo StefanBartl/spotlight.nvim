@@ -32,6 +32,7 @@ local SPECS = {
 
 -- Notifications are outcome reports, not test output: silence them so a failure
 -- is visible in the noise a full suite would otherwise produce.
+---@diagnostic disable-next-line: duplicate-set-field
 vim.notify = function() end
 
 for _, name in ipairs(SPECS) do

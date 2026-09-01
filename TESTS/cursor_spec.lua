@@ -37,7 +37,7 @@ function M.run()
 
   -- ---------- shape-based kind ----------
   t.ok("word: cursor placed", t.cursor_on(2, "error here"))
-  local word = cursor.token()
+  local word = assert(cursor.token(), "cursor is on a word")
   t.eq("word: plain identifier resolved", word.text, "error")
   t.eq("word: all-word-chars classified as word", word.kind, "word")
 

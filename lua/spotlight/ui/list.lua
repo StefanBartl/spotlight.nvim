@@ -60,18 +60,6 @@ local function row(item, n, swatch, partial)
   }
 end
 
---- Open the list. Selecting an entry jumps to its first occurrence; `<Tab>` is
---- not used for removal because kit's chooser reserves it for multi-select —
---- instead the list is re-opened in "remove" mode via `:Spotlight list remove`
---- (and by `mode = "remove"` here). `"lock"` toggles the selected entry's
---- `Spotlight.Item.locked` flag instead of jumping or removing; `"line"` does
---- the same for `Spotlight.Item.line`, and is the only way to reach a
---- buffer-scoped spotlight's line mode — that one has no text identity for
---- `:Spotlight line {text}` to name it by.
----@param mode "jump"|"remove"|"lock"|"line"|nil # Defaults to "jump".
----@return nil
----@param mode string|nil
----@param filter string|nil  # narrow the list before showing it; see `matches`
 ---Spotlights matching `query`.
 ---
 --- Matches the palette slot (`3`), the highlight group (`Spotlight3`), the
@@ -110,6 +98,17 @@ function M.filter(items, query)
   return out
 end
 
+--- Open the list. Selecting an entry jumps to its first occurrence; `<Tab>` is
+--- not used for removal because kit's chooser reserves it for multi-select —
+--- instead the list is re-opened in "remove" mode via `:Spotlight list remove`
+--- (and by `mode = "remove"` here). `"lock"` toggles the selected entry's
+--- `Spotlight.Item.locked` flag instead of jumping or removing; `"line"` does
+--- the same for `Spotlight.Item.line`, and is the only way to reach a
+--- buffer-scoped spotlight's line mode — that one has no text identity for
+--- `:Spotlight line {text}` to name it by.
+---@param mode "jump"|"remove"|"lock"|"line"|nil # Defaults to "jump".
+---@param filter string|nil # narrow the list before showing it; see `M.filter`
+---@return nil
 function M.open(mode, filter)
   mode = (mode == "remove" or mode == "lock" or mode == "line") and mode or "jump"
 

@@ -45,10 +45,11 @@ local function range_text(r)
   if not line then
     return nil, "empty line"
   end
-  local scol, ecol = r.col1, r.col2
-  if type(scol) ~= "number" or type(ecol) ~= "number" or scol <= 0 then
+  local c1, c2 = r.col1, r.col2
+  if type(c1) ~= "number" or type(c2) ~= "number" or c1 <= 0 then
     return nil, "no character-wise selection to read"
   end
+  local scol, ecol = c1, c2
   if scol > ecol then
     scol, ecol = ecol, scol
   end

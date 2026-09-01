@@ -36,7 +36,7 @@ local cache = nil
 ---@return table|nil
 local function store()
   local mod = lib.try_require("lib.nvim.store.project")
-  if mod and type(mod.save) == "function" and type(mod.load) == "function" then
+  if type(mod) == "table" and type(mod.save) == "function" and type(mod.load) == "function" then
     return mod
   end
   return nil
@@ -111,7 +111,7 @@ end
 --- spotlights are excluded, the same as the main persistence snapshot and
 --- for the same reason — a line/column pin can't meaningfully belong to a
 --- saved set any more than it can survive a restart.
----@param name string
+---@param name string|nil An invalid name is refused, not raised on.
 ---@return boolean ok, string|nil err
 function M.save(name)
   if type(name) ~= "string" or name == "" then

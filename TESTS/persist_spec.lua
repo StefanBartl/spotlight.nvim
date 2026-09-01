@@ -75,6 +75,9 @@ function M.run()
   config.setup({ persist = { enable = true, default = true } })
 
   -- ---------- config validation ----------
+  -- Deliberately invalid throughout: the point is that each field falls back
+  -- rather than the setup raising.
+  ---@diagnostic disable: assign-type-mismatch
   config.setup({
     palette = { colors = { { bg = "not-a-color", fg = "#ffffff" }, { bg = "#000000", fg = "#ffffff" } } },
     cursor = { patterns = { "%d+", "%f[" } },
@@ -95,6 +98,7 @@ function M.run()
   -- A wholly invalid palette must not leave nothing to round-robin over.
   config.setup({ palette = { colors = { "nope" } } })
   t.eq("validate: an entirely invalid palette falls back to the defaults", #config.get("palette.colors"), 8)
+  ---@diagnostic enable: assign-type-mismatch
 
   -- Arrays are replaced wholesale, not merged, so a user can genuinely shrink one.
   config.setup({ cursor = { patterns = { "%d+" } } })

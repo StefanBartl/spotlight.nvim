@@ -91,7 +91,7 @@ function M.run()
   registry.rebuild()
 
   -- ---------- counting ----------
-  local aaa = registry.find_by_text("aaa")
+  local aaa = assert(registry.find_by_text("aaa"), "aaa was registered above")
   t.eq("count: two occurrences of aaa", count.count(bufnr, aaa, 200000), 2)
   t.eq("count: above count_max_lines returns nil, not zero", count.count(bufnr, aaa, 2), nil)
 

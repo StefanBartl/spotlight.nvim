@@ -619,6 +619,14 @@ function M.setup(opts)
   palette.apply()
   persist.setup()
   require("spotlight.bindings").setup(config.options)
+
+  -- Tell hover.nvim how often a *spotlighted* token occurs in this buffer.
+  -- Only for tokens already spotlighted -- every token in a log is a token,
+  -- and a preview that counted whatever the cursor touched would be noise.
+  -- Soft: without hover.nvim this does nothing. `hover = false` turns it off.
+  if config.options.hover ~= false then
+    require("spotlight.hover").setup()
+  end
 end
 
 return M

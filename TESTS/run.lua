@@ -13,6 +13,7 @@ local t = require("harness")
 
 local SPECS = {
   "cursor_spec",
+  "hover_spec",
   "registry_spec",
   "nav_spec",
   "persist_spec",

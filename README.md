@@ -109,6 +109,11 @@ and a plain function on the `spotlight` module. See
 [`docs/FEATURES.md`](docs/FEATURES.md) for every feature with its module,
 keymap, usercmd and config references.
 
+With [hover.nvim](https://github.com/StefanBartl/hover.nvim) installed, resting
+the cursor on a **spotlighted** token says how often it occurs in this buffer
+-- only for tokens already spotlighted, which is the whole design rather than
+a limitation. See [`docs/hover.md`](docs/hover.md).
+
 ---
 
 ## Installation

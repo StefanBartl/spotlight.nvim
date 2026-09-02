@@ -12,6 +12,13 @@ require("spotlight.@types")
 
 ---@type Spotlight.Config
 local DEFAULTS = {
+  -- Register a position preview with hover.nvim, so resting the cursor on a
+  -- spotlighted token says how often it occurs in this buffer. Only for
+  -- tokens that are already spotlighted: a spotlight is a decision the reader
+  -- made about *this* token, and it is the only signal available that says
+  -- "this one matters to me". A no-op without hover.nvim installed.
+  hover = true,
+
   -- ---------- colors ----------
   palette = {
     -- Eight slots, each with an explicit bg AND fg. Deriving only a background

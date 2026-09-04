@@ -1,13 +1,18 @@
 # spotlight.nvim — Binding Cheatsheet
 
-Machine-readable overview of every keymap, user command, autocommand and
-highlight group defined by `spotlight.nvim`. This file is documentation only and
-mirrors the source of truth in `lua/spotlight/bindings/`. Any change there must
-be reflected here.
+Every keymap, user command, autocommand and highlight group defined by
+`spotlight.nvim`, at a glance. This file is documentation only and mirrors the
+source of truth in `lua/spotlight/bindings/`; any change there must be
+reflected here.
 
-Every mapping binds directly onto a facade action (`require("spotlight").<action>`)
-— there is no `<Plug>` indirection. which-key, when installed, only labels the
-preset's leader prefix as a group; it does not register the individual keys.
+Where a line needs more than one line of explanation, it lives elsewhere:
+[commands.md](commands.md) for the `:Spotlight` routes, [api.md](api.md) for
+the facade functions, [configuration.md](configuration.md) for rebinding.
+
+Every mapping binds directly onto a facade action
+(`require("spotlight").<action>`) — there is no `<Plug>` indirection.
+which-key, when installed, only labels the preset's leader prefix as a group;
+it does not register the individual keys.
 
 ## Keymaps
 
@@ -29,44 +34,46 @@ config value under `keymaps.*`; setting one to `false` drops just that mapping.
 
 `<leader>sk` / `<leader>sK` are the pair the concept turns on: lowercase marks
 only the one occurrence the cursor/selection is on (a new spotlight, pinned to
-that exact buffer position — see [FEATURES.md](FEATURES.md#toggle-a-spotlight-on-only-this-occurrence)),
-uppercase marks every occurrence of that text, same as before this pair
-existed. `<leader>sL`/`<leader>sC` moved off `<leader>sK`/`<leader>s<C-k>` to
-free the shifted key for the "every occurrence" toggle.
-
-**No `lhs` above is a prefix of another.** This is deliberate: a mapping that is
-also the prefix of a longer one costs a `'timeoutlen'` pause on *every* press.
-`<leader>sk` and `<leader>sK` are fine together — `k`/`K` diverge at that very
-character, neither extends the other.
-
-Prefix moved from `<leader>m` to `<leader>s` (2026; the letters -- `k`/`K`/`L`/`C`/`q`/`W`
--- are unchanged, only the group changed). `<leader>s` is a busier prefix than
-`<leader>m` was: it is already a bare leaf binding in the author's config
-(`search.nvim`'s tabbed UI), and carries real bindings at `sh`, `sM`, `sS`, `sT`
-plus the two-level `sp` (`spf`/`spg`, pickers.nvim) and a filetree.nvim buffer-local
-`sm`. None of those collide with `sk`/`sK`/`sL`/`sC`/`sq`/`sW` -- confirmed against
-every sibling plugin repo directly, not just this cheatsheet folder, since several
-`<leader>s*` mentions elsewhere turned out to be commented-out/aspirational code
-rather than live bindings. Three of the six letters used here have a commented
-(inactive) `snacks.lua` picker slot at the exact same chord: `<leader>sk`
-(`snacks.picker.keymaps()`), `<leader>sq` (`snacks.picker.qflist()`) and
-`<leader>sC` (`snacks.picker.commands()`) -- none currently registered, so there
-is no live conflict, but uncommenting any of those three later would silently
-shadow (or be shadowed by, depending on load order) the matching spotlight
-mapping. `<leader>sw` (lowercase) is a fourth commented slot -- left free here
-for the same reason it always was (no narrower counterpart to pair it with),
-which also keeps that one clear if it is ever activated.
-Also checked against `]`/`[` motions (`]q`, `]l`, `]d`, `]w`).
-
-Living with the bare `<leader>s` leaf binding: every `<leader>s*` mapping,
-spotlight's included, waits out `'timeoutlen'` before firing, in case the user
-meant the bare prefix. That trade already existed for the ~7 other real
-`<leader>s*` bindings before spotlight moved here; this does not introduce it.
+that exact buffer position — see
+[FEATURES/MARKING.md](FEATURES/MARKING.md#toggle-a-spotlight-on-only-this-occurrence)),
+uppercase marks every occurrence of that text.
 
 `<leader>sW` follows the same lowercase/uppercase rule: whole-line rendering is
 the wider, louder of the two ways to show a spotlight, so it takes the shifted
 key. `<leader>sw` is deliberately left free rather than given the opposite
 meaning — "token only" is not a separate action, it is this one toggled off.
+
+### Why no lhs is a prefix of another
+
+A mapping that is also the prefix of a longer one costs a `'timeoutlen'` pause
+on *every* press. `<leader>sk` and `<leader>sK` are fine together — `k`/`K`
+diverge at that very character, neither extends the other. Worth keeping when
+you rebind.
+
+The preset moved from `<leader>m` to `<leader>s`; the letters
+(`k`/`K`/`L`/`C`/`q`/`W`) are unchanged, only the group changed. `<leader>s` is
+the busier prefix: it is already a bare leaf binding in the author's config
+(`search.nvim`'s tabbed UI) and carries real bindings at `sh`, `sM`, `sS`, `sT`
+plus the two-level `sp` (`spf`/`spg`, pickers.nvim) and a filetree.nvim
+buffer-local `sm`. None of those collide, confirmed against every sibling
+plugin repo directly rather than against a cheatsheet — several `<leader>s*`
+mentions elsewhere turned out to be commented-out or aspirational code rather
+than live bindings.
+
+Three of the six letters used here have a **commented** (inactive)
+`snacks.lua` picker slot at the exact same chord: `<leader>sk`
+(`snacks.picker.keymaps()`), `<leader>sq` (`snacks.picker.qflist()`) and
+`<leader>sC` (`snacks.picker.commands()`). None are registered, so there is no
+live conflict, but uncommenting any of the three later would silently shadow
+(or be shadowed by, depending on load order) the matching spotlight mapping.
+`<leader>sw` is a fourth commented slot, left free here for its own reason —
+which also keeps it clear if it is ever activated. Also checked against the
+`]`/`[` motions `]q`, `]l`, `]d`, `]w`.
+
+Living with the bare `<leader>s` leaf binding: every `<leader>s*` mapping,
+spotlight's included, waits out `'timeoutlen'` before firing, in case the user
+meant the bare prefix. That trade already existed for the ~7 other real
+`<leader>s*` bindings before spotlight moved here; this does not introduce it.
 
 ### Right-click context menu
 
@@ -74,65 +81,45 @@ meaning — "token only" is not a separate action, it is this one toggled off.
 (`toggle_here`, `toggle`, `next`, `prev`, `line_toggle`, `quickfix`, `list`,
 `clear` — not the `x`-mode `_selection` variants) as entries in the shape
 [nvzone/menu](https://github.com/nvzone/menu) expects. spotlight.nvim has no
-dependency on `menu` and never opens a context menu itself — a host
-(typically your own `<RightMouse>` dispatcher) composes the entries into
-its own menu. See [FEATURES.md](FEATURES.md#right-click-context-menu).
-`opts.menu.enable = false` opts out.
+dependency on `menu` and never opens a context menu itself. `menu.enable =
+false` opts out. See
+[FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md#right-click-context-menu).
 
 ## User commands
 
-One verb, built with `lib.nvim.bindings.usercmd.composer` — `<Tab>` completion, argument
-typing and validation come from the route tree.
+One verb, built with `lib.nvim.bindings.usercmd.composer` — `<Tab>`
+completion, argument typing and validation come from the route tree. **Full
+reference with arguments and behaviour: [commands.md](commands.md).**
 
-| Command | Args | Range | Action | Desc |
-| --- | --- | --- | --- | --- |
-| `:Spotlight` | — | no | `toggle` | Default route: toggle every occurrence of the token under the cursor |
-| `:Spotlight toggle` | `[text]` | yes | `toggle` / `add` / `remove` | Every occurrence: cursor token, `'<,'>` range selection, or explicit `text` |
-| `:Spotlight here` | — | yes | `toggle_here` / `toggle_here_at` | Only this occurrence: cursor token, or `'<,'>` range selection |
-| `:Spotlight add` | `{text}` | no | `add` | Add a spotlight for the literal `text` |
-| `:Spotlight remove` | `{text}` | no | `remove` | Remove the spotlight matching `text` exactly |
-| `:Spotlight clear` | — | no | `clear` | Remove every spotlight |
-| `:Spotlight list` | `[jump\|remove\|lock\|line] [filter]` | no | `list` / `list_remove` / `list_lock` / `list_line` | Open the list; `remove` deletes on select, `lock` toggles the lock, `line` toggles whole-line rendering. `filter` narrows the list first |
-| `:Spotlight next` | — | **yes** | `next` | Jump to the next occurrence. `!` ignores `nav.scope` for that jump |
-| `:Spotlight prev` | — | **yes** | `prev` | Jump to the previous occurrence. `!` ignores `nav.scope` for that jump |
+| Command | Action | One line |
+| --- | --- | --- |
+| `:Spotlight` | `toggle` | Default route: every occurrence of the cursor token |
+| `:Spotlight toggle [text]` | `toggle` / `add` / `remove` | Every occurrence: cursor token, `'<,'>` selection, or explicit text |
+| `:Spotlight here` | `toggle_here` / `toggle_here_at` | Only this occurrence: cursor token or `'<,'>` selection |
+| `:Spotlight add {text}` | `add` | Add a spotlight for a literal string |
+| `:Spotlight remove {text}` | `remove` | Remove by exact text |
+| `:Spotlight clear` | `clear` | Remove every spotlight |
+| `:Spotlight list [jump\|remove\|lock\|line] [filter]` | `list` / `list_remove` / `list_lock` / `list_line` | Open the list; the action decides what selecting does |
+| `:Spotlight[!] next` | `next` | Next occurrence (`!` ignores `nav.scope`) |
+| `:Spotlight[!] prev` | `prev` | Previous occurrence (`!` ignores `nav.scope`) |
+| `:Spotlight qf [text]` | `quickfix` | Matching lines in this buffer → quickfix |
+| `:Spotlight qf all [text]` | `quickfix_all` | Same, across every loaded buffer |
+| `:Spotlight yank [text]` | `yank` | Matching lines → unnamed register |
+| `:Spotlight line [text]` | `line_toggle` | Toggle whole-line rendering |
+| `:Spotlight lock [text]` | `lock_toggle` | Toggle the palette-slot lock |
+| `:Spotlight map [text]` | `map` | Mark matching lines in the sign column |
+| `:Spotlight map clear` | `map_clear` | Clear the occurrence map in this buffer |
+| `:Spotlight sets save {name}` | `sets_save` | Save the active spotlights under a name |
+| `:Spotlight sets switch {name}` | `sets_switch` | Replace the active spotlights with a saved set |
+| `:Spotlight sets delete {name}` | `sets_delete` | Delete a saved set |
+| `:Spotlight sets list` | `sets_list` | List every saved set and its count |
+| `:Spotlight winopt [on\|off\|toggle\|status]` | `winopt_*` | Per-window opt-out; no argument = `toggle` |
+| `:Spotlight persist [on\|off\|default\|status]` | `persist_*` | Per-file persistence override; no argument = `status` |
+| `:Spotlight refresh` | `refresh` | Redefine the palette, re-apply every match |
 
-### `!` on next/prev, and the list filter (2026-08-24)
-
-**`:Spotlight! next` / `! prev` search every spotlight**, whatever
-`nav.scope` says. With `scope = "auto"` the whole point is that `]k` follows
-the token under the cursor — which is right until the moment you want the
-opposite, and the only way out was editing the config and reloading. The flag
-is **per call**, not a mode: the next plain jump narrows again.
-
-**`:Spotlight list [action] [filter]`** narrows the list before showing it.
-Once several spotlights are active, `remove` mode over twenty entries is a
-scroll rather than a choice.
-
-One filter argument rather than separate `--color`/`--origin` flags: the
-fields never collide in practice, so a single token answers both questions.
-It matches the palette slot, the highlight group (`Spotlight3`), the origin
-path, and the spotlight's own text.
-
-A **numeric** query is only ever a slot query, with no substring fallback —
-otherwise `1` would also match slot 10, via the `1` in its own highlight
-group name `Spotlight10`, undoing the exact test. Everything else is plain
-substring, case-insensitive.
-| `:Spotlight qf` | `[text]` | no | `quickfix` | Matching lines in the current buffer → quickfix (all, or just `text`'s) |
-| `:Spotlight qf all` | `[text]` | no | `quickfix_all` | Same, across every loaded buffer, merged into one list |
-| `:Spotlight yank` | `[text]` | no | `yank` | Matching lines in the current buffer → unnamed register (all, or just `text`'s) |
-| `:Spotlight line` | `[text]` | no | `line_toggle` | Toggle whole-line rendering for a spotlight (`text`, or the cursor token) |
-| `:Spotlight lock` | `[text]` | no | `lock_toggle` | Toggle whether a spotlight keeps its palette slot permanently (`text`, or the cursor token) |
-| `:Spotlight map` | `[text]` | no | `map` | Mark every matching line in the sign column (all spotlights, or just `text`'s) |
-| `:Spotlight map clear` | — | no | `map_clear` | Clear the sign-column occurrence map in the current buffer |
-| `:Spotlight sets save` | `{name}` | no | `sets_save` | Save the active spotlights as a named set (overwrites) |
-| `:Spotlight sets switch` | `{name}` | no | `sets_switch` | Clear the active spotlights and restore a saved set |
-| `:Spotlight sets delete` | `{name}` | no | `sets_delete` | Delete a saved set (active spotlights untouched) |
-| `:Spotlight sets list` | — | no | `sets_list` | List every saved set and how many spotlights it holds |
-| `:Spotlight winopt` | `[on\|off\|toggle\|status]` | no | `winopt_set` / `winopt_toggle` / `winopt_status` | Per-window opt-out; no arg = `toggle` |
-| `:Spotlight persist` | `[on\|off\|default\|status]` | no | `persist_set` / `persist_status` | Per-file persistence override; no arg = `status` |
-| `:Spotlight refresh` | — | no | `refresh` | Redefine the palette, re-apply every match |
-
-Every keymap action has a command and vice versa: no feature exists only on a key.
+`toggle` and `here` are the only range-aware routes; `next` and `prev` take a
+bang instead. Every keymap action has a command and vice versa: no feature
+exists only on a key.
 
 ## Autocommands
 
@@ -154,8 +141,8 @@ the whole reason `matchadd()` was chosen over extmarks.
 ## Highlight groups
 
 Defined by `setup()` and re-defined on `ColorScheme` / `OptionSet background`.
-Configure them via `palette.colors` / `palette.colors_light` — redefining a group
-yourself would be overwritten by the next `ColorScheme`.
+Configure them via `palette.colors` / `palette.colors_light` — redefining a
+group yourself would be overwritten by the next `ColorScheme`.
 
 | Group | Dark bg/fg | Light bg/fg | Note |
 | --- | --- | --- | --- |
@@ -173,44 +160,9 @@ is guaranteed in either theme rather than inherited from the colorscheme.
 
 ## Facade actions
 
-Every action, for binding your own keys with `keymaps.preset = false`.
-
-| Function | Mode | Returns | Desc |
-| --- | --- | --- | --- |
-| `require("spotlight").toggle()` | n | `boolean` | Toggle every occurrence of the resolved token under the cursor |
-| `require("spotlight").toggle_selection()` | x | `boolean` | Toggle every occurrence of the exact visual selection (literal) |
-| `require("spotlight").toggle_here()` | n | `boolean` | Toggle only this occurrence of the resolved token under the cursor |
-| `require("spotlight").toggle_here_selection()` | x | `boolean` | Toggle only this occurrence of the exact visual selection |
-| `require("spotlight").toggle_here_at(text, pos)` | any | `boolean` | Toggle only the occurrence at an explicit `{ buf, row1, col1 }` |
-| `require("spotlight").add(text)` | any | `boolean` | Add a spotlight for a literal string |
-| `require("spotlight").remove(text)` | any | `boolean` | Remove by exact text |
-| `require("spotlight").clear()` | any | `boolean` | Remove every spotlight |
-| `require("spotlight").list()` | n | `nil` | Open the list; selection jumps |
-| `require("spotlight").list_remove()` | n | `nil` | Open the list; selection removes |
-| `require("spotlight").list_lock()` | n | `nil` | Open the list; selection toggles the lock |
-| `require("spotlight").list_line()` | n | `nil` | Open the list; selection toggles whole-line rendering |
-| `require("spotlight").next()` | n | `boolean` | Next occurrence |
-| `require("spotlight").prev()` | n | `boolean` | Previous occurrence |
-| `require("spotlight").quickfix(text?)` | n | `boolean` | Matching lines in the current buffer → quickfix |
-| `require("spotlight").quickfix_all(text?)` | n | `boolean` | Same, across every loaded buffer |
-| `require("spotlight").yank(text?)` | any | `boolean` | Matching lines in the current buffer → unnamed register |
-| `require("spotlight").lock_set(text, value)` | any | `boolean` | Set the slot lock for the spotlight matching `text` exactly |
-| `require("spotlight").lock_toggle(text?)` | any | `boolean` | Toggle the slot lock for `text`, or the cursor token |
-| `require("spotlight").line_set(text, value)` | any | `boolean` | Set whole-line rendering for the spotlight matching `text` exactly |
-| `require("spotlight").line_toggle(text?)` | any | `boolean` | Toggle whole-line rendering for `text`, or the cursor token |
-| `require("spotlight").sets_save(name)` | any | `boolean` | Save the active spotlights as a named set (overwrites) |
-| `require("spotlight").sets_switch(name)` | any | `boolean` | Clear the active spotlights and restore a saved set |
-| `require("spotlight").sets_delete(name)` | any | `boolean` | Delete a saved set |
-| `require("spotlight").sets_list()` | any | `nil` | Report every saved set and its spotlight count |
-| `require("spotlight").map(text?)` | any | `boolean` | Mark every matching line in the sign column |
-| `require("spotlight").map_clear()` | any | `boolean` | Clear the sign-column occurrence map |
-| `require("spotlight").winopt_set(value, win?)` | any | `boolean` | Set the per-window opt-out |
-| `require("spotlight").winopt_toggle(win?)` | any | `boolean` | Toggle the per-window opt-out |
-| `require("spotlight").winopt_status(win?)` | any | `nil` | Report whether spotlighting is on in `win` |
-| `require("spotlight").persist_set(v)` | any | `boolean` | `true`/`false`/`nil` override for the current file |
-| `require("spotlight").persist_status()` | any | `nil` | Report the effective persistence status |
-| `require("spotlight").refresh()` | any | `nil` | Redefine palette + re-apply every match |
-| `require("spotlight").spotlights()` | any | `Spotlight.Item[]` | The live registry |
+Every action is also a plain Lua function, for binding your own keys with
+`keymaps.preset = false`. The `action` column of the command table above names
+them; the signatures and return values are in [api.md](api.md).
 
 ## Global variables
 

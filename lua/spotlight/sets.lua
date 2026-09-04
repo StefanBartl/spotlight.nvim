@@ -1,9 +1,9 @@
 ---@module 'spotlight.sets'
 ---@brief Named, saved snapshots of the registry, switched one at a time.
 ---@description
---- The roadmap left "spotlight sets" with three open questions: a naming and
---- switching UX, a persistence shape, and whether sets are additive or
---- exclusive. This resolves all three the same way: a set is a named
+--- "Spotlight sets" arrived with three open questions: a naming and switching
+--- UX, a persistence shape, and whether sets are additive or exclusive. This
+--- module resolves all three the same way: a set is a named
 --- snapshot of the registry, taken with `M.save`; `M.switch` clears the
 --- active spotlights and restores that snapshot. Exclusive, not additive —
 --- switching is meant to feel like opening a saved workspace, not layering

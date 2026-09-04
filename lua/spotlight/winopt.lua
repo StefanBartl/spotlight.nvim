@@ -1,8 +1,8 @@
 ---@module 'spotlight.winopt'
 ---@brief Per-window opt-out: "do not spotlight in this window."
 ---@description
---- The roadmap left this needing a decision on what happens when the window
---- is later reused for a different buffer. Resolved as window-sticky: the
+--- The one open question was what happens when the window is later reused for
+--- a different buffer. Resolved as window-sticky: the
 --- flag lives on the window itself (`vim.w[win].spotlight_disabled`), not on
 --- whatever buffer happened to be showing when it was set, so it survives
 --- exactly the case the feature is for — "keep a reference split dark no

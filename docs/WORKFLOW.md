@@ -1,6 +1,6 @@
 # Workflow — using spotlight.nvim on a real log
 
-Every feature here is documented on its own in [`docs/FEATURES.md`](FEATURES.md)
+Every feature here is documented on its own in [`docs/FEATURES/`](FEATURES/README.md)
 and [`docs/BINDINGS.md`](BINDINGS.md). This is the different question: once
 you're staring at a 200 MB log and something looks wrong, what do you actually
 type, in what order, and where does it bite you if you're not paying
@@ -146,7 +146,7 @@ switch is per **file**, decided *before* or *while* you spotlight it:
 
 `<leader>sk` spotlights ("this occurrence only") never touch disk in the first
 place, persistence setting or not — see the note in
-[FEATURES.md](FEATURES.md#toggle-a-spotlight-on-only-this-occurrence).
+[FEATURES/MARKING.md](FEATURES/MARKING.md#toggle-a-spotlight-on-only-this-occurrence).
 
 The exception is about **origin**, not appearance: it suppresses spotlights
 *created while looking at* the excluded file, not every spotlight whose

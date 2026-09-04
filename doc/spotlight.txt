@@ -296,6 +296,7 @@ Defaults shown. Every key is typed (`Spotlight.Config` in
 lua/spotlight/@types/), so lua_ls completes and checks the table.
 >lua
     require("spotlight").setup({
+      hover = true,               -- register a preview with hover.nvim
       palette = {
         colors = { { bg = "#ffd75f", fg = "#1c1c1c" }, ... },  -- dark themes
         colors_light = { { bg = "#b58900", fg = "#ffffff" }, ... },
@@ -349,6 +350,9 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
         line = "<leader>sW",         -- whole-line rendering
         next = "]k",
         prev = "[k",
+      },
+      menu = {
+        enable = true,            -- contribute entries to an nvzone/menu host
       },
       notify = true,
       debug = false,              -- see |spotlight-debug|
@@ -753,10 +757,11 @@ boundary — but a statement of what is and is not trusted, so the limits below
 have a reason rather than a vibe.
 
 Nothing is executed, nothing is fetched, nothing is written outside the cache.
-No shell-outs, no `io.*`, no jobs, no network. The only three |:execute|-free
-`vim.cmd` calls are the fixed literals `normal! zz` and `copen`, with nothing
-interpolated. The only file written is the state snapshot, through
-lib.nvim.store.project.
+No shell-outs, no `io.*`, no jobs, no network. The only `vim.cmd` calls are two
+occurrences of the fixed literal `normal! zz` in spotlight/nav.lua, with nothing
+interpolated; the quickfix window is opened through lib.nvim.ui.list rather than
+by composing a command string. The only file written is the state snapshot,
+through lib.nvim.store.project.
 
 Regexes cannot backtrack pathologically. Every pattern handed to Vim is built as
 `\C\V` plus escaped literal text — no quantifiers, no groups, no alternation

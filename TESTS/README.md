@@ -35,6 +35,9 @@ not hide the state of every check after it.
 | `sets_spec.lua`            | Spotlight sets: exclusive save/switch/delete, the unknown-name no-op guard.         |
 | `map_spec.lua`             | Occurrence density: extmark placement, idempotent re-show, no live recompute.       |
 | `winopt_spec.lua`          | Per-window opt-out: window-sticky, immediate strip/refill, other windows unaffected. |
+| `line_spec.lua`            | Whole-line rendering: the widened pattern, the one-below priority, every other consumer left honest. |
+| `qf_buffer_scope_spec.lua` | `:Spotlight qf` against a buffer-scoped ("this occurrence only") spotlight.          |
+| `hover_spec.lua`           | The hover.nvim preview: the spotlighted-only gate, and `nil` rather than `0` above the count ceiling. |
 
 ## What is deliberately not tested here
 

@@ -2,7 +2,7 @@
 -- `.` after the normal-mode toggle keymap: `lib.dot_repeatable` wraps
 -- `api.toggle` via `lib.nvim.dotrepeat`, so `.` re-resolves the cursor token
 -- fresh rather than repeating the original toggle. This is also the direct
--- answer to the roadmap's own "is repeating a toggle coherent" question.
+-- answer to the "is repeating a toggle coherent" question.
 
 local t = require("harness")
 

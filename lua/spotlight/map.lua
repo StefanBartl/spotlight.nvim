@@ -1,8 +1,8 @@
 ---@module 'spotlight.map'
 ---@brief One-shot occurrence density: a sign per matching line.
 ---@description
---- The roadmap's own resolution for "where in the file does this token
---- cluster": a one-shot scan behind an explicit command, not anything live.
+--- The answer to "where in the file does this token cluster": a one-shot scan
+--- behind an explicit command, not anything live.
 --- The plugin's whole design principle is zero cost per keystroke or text
 --- change (see `spotlight.core.match`) — a density map that stayed current
 --- would need exactly the invalidation that principle exists to avoid. So

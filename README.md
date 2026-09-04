@@ -639,6 +639,18 @@ Neovim, no test framework to install.
 
 ---
 
+## Documentation
+
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
+- [Features](docs/FEATURES.md) — everything the plugin does, with the module behind each one.
+- [Bindings](docs/BINDINGS.md) — every keymap, user command and autocommand.
+- [Hover](docs/hover.md) — what the hover says over a spotlighted token.
+- [Workflow](docs/WORKFLOW.md) — how the features combine while you are actually reading a log.
+
+---
+
 ## Roadmap
 
 Deliberately *not*

@@ -55,7 +55,7 @@ Extmarks store *positions*. Setting them means scanning the buffer: O(file
 size) on every add, and again on every text change. On a 200 MB log that is not
 a slow path, it is an unusable one.
 
-|matchadd()| stores the *pattern* and hands it to Vim's renderer, which
+|matchadd()| stores the pattern and hands it to Vim's renderer, which
 evaluates it in C over the visible lines only. Cost is proportional to the
 window, not to the file, and a text change needs no invalidation at all,
 because nothing position-shaped was ever stored.
@@ -144,7 +144,7 @@ side by side.
 
 The normal-mode `<leader>sK` (and the bare `:Spotlight`/`:Spotlight toggle`
 command path) is dot-repeatable via `lib.nvim.dotrepeat`: press it on one
-token, move elsewhere, and `.` toggles whatever the cursor is on *then* — it
+token, move elsewhere, and `.` toggles whatever the cursor is on then — it
 re-resolves fresh rather than repeating the original toggle, so `.` on an
 already-lit token removes it, same as pressing the key on it again would.
 There is deliberately no count multiplier (`3<leader>sK` does nothing special)
@@ -195,12 +195,12 @@ Whether the rest needs special handling depends on which engine reads the
 pattern. `\%l`/`\%c` are evaluated by Vim's own machinery — |matchadd()|,
 |search()| — so rendering and `]k`/`[k` need nothing: a position-anchored
 pattern is just a valid Vim regex to them. |lua-regex| (`vim.regex`) does
-*not* evaluate them, and returns no match on every line including the pinned
+not evaluate them, and returns no match on every line including the pinned
 one. Counting and the quickfix filter are built on it, so they resolve such a
 spotlight from the position recorded on it instead of searching for it.
 
 Toggle identity is the position, not the text: pressing `<leader>sk` again on
-the *same* occurrence removes it; a different occurrence of the same word is
+the same occurrence removes it; a different occurrence of the same word is
 an independent spotlight, even alongside a `<leader>sK` spotlight for the
 same text.
 
@@ -212,7 +212,7 @@ one can paint its lines while the others stay on their tokens. It acts on a
 spotlight that already exists: pointing at an unlit token is refused rather
 than silently creating one.
 
-It is a *rendering* flag, not a different spotlight. `Spotlight.Item.pattern`
+It is a rendering flag, not a different spotlight. `Spotlight.Item.pattern`
 stays the token pattern; only the string handed to |matchadd()| is widened
 (`\_^\.\*` ... `\.\*\_$` around it — the `\_` anchors, because plain `^`/`$`
 are special only at the very start and end of a pattern). That split is what
@@ -221,7 +221,7 @@ not lines, the quickfix and yank scans still report the token's own column,
 and the occurrence map's earliest-column tie-break still works — a line
 pattern always matches at column 1 and would collapse it.
 
-The widened match is registered one priority *below* `match.priority`. A
+The widened match is registered one priority below `match.priority`. A
 whole-line highlight covers every token highlight on its line, and the palette
 exists precisely so several spotlights stay apart; at equal priority the line
 color would swallow the token colors of every other spotlight on that line.
@@ -607,7 +607,7 @@ Named, saved snapshots of the registry, switched one at a time:
 Exclusive, not additive: `switch` replaces the active spotlights rather than
 layering one investigation's tokens on top of another's — closer to opening
 a saved workspace than to tagging. Nothing stops adding more spotlights
-*after* switching; only the switch itself replaces. `switch`/`delete`
+after switching; only the switch itself replaces. `switch`/`delete`
 tab-complete from the names that currently exist.
 
 Switching to an unknown or mistyped name is refused outright — a no-op, not
@@ -629,7 +629,7 @@ buffer state it was recorded from.
                 *Spotlight1* *Spotlight2* *Spotlight3* *Spotlight4*
                 *Spotlight5* *Spotlight6* *Spotlight7* *Spotlight8*
 
-Eight highlight groups, each with an explicit `bg` *and* `fg`. Setting only a
+Eight highlight groups, each with an explicit `bg` and `fg`. Setting only a
 background is the usual mistake: the foreground then comes from whatever the
 colorscheme left there, which is how a readable marker becomes yellow-on-yellow
 after `:colorscheme`. Both channels are pinned, so contrast is a property of the
@@ -652,7 +652,7 @@ A spotlight can lock its slot with `:Spotlight lock [text]` (or
 has become the one you always look for. A locked slot is skipped by
 round-robin the same way an in-use one is, but stays skipped even once every
 other slot fills up and reuse becomes unavoidable: it is never handed to a
-*different* spotlight. Locking does not move a spotlight to a new slot, only
+different spotlight. Locking does not move a spotlight to a new slot, only
 stops it from losing the one it already has. The lock is part of the
 persisted snapshot, so it survives a restart.
 
@@ -789,7 +789,7 @@ Three limits exist because the size of the input is not the plugin's to control:
                                   is O(line) per pattern and a user pattern may
                                   backtrack; a minified single-line log makes
                                   that product enough to hang on a keypress.
-    quickfix.max_entries 10000    Unlike counting, filtering *produces* memory —
+    quickfix.max_entries 10000    Unlike counting, filtering produces memory —
                                   one entry per matching line, each holding the
                                   full line text. Truncation is reported in the
                                   notification and in the list title.
@@ -803,7 +803,7 @@ Lua patterns are dropped, numbers range-checked, and `list.swatch` has newlines
 stripped (it is written into a chooser buffer line, where |nvim_buf_set_lines()|
 treats an embedded newline as a hard error).
 
-One thing to be aware of rather than reassured about: spotlighted tokens *are*
+One thing to be aware of rather than reassured about: spotlighted tokens are
 written to the cache directory by default. When reading a log full of
 credentials, `:Spotlight persist off` is the switch that keeps them out of it
 (see |spotlight-persist|).

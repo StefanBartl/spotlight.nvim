@@ -1,4 +1,5 @@
 *spotlight.txt*             Persistent multi-token highlighting for Neovim logs
+                                                              *spotlight.nvim*
 
 ==============================================================================
 CONTENTS                                                   *spotlight-contents*

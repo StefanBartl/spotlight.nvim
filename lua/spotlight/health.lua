@@ -39,7 +39,7 @@ function M.check()
   if vim.fn.has("nvim-0.9") == 1 then
     ok("Neovim " .. tostring(vim.version()))
   else
-    warn("spotlight.nvim targets Neovim 0.9+")
+    warn("spotlight.nvim targets Neovim 0.9+", { "Upgrade Neovim to 0.9+" })
   end
 
   -- ---------- environment ----------
@@ -48,7 +48,8 @@ function M.check()
   else
     warn(
       "'termguicolors' is off — the palette's #rrggbb values are approximated to the terminal's 256-color "
-        .. "cube, so slots may become hard to tell apart. Set `vim.o.termguicolors = true`."
+        .. "cube, so slots may become hard to tell apart",
+      { "Set `vim.o.termguicolors = true`" }
     )
   end
 
@@ -58,7 +59,7 @@ function M.check()
     if pcall(require, entry.module) then
       ok(("%s — %s"):format(entry.module, entry.purpose))
     elseif entry.required then
-      error_(('%s missing — %s will not work; install "StefanBartl/lib.nvim"'):format(entry.module, entry.purpose))
+      error_(("%s missing — %s will not work"):format(entry.module, entry.purpose), { 'Install "StefanBartl/lib.nvim"' })
     else
       info(("%s missing — %s falls back to a native equivalent"):format(entry.module, entry.purpose))
     end
@@ -78,7 +79,7 @@ function M.check()
   start("spotlight.nvim: configuration")
   local cfg_ok, config = pcall(require, "spotlight.config")
   if not cfg_ok then
-    error_("config module failed to load: " .. tostring(config))
+    error_("config module failed to load: " .. tostring(config), { "Reinstall spotlight.nvim" })
     return
   end
 

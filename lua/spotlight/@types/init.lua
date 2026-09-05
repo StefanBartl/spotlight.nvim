@@ -99,6 +99,7 @@
 ---@field menu? Spotlight.MenuOpts # `spotlight.integrations.menu` (nvzone/menu context-menu contribution) opt-out.
 ---@field notify? boolean # Report added/removed/cleared spotlights via `lib.nvim.notify`.
 ---@field debug? boolean # Structured debug logging at the decision points, via `lib.nvim.logger`.
+---@field hover? boolean # Register a position preview with hover.nvim (occurrence count for the spotlighted token under the cursor). No-op without hover.nvim installed.
 
 --- Opt-out for `spotlight.integrations.menu`. spotlight.nvim has no
 --- nvzone/menu dependency itself; this only gates whether `M.items()`/

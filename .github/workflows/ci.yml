@@ -18,18 +18,18 @@ jobs:
     name: stylua (format check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
+          version: v2.5.2
           args: --check lua plugin TESTS
 
   luacheck:
     name: luacheck (lint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Plain Lua 5.4, not LuaJIT: luacheck only needs *an* interpreter to run
       # on, and which dialect it lints for is set by `std = "luajit"` in
       # .luacheckrc — independent of the host. Pinning a LuaJIT build here buys
@@ -39,21 +39,21 @@ jobs:
         with:
           luaVersion: "5.4"
       - uses: leafo/gh-actions-luarocks@v4
-      - run: luarocks install luacheck
+      - run: luarocks install luacheck 1.2.0
       - run: luacheck lua plugin TESTS
 
   tests:
     name: tests (headless nvim)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: spotlight.nvim
       # lib.nvim is a real runtime dependency (usercmd.composer for the
       # :Spotlight verb, store.project for persistence, ui.kit.select for the
       # list) — checked out as a sibling so `rtp+=../lib.nvim` matches the
       # local dev convention documented in TESTS/README.md.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim

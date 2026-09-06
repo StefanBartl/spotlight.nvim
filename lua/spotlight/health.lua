@@ -14,6 +14,7 @@ local M = {}
 local LIB_MODULES = {
   { module = "lib.nvim.bindings.usercmd.composer", purpose = "the :Spotlight verb", required = true },
   { module = "lib.nvim.ui.kit.select", purpose = "the spotlight list", required = true },
+  { module = "lib.nvim.ui.list", purpose = "the quickfix filter (:Spotlight qf / yank)", required = true },
   { module = "lib.nvim.store.project", purpose = "per-project persistence", required = false },
   { module = "lib.nvim.debounce", purpose = "coalesced state saves", required = false },
   { module = "lib.nvim.notify", purpose = "namespaced notifications", required = false },

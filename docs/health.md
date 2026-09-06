@@ -30,6 +30,7 @@ very different problems.
 | --- | --- | --- |
 | `lib.nvim.bindings.usercmd.composer` | **yes** | The `:Spotlight` verb does not exist at all |
 | `lib.nvim.ui.kit.select` | **yes** | The spotlight list cannot open |
+| `lib.nvim.ui.list` | **yes** | `:Spotlight qf` / `:Spotlight yank` cannot build the quickfix list |
 | `lib.nvim.bindings.keymap` | **yes** | The keymap preset is not bound |
 | `lib.nvim.store.project` | no | Per-project persistence; falls back to a native equivalent |
 | `lib.nvim.debounce` | no | Coalesced state saves |

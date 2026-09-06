@@ -7,9 +7,9 @@ Treesitter, no LSP, no external binary.
 
 `lib.nvim` is a **required** dependency, not a nicety: the `:Spotlight` verb is
 built on `lib.nvim.bindings.usercmd.composer`, the list on
-`lib.nvim.ui.kit.select`, and the keymap preset on
-`lib.nvim.bindings.keymap`. The persistence, notify, autocmd, dot-repeat and
-debounce helpers degrade to native equivalents when absent.
+`lib.nvim.ui.kit.select`, the quickfix filter on `lib.nvim.ui.list`, and the
+keymap preset on `lib.nvim.bindings.keymap`. The persistence, notify, autocmd,
+dot-repeat and debounce helpers degrade to native equivalents when absent.
 `:checkhealth spotlight` reports each module separately, with what it is used
 for — see [health.md](health.md).
 

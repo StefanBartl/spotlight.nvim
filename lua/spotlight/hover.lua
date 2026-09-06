@@ -38,6 +38,9 @@ local _registered = false
 --- How many lines a buffer may have before the count declines. Matches the
 --- ceiling the spotlight list uses, so the two never disagree about whether a
 --- buffer was scanned.
+--- CDX: this fixed 20000 does not match `list.count_max_lines` (default 200000)
+--- and never reads the config, so list and hover disagree for buffers between
+--- the two — judgement call whether the constant or the comment is wrong.
 local MAX_LINES = 20000
 
 ---@internal

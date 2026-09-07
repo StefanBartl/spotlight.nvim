@@ -5,12 +5,13 @@
 # spotlight.nvim
 
 ```
-                    __  ___       __    __
+                     __  ___       __    __
    _________  ____  / /_/ (_)___ _/ /_  / /_
   / ___/ __ \/ __ \/ __/ / / __ `/ __ \/ __/
  (__  ) /_/ / /_/ / /_/ / / /_/ / / / / /_
-/____/ .___/\____/\__/_/_/\__,_/_/ /_/\__/
-    /_/      many tokens, many colors, one log
+/____/ .___/\____/\__/_/_/\__, /_/ /_/\__/
+    /_/                  /____/       .nvim
+       many tokens, many colors, one log
 ```
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

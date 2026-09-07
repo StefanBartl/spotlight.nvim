@@ -34,6 +34,12 @@ is the short version of all of it.
 | --- | --- |
 | [architecture.md](architecture.md) | The `matchadd()`-not-extmarks decision and the four limitations that follow from it; the module tree; the security model and the three bounded inputs |
 
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and the steps for adding an action — including the three ways every action has to be reachable |
+
 ## Also in the repository
 
 `:help spotlight` — the same material as Vim help, in `doc/spotlight.txt`.

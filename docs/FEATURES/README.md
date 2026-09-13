@@ -1,5 +1,25 @@
 # Features
 
+`*` gives you one token and fights your real search. `:match` gives you three
+slots and no management. `matchadd()` is the right primitive but is
+window-local, so a split loses everything.
+
+This is that primitive with the bookkeeping done for you. Because it stores
+*patterns* rather than positions, cost is proportional to the window rather
+than to the file — which is what keeps it usable on a log too big to open in
+anything else, and is the decision the rest of the plugin follows from
+([why](../architecture.md#why-matchadd-and-not-extmarks)).
+
+| Area | Does |
+| --- | --- |
+| **Marking** | Any number of tokens, under the cursor or from a visual selection, either everywhere the text appears or pinned to one occurrence |
+| **Token resolution** | A configurable, ordered pattern list that sees what `<cword>` cannot: UUIDs, ISO timestamps, `192.168.1.1:8080`, `0x1f4a`, git shas, `user@host` |
+| **Colors** | Eight distinguishable ones, handed out round-robin and skipping the ones already on screen, with dark and light palettes and an optional permanent lock per slot |
+| **Every window** | New splits, new tabs and buffer switches fill themselves; a single window can opt out |
+| **Finding your way** | The list with live match counts, `]k` / `[k` navigation, a sign-column occurrence map, whole-line rendering, and every matching line into the quickfix list or a register |
+| **Persistence** | State per project, keyed by git root, with a per-file opt-out for the log you do not want written to disk — and named sets to switch between investigations |
+| **Diagnostics** | `:checkhealth spotlight` reports every dependency, every rejected config value and the live state; `debug = true` logs the four decisions behind "why did nothing light up" |
+
 `spotlight.nvim` marks tokens in a log — any number of them, in distinguishable
 colors, applied in every window, and persisted per project. Everything on the
 pages below is verified against `lua/spotlight/` as it stands.

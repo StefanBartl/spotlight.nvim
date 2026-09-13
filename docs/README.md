@@ -8,6 +8,8 @@ is the short version of all of it.
 | Page | Answers |
 | --- | --- |
 | [installation.md](installation.md) | Requirements, the dependency on `lib.nvim`, and a spec for lazy.nvim, packer, mini.deps, vim-plug, paq and `vim.pack` |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
+| [what-you-get.md](what-you-get.md) | The default keys at a glance |
 | [configuration.md](configuration.md) | Every `setup()` key with its default, plus the four topics worth reading before changing one: token resolution, colors, persistence, keymaps |
 
 ## Using it

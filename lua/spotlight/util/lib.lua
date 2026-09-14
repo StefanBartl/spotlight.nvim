@@ -1,9 +1,10 @@
 ---@module 'spotlight.util.lib'
----@brief Soft, guarded bridge to a handful of `lib.nvim` helpers.
+---@brief Soft, guarded bridge to a handful of `lib.nvim`/`ui.nvim` helpers.
 ---@description
---- `lib.nvim` is a **required** dependency — the `:Spotlight` verb is built on
---- `lib.nvim.bindings.usercmd.composer`, persistence on `lib.nvim.store.project`, the
---- list on `lib.nvim.ui.kit.select`. These specific accessors nonetheless stay
+--- `lib.nvim` and `ui.nvim` are both **required** dependencies — the
+--- `:Spotlight` verb is built on `lib.nvim.bindings.usercmd.composer`,
+--- persistence on `lib.nvim.store.project`, the list itself on ui.nvim's
+--- `ui.kit.select`. These specific accessors nonetheless stay
 --- soft-guarded, because each has a usable native equivalent: a missing
 --- `lib.nvim.notify` should degrade a message to `vim.notify`, not break the
 --- keymap that wanted to report success.

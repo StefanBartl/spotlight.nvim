@@ -2,12 +2,14 @@
 
 ## Requirements
 
-Neovim **0.9+** and [lib.nvim](https://github.com/StefanBartl/lib.nvim). No
-Treesitter, no LSP, no external binary.
+Neovim **0.9+**, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and
+[ui.nvim](https://github.com/StefanBartl/ui.nvim). No Treesitter, no LSP, no
+external binary.
 
-`lib.nvim` is a **required** dependency, not a nicety: the `:Spotlight` verb is
-built on `lib.nvim.bindings.usercmd.composer`, the list on
-`lib.nvim.ui.kit.select`, the quickfix filter on `lib.nvim.ui.list`, and the
+Both are **required** dependencies, not a nicety: the `:Spotlight` verb is
+built on `lib.nvim.bindings.usercmd.composer`, the list itself on ui.nvim's
+`ui.kit.select` — with no fallback, since a themed multi-line-item float is
+the whole feature — the quickfix filter on `lib.nvim.ui.list`, and the
 keymap preset on `lib.nvim.bindings.keymap`. The persistence, notify, autocmd,
 dot-repeat and debounce helpers degrade to native equivalents when absent.
 `:checkhealth spotlight` reports each module separately, with what it is used

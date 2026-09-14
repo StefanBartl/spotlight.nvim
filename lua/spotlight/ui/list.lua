@@ -1,7 +1,7 @@
 ---@module 'spotlight.ui.list'
 ---@brief The spotlight list: color swatch, pattern, match count → jump / remove.
 ---@description
---- Built on `lib.nvim.ui.kit.select`'s **rich items** (`item.lines` with
+--- Built on `ui.kit.select`'s **rich items** (`item.lines` with
 --- per-span highlight groups), which is exactly the primitive this list needs: a
 --- row whose first columns are painted in the spotlight's own `SpotlightN` group
 --- and whose remainder is plain text. Without it the swatch would need a
@@ -177,9 +177,9 @@ function M.open(mode, filter)
     title = title .. " (+ = at least one buffer skipped: lower bound)"
   end
 
-  local select = lib.try_require("lib.nvim.ui.kit.select")
+  local select = lib.try_require("ui.kit.select")
   if not select or type(select.open) ~= "function" then
-    lib.notify("lib.nvim.ui.kit.select unavailable — cannot open the list", vim.log.levels.ERROR)
+    lib.notify("ui.kit.select unavailable — cannot open the list", vim.log.levels.ERROR)
     return
   end
 

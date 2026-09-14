@@ -3,7 +3,7 @@
 ---@description
 --- spotlight.nvim does not depend on a menu plugin. It *provides* a list of
 --- entries in the shape nvzone/menu expects, built with
---- `lib.nvim.contextmenu`'s helpers, and a host — typically the user's own
+--- `ui.contextmenu`'s helpers, and a host — typically the user's own
 --- RightMouse dispatcher — composes them into its own menu, e.g.:
 --- >
 ---   local items = require("spotlight.integrations.menu").items()
@@ -17,14 +17,14 @@
 --- reason, same as they have no Ex-command equivalent either. Opt-out via
 --- `config.menu.enable`.
 
-local contextmenu = require("lib.nvim.contextmenu")
+local contextmenu = require("ui.contextmenu")
 
 local M = {}
 
 --- Build the spotlight.nvim menu entries.
 --- Returns an empty list when the integration is disabled, so a host can
 --- safely `vim.list_extend` it unconditionally.
----@return Lib.ContextMenu.Item[]
+---@return Ui.ContextMenu.Item[]
 function M.items()
   local mcfg = require("spotlight.config").get("menu")
   if mcfg and mcfg.enable == false then
@@ -66,7 +66,7 @@ end
 --- submenu entry, for hosts that prefer a "Spotlight ▸" fly-out instead of
 --- inline entries. Returns nil when there is nothing to show.
 ---@param label? string submenu label (default "  Spotlight")
----@return Lib.ContextMenu.Item|nil
+---@return Ui.ContextMenu.Item|nil
 function M.submenu(label)
   return contextmenu.submenu(label or "  Spotlight", M.items())
 end

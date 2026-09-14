@@ -445,7 +445,7 @@ tagged `(locked)` and a line-mode spotlight `(whole line)`, for the same
 reason.
 
 The swatch is painted in the spotlight's own |Spotlight1| ... group, via
-lib.nvim.ui.kit.select's rich items, so there is no rendering code in this
+ui.kit.select's rich items, so there is no rendering code in this
 plugin.
 
 Match counts are computed when the list opens, and only then — the one O(buffer)
@@ -816,7 +816,7 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 requirements:
 
     lib.nvim.bindings.usercmd.composer   the :Spotlight verb
-    lib.nvim.ui.kit.select      the spotlight list (rich items)
+    ui.kit.select      the spotlight list (rich items)
     lib.nvim.ui.list            the quickfix filter (:Spotlight qf / yank)
     lib.nvim.bindings.keymap    the keymap preset
 

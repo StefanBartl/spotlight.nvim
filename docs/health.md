@@ -5,7 +5,7 @@
 ```
 
 Read-only: it never mutates anything, so running it is always safe. It reports
-four sections plus the command verb's own check. For a symptom you already
+five sections plus the command verb's own check. For a symptom you already
 have, start at [troubleshooting.md](troubleshooting.md) instead — this page
 explains what the output *means*.
 
@@ -29,7 +29,6 @@ very different problems.
 | Module | Required | What is lost without it |
 | --- | --- | --- |
 | `lib.nvim.bindings.usercmd.composer` | **yes** | The `:Spotlight` verb does not exist at all |
-| `lib.nvim.ui.kit.select` | **yes** | The spotlight list cannot open |
 | `lib.nvim.ui.list` | **yes** | `:Spotlight qf` / `:Spotlight yank` cannot build the quickfix list |
 | `lib.nvim.bindings.keymap` | **yes** | The keymap preset is not bound |
 | `lib.nvim.store.project` | no | Per-project persistence; falls back to a native equivalent |
@@ -46,6 +45,16 @@ defect.
 
 which-key is reported here too. Its absence is info, never a warning: mappings
 carry their own `desc` either way, and only the group label depends on it.
+
+## `spotlight.nvim: ui.nvim`
+
+`ui.kit` moved out of `lib.nvim` into the separate
+[ui.nvim](https://github.com/StefanBartl/ui.nvim) repo, so it gets its own
+section with its own install hint rather than sharing `lib.nvim`'s.
+
+| Module | Required | What is lost without it |
+| --- | --- | --- |
+| `ui.kit.select` | **yes** | The spotlight list cannot open — this is the entire feature, so there is no fallback |
 
 ## `spotlight.nvim: configuration`
 

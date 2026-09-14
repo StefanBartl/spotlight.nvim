@@ -45,4 +45,4 @@ Rendering. Whether `matchadd()` produces the right pixels is Vim's business; the
 suite asserts that the *ledger* is right (`getmatches()` in each window, one entry
 per active spotlight, none left after a clear), which is the part this plugin
 owns. The chooser float is likewise exercised only through
-`lib.nvim.ui.kit.select`'s own contract.
+`ui.kit.select`'s own contract.

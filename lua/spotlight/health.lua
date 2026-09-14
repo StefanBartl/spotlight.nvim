@@ -13,7 +13,6 @@ local M = {}
 ---@type { module: string, purpose: string, required: boolean }[]
 local LIB_MODULES = {
   { module = "lib.nvim.bindings.usercmd.composer", purpose = "the :Spotlight verb", required = true },
-  { module = "lib.nvim.ui.kit.select", purpose = "the spotlight list", required = true },
   { module = "lib.nvim.ui.list", purpose = "the quickfix filter (:Spotlight qf / yank)", required = true },
   { module = "lib.nvim.store.project", purpose = "per-project persistence", required = false },
   { module = "lib.nvim.debounce", purpose = "coalesced state saves", required = false },
@@ -23,6 +22,14 @@ local LIB_MODULES = {
   { module = "lib.nvim.dotrepeat", purpose = "`.` repeats the normal-mode toggle", required = false },
   { module = "lib.nvim.bindings.autocmd", purpose = "guarded autocommands", required = false },
   { module = "lib.nvim.ui.hl", purpose = "highlight definition", required = false },
+}
+
+--- Separate from LIB_MODULES: ui.kit moved out of lib.nvim into its own
+--- ui.nvim repo, so a missing entry here needs "Install StefanBartl/ui.nvim",
+--- not the lib.nvim hint every LIB_MODULES entry shares.
+---@type { module: string, purpose: string, required: boolean }[]
+local UI_NVIM_MODULES = {
+  { module = "ui.kit.select", purpose = "the spotlight list", required = true },
 }
 
 --- Run the health check.
@@ -61,6 +68,18 @@ function M.check()
       ok(("%s — %s"):format(entry.module, entry.purpose))
     elseif entry.required then
       error_(("%s missing — %s will not work"):format(entry.module, entry.purpose), { 'Install "StefanBartl/lib.nvim"' })
+    else
+      info(("%s missing — %s falls back to a native equivalent"):format(entry.module, entry.purpose))
+    end
+  end
+
+  -- ---------- ui.nvim ----------
+  start("spotlight.nvim: ui.nvim")
+  for _, entry in ipairs(UI_NVIM_MODULES) do
+    if pcall(require, entry.module) then
+      ok(("%s — %s"):format(entry.module, entry.purpose))
+    elseif entry.required then
+      error_(("%s missing — %s will not work"):format(entry.module, entry.purpose), { 'Install "StefanBartl/ui.nvim"' })
     else
       info(("%s missing — %s falls back to a native equivalent"):format(entry.module, entry.purpose))
     end

@@ -50,9 +50,12 @@ jobs:
         with:
           path: spotlight.nvim
       # lib.nvim is a real runtime dependency (usercmd.composer for the
-      # :Spotlight verb, store.project for persistence, ui.kit.select for the
-      # list) — checked out as a sibling so `rtp+=../lib.nvim` matches the
-      # local dev convention documented in TESTS/README.md.
+      # :Spotlight verb, store.project for persistence) — checked out as a
+      # sibling so `rtp+=../lib.nvim` matches the local dev convention
+      # documented in TESTS/README.md. ui.nvim (ui.kit.select for the list)
+      # is NOT checked out here: TESTS/README.md's own "what is deliberately
+      # not tested" section explains that the chooser float is exercised
+      # only through ui.kit.select's own contract, never from this suite.
       - uses: actions/checkout@v5
         with:
           repository: StefanBartl/lib.nvim

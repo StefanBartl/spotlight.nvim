@@ -43,6 +43,11 @@ scrolling, through a `:split`.
 > **[cmdlog.nvim](https://github.com/StefanBartl/cmdlog.nvim)** — the other
 > half of reading output in the editor: the command that produced the log.
 >
+> **[my.nvim](https://github.com/StefanBartl/my.nvim)** — its
+> `cword_occurrences` marks the word under the cursor as you move, which
+> is the transient half of the same question. This plugin is the half you
+> pin: several tokens at once, and they stay through searches and splits.
+>
 > All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
 > dependency — see [Requirements](docs/installation.md#requirements).

@@ -29,6 +29,18 @@ local SPECS = {
   "map_spec",
   "winopt_spec",
   "line_spec",
+  "multibyte_spec",
+  "match_ledger_spec",
+  "autocmds_spec",
+  "keymaps_spec",
+  "config_edge_spec",
+  "count_edge_spec",
+  "path_spec",
+  "util_lib_spec",
+  "persist_store_spec",
+  "ui_list_spec",
+  "menu_spec",
+  "health_spec",
 }
 
 -- Notifications are outcome reports, not test output: silence them so a failure

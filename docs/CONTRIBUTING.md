@@ -113,8 +113,22 @@ Exit 0 is a pass; lib.nvim is expected as a sibling checkout.
 [GitHub Actions](../.github/workflows/ci.yml) runs it plus stylua and luacheck
 on every push and pull request to `main`.
 
+A new spec file has to be listed in `run.lua`'s `SPECS` table, or CI will never
+run it. Specs are expected to be independent of one another — the suite is
+checked in the listed order and in reverse — so each one sets the config and
+clears the registry itself instead of inheriting a predecessor's state.
+
 `hardening_spec.lua` covers the bounded inputs. If you add a bound, add a case
 there rather than trusting the default to hold.
+
+If your change is positional, read `TESTS/multibyte_spec.lua` first: every
+position in this plugin is a byte offset (`\%23c` is a byte column, `\%23v` would
+be the display one), and a character-based computation fails silently rather than
+loudly. If your change needs a dependency that is not a CI checkout — ui.nvim, a
+picker backend — cut the seam with the harness's `with_modules` /
+`without_modules` rather than leaving it untested. `TESTS/README.md` lists every
+seam the suite already cuts, what it deliberately leaves alone, and the defects
+it pins.
 
 ## Workflow
 

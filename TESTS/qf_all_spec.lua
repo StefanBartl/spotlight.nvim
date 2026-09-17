@@ -24,6 +24,12 @@ function M.run()
   local api = require("spotlight")
 
   config.setup()
+  -- The `:Spotlight` verb, for the command-route assertions below. Registered
+  -- here when it is not already, so this spec does not depend on another one
+  -- having called `setup()` first.
+  if vim.fn.exists(":Spotlight") ~= 2 then
+    require("spotlight.bindings.usrcmds").setup()
+  end
   registry.clear()
 
   local bufA = real_buffer({ "req=aaa one", "other", "req=aaa two" })

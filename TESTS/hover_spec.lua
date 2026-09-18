@@ -81,6 +81,39 @@ function M.run()
   t.ok("hover: a single occurrence answers", type(single) == "table")
   t.contains("hover: in the singular", table.concat(single.lines, "\n"), "1 occurrence in")
 
+  -- ------------------------------------------------- the ceiling, and pcall --
+  --
+  -- `core.count` declines (returns nil) once a buffer is over MAX_LINES, and
+  -- the module doc comment promises the callback repeats that as "too many
+  -- lines to count here" rather than smoothing it into a zero -- a real
+  -- branch nothing in this file exercised. Swapping `core.count` in reaches it
+  -- without building a 20000-line buffer for real.
+  t.with_modules({ ["spotlight.core.count"] = {
+    count = function()
+      return nil, 0
+    end,
+  } }, function()
+    local over_ceiling = answer(buf, 1, 2)
+    t.ok("hover: over the ceiling still answers (spotlighted)", type(over_ceiling) == "table")
+    t.contains("hover: naming the token", over_ceiling.title, "req-42abc")
+    t.contains("hover: but declines to count it", table.concat(over_ceiling.lines, "\n"), "too many lines to count here")
+    t.eq("hover: not smoothed into a zero", table.concat(over_ceiling.lines, "\n"):find("0 occurrence"), nil)
+  end)
+
+  -- A count that raises (a bad pattern, a race on the buffer) is swallowed by
+  -- the callback's own `pcall`: the token is still spotlighted, so it still
+  -- says so, just without a number.
+  t.with_modules({ ["spotlight.core.count"] = {
+    count = function()
+      error("boom")
+    end,
+  } }, function()
+    local errored = answer(buf, 1, 2)
+    t.ok("hover: a count that raises still answers (spotlighted)", type(errored) == "table")
+    t.eq("hover: with no count line at all", #errored.lines, 1)
+    t.eq("hover: just the bare word", errored.lines[1], "spotlighted")
+  end)
+
   require("spotlight.core.registry").clear()
   pcall(api.nvim_set_current_buf, prev_buf)
   pcall(api.nvim_buf_delete, buf, { force = true })

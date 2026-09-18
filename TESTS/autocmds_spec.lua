@@ -155,6 +155,7 @@ function M.run()
   ---@param label string
   ---@param kill fun(buf: integer)
   ---@param expect_removed boolean
+  ---@return integer buf # so a case that deliberately leaves the buffer loaded can be wiped by its caller.
   local function teardown_case(label, kill, expect_removed)
     registry.clear()
     local b = vim.api.nvim_create_buf(true, false)
@@ -170,6 +171,7 @@ function M.run()
     end
     t.eq(label .. ": the global spotlight always survives", registry.find_by_text("global") ~= nil, true)
     t.eq(label .. ": the pin is gone", registry.count() == 1, expect_removed)
+    return b
   end
 
   teardown_case(":bwipeout", function(b)
@@ -196,11 +198,20 @@ function M.run()
 
   -- `:q` closes a window, not the buffer: the pin stays valid, and keeping it is
   -- the correct answer rather than an oversight.
-  teardown_case(":q on a split (buffer stays loaded)", function(b)
+  --
+  -- The case's whole point is that the buffer survives the kill -- which means
+  -- it is still loaded, listed, and containing "req=aaa pinned here" once the
+  -- assertions above are done with it. Left alone that buffer outlives this
+  -- spec and inflates any later spec's buffer-wide scan (`qf.fill_all`,
+  -- `count.count_loaded`) by one "aaa" match -- caught by running the suite in
+  -- reverse, as TESTS/README.md says it must. Wipe it explicitly; every other
+  -- case's `kill` already did this as part of what it was testing.
+  local survivor = teardown_case(":q on a split (buffer stays loaded)", function(b)
     vim.cmd("split")
     vim.api.nvim_set_current_buf(b)
     vim.cmd("q")
   end, false)
+  vim.cmd("bwipeout! " .. survivor)
 
   -- And the events on their own, which is what a third-party plugin's
   -- `nvim_buf_delete`-equivalent reaches the handler through.

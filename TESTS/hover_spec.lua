@@ -83,11 +83,11 @@ function M.run()
 
   -- ------------------------------------------------- the ceiling, and pcall --
   --
-  -- `core.count` declines (returns nil) once a buffer is over MAX_LINES, and
-  -- the module doc comment promises the callback repeats that as "too many
+  -- `core.count` declines (returns nil) once a buffer is over `list.count_max_lines`,
+  -- and the module doc comment promises the callback repeats that as "too many
   -- lines to count here" rather than smoothing it into a zero -- a real
   -- branch nothing in this file exercised. Swapping `core.count` in reaches it
-  -- without building a 20000-line buffer for real.
+  -- without building a 200000-line buffer for real.
   t.with_modules({ ["spotlight.core.count"] = {
     count = function()
       return nil, 0
@@ -98,6 +98,26 @@ function M.run()
     t.contains("hover: naming the token", over_ceiling.title, "req-42abc")
     t.contains("hover: but declines to count it", table.concat(over_ceiling.lines, "\n"), "too many lines to count here")
     t.eq("hover: not smoothed into a zero", table.concat(over_ceiling.lines, "\n"):find("0 occurrence"), nil)
+  end)
+
+  -- LUA-87: the ceiling comes from `list.count_max_lines`, not a duplicated
+  -- module constant -- a user raising or lowering it must reach this float
+  -- too, or the list and the float disagree about whether a buffer counts as
+  -- "too big to scan".
+  local seen_max_lines
+  t.with_modules({
+    ["spotlight.core.count"] = {
+      count = function(_, _, max_lines)
+        seen_max_lines = max_lines
+        return 1, 1
+      end,
+    },
+  }, function()
+    local config = require("spotlight.config")
+    config.setup({ list = { count_max_lines = 12345 } })
+    answer(buf, 1, 2)
+    t.eq("hover: reads the ceiling from list.count_max_lines, not a fixed constant", seen_max_lines, 12345)
+    config.setup()
   end)
 
   -- A count that raises (a bad pattern, a race on the buffer) is swallowed by

@@ -35,14 +35,6 @@ local api = vim.api
 ---@type boolean
 local _registered = false
 
---- How many lines a buffer may have before the count declines. Matches the
---- ceiling the spotlight list uses, so the two never disagree about whether a
---- buffer was scanned.
---- CDX: this fixed 20000 does not match `list.count_max_lines` (default 200000)
---- and never reads the config, so list and hover disagree for buffers between
---- the two — judgement call whether the constant or the comment is wrong.
-local MAX_LINES = 20000
-
 ---@internal
 --- The word-ish run the cursor is inside, or nil.
 ---
@@ -133,7 +125,11 @@ function M.setup()
         end
 
         local ok_count, count = pcall(function()
-          return (require("spotlight.core.count").count(bufnr, item, MAX_LINES))
+          -- Read live, not a duplicated module-level constant: `list.count_max_lines`
+          -- is the one ceiling the whole plugin agrees on, so the list and this
+          -- float never disagree about whether a buffer was scanned.
+          local max_lines = require("spotlight.config").get("list.count_max_lines")
+          return (require("spotlight.core.count").count(bufnr, item, max_lines))
         end)
 
         local lines

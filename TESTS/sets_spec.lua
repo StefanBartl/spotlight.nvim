@@ -116,6 +116,39 @@ function M.run()
   vim.cmd("Spotlight sets list")
   sets.delete("cmdset")
 
+  -- ---------- PERF-42: a write must not clobber a concurrent instance's set ----------
+  --
+  -- `sets.lua` caches the on-disk sets table for the session and never
+  -- invalidates it on its own; `save`/`delete` then write that cache back as
+  -- the WHOLE file. Populate the cache first (`sets.names()`), then write a
+  -- set straight to the store -- bypassing this module entirely, the way a
+  -- second running Neovim instance would -- before this session's own save.
+  -- Without an invalidate-before-write, that whole-file write silently drops
+  -- the other instance's set.
+  local ok_store, project_store = pcall(require, "lib.nvim.store.project")
+  if ok_store then
+    sets.names() -- force the cache to populate from what is on disk now
+    local raw = project_store.load("spotlight/sets")
+    local on_disk = (type(raw) == "table" and type(raw.sets) == "table") and raw.sets or {}
+    on_disk["external-instance"] =
+      { { id = 1, text = "ext", kind = "literal", pattern = "\\C\\V\\<ext\\>", scope = "global", slot = 1, hl = "Spotlight1" } }
+    project_store.save("spotlight/sets", { version = 1, sets = on_disk })
+
+    registry.clear()
+    registry.add({ text = "mine", kind = "literal" })
+    sets.save("mine-instance")
+
+    local names_after = {}
+    for _, n in ipairs(sets.names()) do
+      names_after[n] = true
+    end
+    t.ok("perf-42: this session's own save still succeeds", names_after["mine-instance"])
+    t.ok("perf-42: a concurrent instance's set survives this session's write", names_after["external-instance"])
+
+    sets.delete("mine-instance")
+    sets.delete("external-instance")
+  end
+
   registry.clear()
 end
 

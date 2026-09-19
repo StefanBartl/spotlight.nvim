@@ -27,7 +27,9 @@ local M = {}
 local STORE_KEY = "spotlight/sets"
 local VERSION = 1
 
---- Lazily loaded, session-cached: `name -> Spotlight.StoredItem[]`.
+--- Lazily loaded, session-cached: `name -> Spotlight.StoredItem[]`. Reads
+--- share this cache freely; a write forces a fresh read first (`invalidate`)
+--- since it writes the whole file back.
 ---@type table<string, Spotlight.StoredItem[]>|nil
 local cache = nil
 
@@ -66,6 +68,23 @@ local function loaded()
     end
   end
   return cache
+end
+
+---@internal
+--- Force `cache` to be re-read from disk on the next `loaded()` call.
+---
+--- `cache` has no TTL and nothing else invalidates it, so without this a
+--- write from *this* session is based on whatever was on disk when `loaded()`
+--- first ran -- possibly long before -- rather than the current file.
+--- `save_cache` then writes that stale snapshot back as the WHOLE file, so
+--- any set a different running instance saved or deleted in the meantime is
+--- silently overwritten by it. Called right before `M.save`/`M.delete`
+--- mutate and write: it narrows the race to the gap between this re-read and
+--- that write, rather than leaving the cache stale for the rest of the
+--- session.
+---@return nil
+local function invalidate()
+  cache = nil
 end
 
 ---@internal
@@ -117,6 +136,7 @@ function M.save(name)
   if type(name) ~= "string" or name == "" then
     return false, "a set needs a name"
   end
+  invalidate()
   loaded()[name] = registry.snapshot()
   return save_cache()
 end
@@ -151,6 +171,7 @@ end
 ---@param name string
 ---@return boolean ok
 function M.delete(name)
+  invalidate()
   local c = loaded()
   if not c[name] then
     return false

@@ -165,6 +165,27 @@ function M.has_report(reports, level, needle)
   return false
 end
 
+--- Collect `spotlight.util.lib.notify` calls issued during `fn`, by
+--- substituting `lib.nvim.notify` for the duration. `lib.notify` resolves it
+--- fresh on every call (see `spotlight.util.lib`'s own seam comment), so
+--- swapping the module is enough — no reload needed.
+---@param fn fun()
+---@return { msg: string, level: integer }[] notifications
+function M.notifications(fn)
+  local records = {}
+  local fake = {
+    create = function()
+      return {
+        notify = function(msg, level)
+          records[#records + 1] = { msg = msg, level = level }
+        end,
+      }
+    end,
+  }
+  M.with_modules({ ["lib.nvim.notify"] = fake }, fn)
+  return records
+end
+
 --- Replace the current buffer's contents and return it as a scratch fixture.
 ---@param lines string[]
 ---@return integer bufnr

@@ -48,6 +48,16 @@ end
 --- Load the on-disk sets table into `cache`, once per session. Every field is
 --- re-validated, the same treatment as the main persistence snapshot: this
 --- file is exactly as untrusted (hand-editable JSON in the cache directory).
+---
+--- An unreadable/corrupt file and "no sets saved yet" both leave `cache`
+--- empty — there is no third return value here for callers to check, and
+--- `M.save`/`M.delete` write the WHOLE file back from `cache` (see
+--- `save_cache`). Left unreported, a save right after a corrupt load would
+--- silently replace a file that actually held other saved sets with one
+--- holding only the set just saved. `lib.nvim.cache.disk` already backs up
+--- the original bytes before returning the decode failure, so nothing is
+--- destroyed on disk, but the user still needs to know their saved sets did
+--- not come back before they save or delete anything (ERR-11).
 ---@return table<string, Spotlight.StoredItem[]>
 local function loaded()
   if cache then
@@ -58,8 +68,16 @@ local function loaded()
   if not s then
     return cache
   end
-  local ok, data = pcall(s.load, STORE_KEY)
-  if not ok or type(data) ~= "table" or type(data.sets) ~= "table" then
+  local ok, data, err = pcall(s.load, STORE_KEY)
+  if not ok then
+    lib.notify(("could not read saved spotlight sets: %s"):format(tostring(data)), vim.log.levels.WARN)
+    return cache
+  end
+  if err then
+    lib.notify(("could not read saved spotlight sets: %s"):format(err), vim.log.levels.WARN)
+    return cache
+  end
+  if type(data) ~= "table" or type(data.sets) ~= "table" then
     return cache
   end
   for name, items in pairs(data.sets) do

@@ -149,6 +149,55 @@ function M.run()
     sets.delete("external-instance")
   end
 
+  -- ---------- ERR-11: a corrupt/unreadable sets file must not look like "no
+  -- sets saved yet" ----------
+  --
+  -- `loaded()` feeds straight into `save()`/`delete()`'s load-modify-save
+  -- cycle: a save right after a silently-empty corrupt load would replace a
+  -- file that held other sets with one holding only the set just saved.
+  -- `lib.nvim.cache.disk` already backs the original bytes up (to
+  -- `<file>.corrupt`) before reporting the decode failure, so nothing is
+  -- destroyed on disk by that -- but the user still needs a warning before
+  -- it happens. `spotlight.sets` caches its on-disk table for the whole
+  -- session, so the module is reloaded fresh here to reach `loaded()`'s
+  -- very first call under a store double, then restored to the original
+  -- instance afterwards.
+  local STORE_MOD = "lib.nvim.store.project"
+  do
+    local saved_sets_module = package.loaded["spotlight.sets"]
+    package.loaded["spotlight.sets"] = nil
+    t.with_modules({
+      [STORE_MOD] = {
+        save = function() end,
+        load = function()
+          return nil, "invalid json: original kept at /fake/sets.json.corrupt"
+        end,
+      },
+    }, function()
+      local fresh_sets = require("spotlight.sets")
+      local notifications = t.notifications(function()
+        t.eq("sets/names: a corrupt sets file yields no names, same as none saved", #fresh_sets.names(), 0)
+      end)
+      t.eq("sets/names: but warns the user about the corrupt file (ERR-11)", #notifications, 1)
+      t.eq("sets/names: at WARN level", notifications[1].level, vim.log.levels.WARN)
+      t.contains("sets/names: naming the underlying decode failure", notifications[1].msg, "invalid json")
+    end)
+    package.loaded["spotlight.sets"] = saved_sets_module
+  end
+  -- The quiet case stays quiet: no sets file at all is not an error.
+  do
+    local saved_sets_module = package.loaded["spotlight.sets"]
+    package.loaded["spotlight.sets"] = nil
+    t.with_modules({ [STORE_MOD] = { save = function() end, load = function() end } }, function()
+      local fresh_sets = require("spotlight.sets")
+      local notifications = t.notifications(function()
+        t.eq("sets/names: no sets file at all is 0 names", #fresh_sets.names(), 0)
+      end)
+      t.eq("sets/names: and stays silent -- 'nothing yet' is not 'broken'", #notifications, 0)
+    end)
+    package.loaded["spotlight.sets"] = saved_sets_module
+  end
+
   registry.clear()
 end
 

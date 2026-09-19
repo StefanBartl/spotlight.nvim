@@ -191,6 +191,14 @@ function M.run()
   t.without_modules({ STORE }, function()
     t.eq("load: returns 0 without the store module", persist.load(), 0)
   end)
+  -- The quiet case must stay quiet: a project with nothing persisted yet is
+  -- not an error, and must not warn just because the result is empty.
+  t.with_modules({ [STORE] = { save = function() end, load = function() end } }, function()
+    local notifications = t.notifications(function()
+      t.eq("load: no snapshot at all is 0", persist.load(), 0)
+    end)
+    t.eq("load: and stays silent -- 'nothing yet' is not 'broken'", #notifications, 0)
+  end)
   t.with_modules(
     { [STORE] = {
       save = function() end,
@@ -199,7 +207,13 @@ function M.run()
       end,
     } },
     function()
-      t.eq("load: a raising store is 0, not a crash", persist.load(), 0)
+      local notifications = t.notifications(function()
+        local restored, err = persist.load()
+        t.eq("load: a raising store is 0, not a crash", restored, 0)
+        t.contains("load: and reports the underlying message", err or "", "unreadable")
+      end)
+      t.eq("load: a raising store still warns the user (ERR-11)", #notifications, 1)
+      t.eq("load: at WARN level", notifications[1].level, vim.log.levels.WARN)
     end
   )
   t.with_modules(
@@ -213,6 +227,27 @@ function M.run()
       t.eq("load: a non-table snapshot is 0", persist.load(), 0)
     end
   )
+  -- ERR-11: a snapshot file that exists but could not be decoded (what
+  -- `lib.nvim.cache.disk` reports after backing up the original bytes to
+  -- `.corrupt`) must not look like "no snapshot yet" -- both currently
+  -- return `0`, but only the corrupt case is worth telling the user about.
+  t.with_modules({
+    [STORE] = {
+      save = function() end,
+      load = function()
+        return nil, "invalid json: original kept at /fake/state.json.corrupt"
+      end,
+    },
+  }, function()
+    local notifications = t.notifications(function()
+      local restored, err = persist.load()
+      t.eq("load: a corrupt snapshot restores 0, same as no snapshot", restored, 0)
+      t.contains("load: but the error is returned", err or "", "invalid json")
+    end)
+    t.eq("load: exactly one warning for the corrupt snapshot", #notifications, 1)
+    t.eq("load: at WARN level", notifications[1].level, vim.log.levels.WARN)
+    t.contains("load: naming the underlying decode failure", notifications[1].msg, "invalid json")
+  end)
 
   local store2 = fake_store()
   t.with_modules({ [STORE] = store2 }, function()

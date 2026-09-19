@@ -153,7 +153,19 @@ function M.save()
 end
 
 --- Load the snapshot and restore spotlights plus the exception list.
+---
+--- A restored count of `0` covers two situations that must stay
+--- distinguishable to the *user*, even though both return `0` here: a
+--- project with no snapshot yet (quiet — nothing went wrong) and a snapshot
+--- file that exists but could not be read or decoded (reported via
+--- `lib.notify`, ERR-11 — "no spotlights came back" must not look like "there
+--- were none to restore"). `lib.nvim.cache.disk` already backs up the
+--- original bytes next to a corrupt file before this ever sees it, so
+--- nothing is destroyed by the fact that the very next save writes a fresh
+--- snapshot over it — but the user still needs to know their persisted
+--- spotlights did not come back and why.
 ---@return integer restored
+---@return string|nil err # Set only when a snapshot existed but could not be read/decoded.
 function M.load()
   if config.get("persist.enable") ~= true then
     return 0
@@ -162,10 +174,18 @@ function M.load()
   if not s then
     return 0
   end
-  local ok, data = pcall(s.load, STORE_KEY)
-  if not ok or type(data) ~= "table" then
+  local ok, data, err = pcall(s.load, STORE_KEY)
+  if not ok then
+    lib.notify(("could not restore persisted spotlights: %s"):format(tostring(data)), vim.log.levels.WARN)
     lib.debug("persist: nothing to load", { key = STORE_KEY, root = path.root(), ok = ok })
-    return 0
+    return 0, tostring(data)
+  end
+  if err then
+    lib.notify(("could not restore persisted spotlights: %s"):format(err), vim.log.levels.WARN)
+  end
+  if type(data) ~= "table" then
+    lib.debug("persist: nothing to load", { key = STORE_KEY, root = path.root(), ok = ok, err = err })
+    return 0, err
   end
 
   if type(data.persist_exceptions) == "table" then

@@ -45,12 +45,42 @@ function M.run()
   t.eq("setup(non-table): treated as {}", config.get("match.max"), 64)
   t.eq("setup(non-table): and nothing is reported as an issue", #config.issues, 0)
 
-  -- Unknown keys are carried through rather than rejected -- worth knowing,
-  -- since a typo in a user's config is therefore silent here (the keymap
-  -- registry is the layer that reports one, and only for keymap names).
+  -- ---------- unknown keys are rejected before the merge (ERR-50) ----------
+  --
+  -- A misspelled top-level key never reaches the merge -- it would otherwise
+  -- sit in the active config as an inert extra field, with the option the
+  -- user meant to set silently still at its default.
   config.setup({ nonexistent_section = { a = 1 } })
-  t.eq("setup: an unknown key is kept, not rejected", config.get("nonexistent_section.a"), 1)
-  t.eq("setup: and is not reported as an issue", #config.issues, 0)
+  t.eq("setup: an unknown top-level key is rejected, not kept", config.get("nonexistent_section.a"), nil)
+  t.ok("setup: and it is reported", #config.issues >= 1)
+  t.contains("setup: naming the offending key", table.concat(config.issues, " | "), "nonexistent_section")
+
+  -- Checked by full dotted path, not bare name: a typo one level into a
+  -- known section is caught too, and the rest of that section's overrides
+  -- still apply.
+  config.setup({ keymaps = { toggl_here = "<leader>x" } })
+  t.eq("setup: a nested unknown key is rejected", config.get("keymaps.toggl_here"), nil)
+  t.eq("setup: ...and the real key keeps its default", config.get("keymaps.toggle_here"), "<leader>sk")
+  t.contains("setup: reported by its full path", table.concat(config.issues, " | "), "keymaps.toggl_here")
+
+  -- A close-but-wrong key gets a "did you mean" hint.
+  config.setup({ mach = { max = 7 } })
+  t.contains("setup: a near-miss key gets a hint", table.concat(config.issues, " | "), "did you mean 'match'")
+
+  -- A non-table value for a record-shaped section degrades to the default
+  -- instead of replacing the whole section (which the merge would otherwise
+  -- do wholesale, and the very next normalizer would then index into a
+  -- non-table and throw).
+  config.setup({ match = 5 })
+  t.eq("setup: a scalar override for a table section is rejected", config.get("match.max"), 64)
+  t.contains("setup: and reported", table.concat(config.issues, " | "), "'match' must be a table")
+
+  -- A section where every sub-key was rejected behaves like an explicit
+  -- `{}` override: nothing survives to hand the merge, so the section's
+  -- other defaults are untouched rather than wiped by an accidental
+  -- array-shaped `{}`.
+  config.setup({ persist = { enabel = false } })
+  t.eq("setup: a fully-rejected section keeps its real defaults", config.get("persist.enable"), true)
   config.setup()
 
   -- ---------- the numeric knobs ----------

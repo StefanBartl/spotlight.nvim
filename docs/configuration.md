@@ -10,6 +10,13 @@ color or an unparseable Lua pattern is dropped, every other setting still
 applies, and `:checkhealth spotlight` lists exactly what was rejected. One bad
 line should not stop the plugin from loading.
 
+Unknown keys are rejected the same way, **before** they are merged in — a
+typo like `spotlight.setup({ mach = { max = 7 } })` is reported (with a
+"did you mean" hint when one is close) instead of sitting in the config as an
+inert field while the option you actually meant to set silently keeps its
+default. `keymaps` is the one section that also accepts a plain `false` in
+place of a table — see [Keymaps](#keymaps).
+
 ## Table of contents
 
 - [Every default](#every-default)

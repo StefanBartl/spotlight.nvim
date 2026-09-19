@@ -1,10 +1,11 @@
 ---@module 'spotlight.config'
 ---@brief Runtime configuration store for spotlight.nvim.
 ---@description
---- Deep-merges user options over `spotlight.config.DEFAULTS`, validates the
---- handful of values that can break rendering or matching if wrong, and exposes
---- a single `get(path)` accessor (dot-separated) so no other module ever reads a
---- raw options table. This keeps fallback semantics in one place.
+--- Rejects unknown keys, deep-merges what is left over `spotlight.config.DEFAULTS`,
+--- validates the handful of values that can break rendering or matching if
+--- wrong, and exposes a single `get(path)` accessor (dot-separated) so no
+--- other module ever reads a raw options table. This keeps fallback semantics
+--- in one place.
 ---
 --- The merge and the dot-path lookup are `lib.lua.config`'s: this module used
 --- to carry its own byte-identical copies of both (cascade.nvim had the other
@@ -33,6 +34,138 @@ M.options = vim.deepcopy(DEFAULTS)
 --- to its default, not stop the plugin from loading.
 ---@type string[]
 M.issues = {}
+
+---@internal
+--- Top-level keys `setup()` accepts and, for the record-shaped sections among
+--- them, their own direct keys by full dotted path -- e.g. `palette.bold`,
+--- `keymaps.toggle_here`. `true` means "a leaf" (no further nesting to check).
+--- `spotlight.@types` is the source of truth this table mirrors; every field
+--- documented there must have an entry here, or a genuine key would be
+--- rejected as unknown.
+---
+--- One level of nesting is enough: no section in `DEFAULTS.lua` nests a
+--- record inside a record. What looks like a third level (`palette.colors`,
+--- `cursor.patterns`) is an *array* of opaque entries, not a keyed option
+--- table, so there is nothing further here to validate by name -- those are
+--- shape-checked at their actual use by `normalize_palette`/
+--- `normalize_cursor_patterns` instead.
+---@type table<string, true|table<string, true>>
+local KNOWN = {
+  hover = true,
+  palette = { colors = true, colors_light = true, bold = true, reapply_on_colorscheme = true },
+  match = { priority = true, ignore_case = true, word_boundaries = true, max = true, max_text_len = true },
+  cursor = { patterns = true, fallback_cword = true, max_line_len = true },
+  nav = { scope = true, wrap = true, center = true },
+  list = { count = true, count_max_lines = true, count_scope = true, swatch = true },
+  map = { sign_text = true, max_entries = true },
+  quickfix = { open = true, title = true, max_entries = true },
+  persist = { enable = true, default = true, debounce_ms = true },
+  keymaps = {
+    preset = true,
+    toggle_here = true,
+    toggle = true,
+    list = true,
+    clear = true,
+    quickfix = true,
+    line = true,
+    next = true,
+    prev = true,
+  },
+  menu = { enable = true },
+  notify = true,
+  debug = true,
+}
+
+-- `keymaps` is the one record-shaped section whose user-facing type also
+-- allows a plain boolean override: `keymaps = false` is `bindings/keymaps.lua`
+-- and `integrations/menu.lua`'s documented (and tested, see
+-- TESTS/keymaps_spec.lua and TESTS/menu_spec.lua) way to say "bind nothing",
+-- distinct from `keymaps.preset = false` ("declare the actions, but do not
+-- bind them"). Without this, `sanitize()` would reject it as "must be a
+-- table" and silently put the full default keymap table back in its place.
+---@type table<string, true>
+local BOOL_OVERRIDABLE = { keymaps = true }
+
+---@internal
+--- `key` with the nearest known one as a hint when there is a plausible one
+--- (edit distance <= 3) -- same pattern as cascade.nvim/buffer-ctx.nvim's
+--- config modules.
+---@param key any
+---@param known table<string, any>
+---@param prefix string
+---@return string
+local function describe_unknown(key, known, prefix)
+  local levenshtein = require("lib.lua.strings.distance").levenshtein
+  local name = tostring(key)
+  local best, best_distance = nil, nil
+  for candidate in pairs(known) do
+    local d = levenshtein(name, candidate)
+    if d <= 3 and (best_distance == nil or d < best_distance) then
+      best, best_distance = candidate, d
+    end
+  end
+  if best then
+    return ("unknown option '%s%s' (did you mean '%s%s'?)"):format(prefix, name, prefix, best)
+  end
+  return ("unknown option '%s%s'"):format(prefix, name)
+end
+
+---@internal
+--- Reject what cannot be merged, before the merge (ERR-50): a misspelled key
+--- (`persit = {...}`, `keymaps = { toggl_here = ... }`) previously landed in
+--- the active config as an inert extra field -- the merge does not check its
+--- own input, `lib_config.get` just returns `nil` for a path nobody ever
+--- reads, and the option the user actually meant to set silently kept its
+--- default. Checked by full dotted path (`KNOWN`, one level of nesting,
+--- which is as deep as this schema goes -- see its own doc comment) rather
+--- than by bare name, so e.g. a `toggle` typo'd under the wrong section still
+--- gets caught. A non-table value for a record-shaped section (`match = 5`)
+--- is rejected the same way instead of reaching `drop_pointless_empty_overrides`/
+--- the merge, where it would either throw or silently replace the whole
+--- section -- except for the sections in `BOOL_OVERRIDABLE`, whose
+--- documented, tested shorthand a plain boolean genuinely is.
+---@param user_opts table
+---@return table clean
+---@return string[] issues
+local function sanitize(user_opts)
+  local clean, issues = {}, {}
+  for key, value in pairs(user_opts) do
+    local known = KNOWN[key]
+    if known == nil then
+      issues[#issues + 1] = describe_unknown(key, KNOWN, "")
+    elseif type(known) == "table" then
+      if type(value) ~= "table" then
+        if BOOL_OVERRIDABLE[key] then
+          clean[key] = value
+        else
+          issues[#issues + 1] = ("option '%s' must be a table, got %s -- using the default"):format(key, type(value))
+        end
+      else
+        local nested = {}
+        for sub_key, sub_value in pairs(value) do
+          if known[sub_key] then
+            nested[sub_key] = sub_value
+          else
+            issues[#issues + 1] = describe_unknown(sub_key, known, key .. ".")
+          end
+        end
+        -- Only set the key at all when a real override survived: an empty
+        -- `nested` here is indistinguishable from an explicit empty *array*
+        -- override to `drop_pointless_empty_overrides`/the merge below, and
+        -- setting it anyway would make a fully-rejected section (every
+        -- sub-key typo'd) behave like `setup({ keymaps = {} })` -- which is
+        -- already handled correctly -- rather than "nothing survived here".
+        if next(nested) ~= nil then
+          clean[key] = nested
+        end
+      end
+    else
+      clean[key] = value
+    end
+  end
+  table.sort(issues)
+  return clean, issues
+end
 
 ---@internal
 --- `lib_config.deep_merge` replaces a table wholesale, instead of recursing
@@ -242,8 +375,9 @@ end
 ---@param opts Spotlight.Config|nil
 ---@return nil
 function M.setup(opts)
-  M.issues = {}
-  local clean = drop_pointless_empty_overrides(type(opts) == "table" and opts or {}, DEFAULTS)
+  local sanitized, issues = sanitize(type(opts) == "table" and opts or {})
+  M.issues = issues
+  local clean = drop_pointless_empty_overrides(sanitized, DEFAULTS)
   -- Merged onto a copy of `DEFAULTS`, not `DEFAULTS` itself: `deep_merge`
   -- only copies the top level and recurses into sections `clean` actually
   -- mentions, so every section left untouched by the caller would otherwise

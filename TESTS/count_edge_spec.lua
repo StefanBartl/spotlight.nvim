@@ -43,7 +43,7 @@ function M.run()
   -- ---------- a pattern Vim refuses ----------
   local broken = { pattern = "\\V\\%(", id = -1, text = "broken", slot = 1, hl = "Spotlight1" }
   local n, scanned = count.count(real_buffer({ "anything" }), broken, 1000)
-  t.eq("count: an uncompilable pattern counts 0 rather than raising", n, 0)
+  t.eq("count: an uncompilable pattern is 'not counted' (nil), not a real zero (ERR-11)", n, nil)
   t.eq("count: and reports zero lines scanned", scanned, 0)
   local entries, truncated = count.matching_lines(real_buffer({ "anything" }), { "\\V\\%(" }, 10)
   t.eq("matching_lines: an uncompilable pattern yields no entries", #entries, 0)

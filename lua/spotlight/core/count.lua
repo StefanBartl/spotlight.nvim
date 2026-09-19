@@ -73,10 +73,11 @@ end
 
 --- Count how many times `item`'s pattern matches in `bufnr`.
 ---
---- Returns `nil` when the buffer is larger than `max_lines`, which callers must
---- render as "not counted" rather than as zero — the difference between "this
---- token appears nowhere" and "we did not look" is exactly what the user is
---- reading the list for.
+--- Returns `nil` when the buffer is larger than `max_lines`, or when `item`'s
+--- pattern is one Vim refuses to compile, which callers must render as "not
+--- counted" rather than as zero — the difference between "this token appears
+--- nowhere" and "we did not look" is exactly what the user is reading the
+--- list for.
 ---@param bufnr integer
 ---@param item Spotlight.Item
 ---@param max_lines integer
@@ -94,7 +95,11 @@ function M.count(bufnr, item, max_lines)
   end
   local re = pattern.compile(item.pattern)
   if not re then
-    return 0, 0
+    -- Same "we did not look" signal as the `max_lines` decline above, not
+    -- `0`: a pattern Vim refuses to compile was never actually scanned, and
+    -- collapsing that into a real zero would answer "this token appears
+    -- nowhere" for a token this function has no idea about.
+    return nil, 0
   end
   local n = 0
   -- Fetched in chunks: one nvim_buf_get_lines call for a 200k-line buffer

@@ -1,7 +1,8 @@
 -- TESTS/yank_spec.lua
 -- `:Spotlight yank` / `yank.yank` / `api.yank`: matching lines into the
--- unnamed register, reusing `core.count.matching_lines` exactly like the
--- quickfix filter does.
+-- unnamed register, reusing `core.count.matching_lines_for` exactly like the
+-- quickfix filter does — including its buffer-scoped ("this occurrence
+-- only") item handling (PRIN-20; see the pinned-item case below).
 
 local t = require("harness")
 
@@ -70,6 +71,26 @@ function M.run()
   t.contains("cmd/yank: fills the unnamed register", vim.fn.getreg('"'), "req=aaa")
 
   registry.clear()
+
+  -- ---------- a buffer-scoped ("this occurrence only") item is not dropped ----------
+  --
+  -- Its pattern carries `\%l\%c` position atoms that `vim.regex` never
+  -- evaluates (see `core/count.lua`'s `pinned_to`), so a pattern-only scan
+  -- would report "no matching lines" even though `:Spotlight qf` finds it and
+  -- the highlight is visibly on screen (PRIN-20).
+  local pin_buf = vim.api.nvim_create_buf(false, false)
+  vim.api.nvim_buf_set_lines(pin_buf, 0, -1, false, { "only this one, please" })
+  vim.api.nvim_set_current_buf(pin_buf)
+  local pin = registry.add_at({ text = "this one", kind = "literal" }, { buf = pin_buf, row1 = 1, col1 = 6 })
+
+  local pin_found, pin_err, pin_truncated = yank.yank(pin)
+  t.eq("yank/pinned: the pinned occurrence is found, not reported as 0", pin_found, 1)
+  t.eq("yank/pinned: no error", pin_err, nil)
+  t.ok("yank/pinned: not truncated", not pin_truncated)
+  t.eq("yank/pinned: the pinned line lands in the register", vim.fn.getreg('"'), "only this one, please\n")
+
+  registry.clear()
+  vim.cmd("bwipeout! " .. pin_buf)
 end
 
 return M

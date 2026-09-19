@@ -2,10 +2,10 @@
 ---@brief Yank every matching line to the unnamed register.
 ---@description
 --- The quickfix filter's sibling for "I just want the text, not a navigable
---- list" — reuses `core.count.matching_lines` verbatim, so the scanning cost
---- and the "each line reported once, even if several spotlights hit it"
---- guarantee are identical to `:Spotlight qf`. The only difference is the
---- destination.
+--- list" — shares `core.count.matching_lines_for` with `spotlight.qf`, so the
+--- scanning cost, the pinned-item handling, and the "each line reported once,
+--- even if several spotlights hit it" guarantee are identical to
+--- `:Spotlight qf`. The only difference is the destination.
 ---
 --- Deliberately narrow for now: always the unnamed register (`"`), always raw
 --- line text with no line-number prefix. A register argument or a
@@ -21,6 +21,13 @@ local M = {}
 --- Yank matching lines into the unnamed register, one per line, in buffer
 --- order. With `item` given, only that spotlight's matches; otherwise every
 --- active spotlight's.
+---
+--- Goes through `count.matching_lines_for` (item-aware), not
+--- `count.matching_lines` (pattern-only): a buffer-scoped ("this occurrence
+--- only") item's pattern carries `\%l\%c` position atoms that `vim.regex`
+--- does not evaluate, so a pattern-only scan silently drops it -- the same
+--- item `spotlight.qf`'s `matching_lines_for` call already resolves by its
+--- recorded position instead of searching for it.
 ---@param item Spotlight.Item|nil
 ---@return integer found, string|nil err, boolean truncated
 function M.yank(item)
@@ -29,14 +36,9 @@ function M.yank(item)
     return 0, "no active spotlights", false
   end
 
-  local pats = {}
-  for i, it in ipairs(items) do
-    pats[i] = it.pattern
-  end
-
   local bufnr = vim.api.nvim_get_current_buf()
   local opts = config.get("quickfix")
-  local entries, truncated = count.matching_lines(bufnr, pats, opts.max_entries)
+  local entries, truncated = count.matching_lines_for(bufnr, items, opts.max_entries)
 
   if #entries == 0 then
     return 0, "no matching lines in this buffer", false

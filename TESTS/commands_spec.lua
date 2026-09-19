@@ -100,7 +100,21 @@ function M.run()
   t.eq("api/next: no spotlights means no movement", api.next(), false)
   t.eq("api/quickfix: an unknown text is refused", api.quickfix("nope"), false)
   api.add("aaa")
-  t.eq("api/spotlights: the live registry is exposed", #api.spotlights(), 1)
+  t.eq("api/spotlights: a snapshot of the registry is exposed", #api.spotlights(), 1)
+
+  -- ERR-54: a caller sorting/pruning what looks like its own copy (e.g. a
+  -- statusline doing `table.sort(spotlights(), by_slot)`) must not reorder or
+  -- shrink the live registry other consumers (persistence, nav, the list)
+  -- read from.
+  api.add("mmm")
+  local snapshot = api.spotlights()
+  table.sort(snapshot, function(a, b)
+    return a.text > b.text
+  end)
+  t.eq("api/spotlights: sorting the snapshot puts 'mmm' first in it", snapshot[1].text, "mmm")
+  t.eq("api/spotlights: ...but the live registry keeps insertion order", registry.all()[1].text, "aaa")
+  table.remove(snapshot)
+  t.eq("api/spotlights: shrinking the snapshot does not shrink the live registry", registry.count(), 2)
   api.clear()
 
   -- ---------- preset keymaps ----------

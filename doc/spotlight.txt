@@ -702,7 +702,7 @@ to any key or called from your own code:
     spotlight.winopt_toggle(win|nil)     -- toggle it
     spotlight.winopt_status(win|nil)     -- report it
     spotlight.refresh()            -- redefine palette, re-apply everything
-    spotlight.spotlights()         -- the live Spotlight.Item[] list
+    spotlight.spotlights()         -- a snapshot of the Spotlight.Item[] list
 <
 Each returns a boolean saying whether anything happened, and reports its own
 outcome (suppress those messages with `notify = false`).

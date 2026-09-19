@@ -53,8 +53,8 @@ the entries into its own menu.
 
 Every action is also a plain function on the `spotlight` module — no
 `<Plug>` indirection, no action that exists only as a keymap.
-`spotlight.spotlights()` gives live read access to the registry for a status
-line or a scripted check. The full list of signatures is in
+`spotlight.spotlights()` gives read access to a snapshot of the registry for a
+status line or a scripted check. The full list of signatures is in
 [api.md](../api.md).
 
 - **Module:** `init.lua`

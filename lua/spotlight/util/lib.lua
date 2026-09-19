@@ -214,6 +214,20 @@ function M.debounce(fn, ms)
   }
 end
 
+--- Translate `<Esc>` to the byte sequence `nvim_feedkeys` expects.
+---
+--- `vim.keycode()` is a Neovim 0.10 addition -- absent on the 0.9 floor
+--- README.md/health.lua declare -- so it is guarded rather than called
+--- directly; `nvim_replace_termcodes(str, true, true, true)` is the same
+--- translation `vim.keycode` itself performs, and works on 0.9 too.
+---@return string
+function M.esc_keycode()
+  if type(vim.keycode) == "function" then
+    return vim.keycode("<Esc>")
+  end
+  return vim.api.nvim_replace_termcodes("<Esc>", true, true, true)
+end
+
 --- Wrap `fn` so pressing `.` afterwards re-invokes it — used for the
 --- normal-mode toggle keymap so `.` after `<leader>sK` re-resolves and
 --- toggles whatever is under the cursor *now*, not a captured closure over

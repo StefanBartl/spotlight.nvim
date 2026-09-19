@@ -96,7 +96,7 @@ extra wiring.
 
 | Function | Mode | Returns | Description |
 | --- | --- | --- | --- |
-| `spotlight.spotlights()` | any | `Spotlight.Item[]` | The live registry — for a status line or a scripted check |
+| `spotlight.spotlights()` | any | `Spotlight.Item[]` | A snapshot of the registry — for a status line or a scripted check |
 
 Each `Spotlight.Item` carries at least `text`, `pattern`, `slot`, `hl`,
 `locked` and `line`; the authoritative shape is

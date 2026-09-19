@@ -70,7 +70,7 @@ end
 ---@return boolean changed
 function M.toggle_selection()
   local token, err = cursor.selection()
-  vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
+  vim.api.nvim_feedkeys(lib.esc_keycode(), "n", false)
   if not token then
     report(err or "no selection", vim.log.levels.WARN)
     return false
@@ -110,7 +110,7 @@ end
 ---@return boolean changed
 function M.toggle_here_selection()
   local token, err, pos = cursor.selection()
-  vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
+  vim.api.nvim_feedkeys(lib.esc_keycode(), "n", false)
   if not token or not pos then
     report(err or "no selection", vim.log.levels.WARN)
     return false
@@ -602,10 +602,16 @@ function M.refresh()
   registry.rebuild()
 end
 
---- Live access to the registry, for users scripting against the plugin.
+--- Read access to the registry, for users scripting against the plugin. A
+--- snapshot, not the live list `registry.all()` itself holds: `registry.lua`
+--- documents that array as "read-only by contract", a contract only its own
+--- module's callers can be expected to know about -- a script that sorts or
+--- prunes what looks like its own copy (e.g. `table.sort(spotlights(), ...)`
+--- for a statusline) would otherwise reorder or corrupt the registry itself
+--- for the rest of the session.
 ---@return Spotlight.Item[]
 function M.spotlights()
-  return registry.all()
+  return vim.list_slice(registry.all())
 end
 
 -- ---------- setup ----------

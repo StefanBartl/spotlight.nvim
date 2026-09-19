@@ -43,8 +43,9 @@ What Neovim offers on its own does not cover it:
     the same buffer with no highlights.
   - |:match| has three slots, no list, and no persistence.
 
-Requires Neovim 0.9+ and "StefanBartl/lib.nvim". No Treesitter. No
-|TextChanged| or |CursorMoved| autocommand — see |spotlight-matchadd|.
+Requires Neovim 0.9+, "StefanBartl/lib.nvim" and "StefanBartl/ui.nvim". No
+Treesitter. No |TextChanged| or |CursorMoved| autocommand — see
+|spotlight-matchadd|.
 
 ==============================================================================
 2. WHY MATCHADD()                                          *spotlight-matchadd*
@@ -103,7 +104,7 @@ With lazy.nvim:
 >lua
     {
       "StefanBartl/spotlight.nvim",
-      dependencies = { "StefanBartl/lib.nvim" },
+      dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
       event = "VeryLazy",
       config = function()
         require("spotlight").setup()
@@ -812,11 +813,11 @@ credentials, `:Spotlight persist off` is the switch that keeps them out of it
 ==============================================================================
 20. LIB.NVIM INTEGRATION                                        *spotlight-lib*
 
-"StefanBartl/lib.nvim" is a required dependency. Four modules are hard
-requirements:
+"StefanBartl/lib.nvim" and "StefanBartl/ui.nvim" are both required
+dependencies. Four modules are hard requirements:
 
     lib.nvim.bindings.usercmd.composer   the :Spotlight verb
-    ui.kit.select      the spotlight list (rich items)
+    ui.kit.select (from ui.nvim)         the spotlight list (rich items)
     lib.nvim.ui.list            the quickfix filter (:Spotlight qf / yank)
     lib.nvim.bindings.keymap    the keymap preset
 

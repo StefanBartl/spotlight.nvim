@@ -49,8 +49,9 @@ scrolling, through a `:split`.
 > pin: several tokens at once, and they stay through searches and splits.
 >
 > All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
-> dependency — see [Requirements](docs/installation.md#requirements).
+> [lib.nvim](https://github.com/StefanBartl/lib.nvim) and
+> [ui.nvim](https://github.com/StefanBartl/ui.nvim) are the two real
+> dependencies — see [Requirements](docs/installation.md#requirements).
 
 ---
 

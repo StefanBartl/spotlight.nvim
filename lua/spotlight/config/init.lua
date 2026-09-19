@@ -15,18 +15,55 @@ require("spotlight.@types")
 
 local DEFAULTS = require("spotlight.config.DEFAULTS")
 local lib_config = require("lib.lua.config")
+local tables = require("lib.lua.tables.core")
 
 ---@class Spotlight.ConfigModule
 ---@field options Spotlight.Config
 local M = {}
 
-M.options = DEFAULTS
+-- A fresh copy, not `DEFAULTS` itself: `M.options` is public and read by
+-- every other module before `setup()` may ever run, and `DEFAULTS.lua`'s own
+-- header says "Never mutate it at runtime" -- a promise this module cannot
+-- keep for a caller that reads `M.options` while it still aliases the real
+-- defaults table.
+M.options = vim.deepcopy(DEFAULTS)
 
 --- Problems found by the last `setup()`, as human-readable strings. Surfaced by
 --- `:checkhealth spotlight` rather than thrown: a bad single key should degrade
 --- to its default, not stop the plugin from loading.
 ---@type string[]
 M.issues = {}
+
+---@internal
+--- `lib_config.deep_merge` replaces a table wholesale, instead of recursing
+--- into it, whenever `tables.is_array` says it is list-like -- which is
+--- vacuously true for `{}`. A record-shaped section (e.g. `keymaps`, whose
+--- default has no array-like keys of its own) has no such array default, so
+--- an override like `setup({ keymaps = {} })` would otherwise wipe every
+--- default under that key, including the ones the caller never touched: the
+--- merge cannot tell "empty override" apart from "explicit empty list", and
+--- picks the wrong one. Recursively drop an override that is an empty table
+--- where the matching default is *not* itself array-like, so it merges as
+--- "nothing to override here" instead of "erase this section". An override
+--- that mirrors an actual array default (e.g. `cursor.patterns = {}`) is left
+--- untouched -- that is a deliberate, meaningful override, not this bug.
+---@param opts table
+---@param defaults table
+---@return table clean
+local function drop_pointless_empty_overrides(opts, defaults)
+  local clean = {}
+  for k, v in pairs(opts) do
+    local d = defaults[k]
+    if type(v) == "table" and type(d) == "table" and not tables.is_array(d) then
+      if next(v) ~= nil then
+        clean[k] = drop_pointless_empty_overrides(v, d)
+      end
+    else
+      clean[k] = v
+    end
+  end
+  return clean
+end
 
 ---@internal
 --- Whether `c` is a usable palette entry (both channels present, `#rrggbb`).
@@ -49,7 +86,10 @@ end
 local function normalize_palette(o, key)
   local list = o.palette[key]
   if type(list) ~= "table" then
-    o.palette[key] = DEFAULTS.palette[key]
+    -- A copy, not `DEFAULTS.palette[key]` itself: assigning the live default
+    -- array back into `o` would re-alias it, undoing the deep-copied merge
+    -- this module builds `o` from (see `M.setup`).
+    o.palette[key] = vim.deepcopy(DEFAULTS.palette[key])
     M.issues[#M.issues + 1] = ("palette.%s is not a list — using defaults"):format(key)
     return
   end
@@ -60,7 +100,7 @@ local function normalize_palette(o, key)
     end
   end
   if #kept == 0 then
-    o.palette[key] = DEFAULTS.palette[key]
+    o.palette[key] = vim.deepcopy(DEFAULTS.palette[key])
     M.issues[#M.issues + 1] = ("palette.%s held no valid { bg = '#rrggbb', fg = '#rrggbb' } entry — using defaults"):format(key)
     return
   end
@@ -82,7 +122,10 @@ end
 local function normalize_cursor_patterns(o)
   local list = o.cursor.patterns
   if type(list) ~= "table" then
-    o.cursor.patterns = DEFAULTS.cursor.patterns
+    -- Copied for the same reason as `normalize_palette`'s fallback: `o` is
+    -- the deep-copied merge result, and aliasing the live `DEFAULTS` array
+    -- back in would reopen the same shared-reference hole one level down.
+    o.cursor.patterns = vim.deepcopy(DEFAULTS.cursor.patterns)
     M.issues[#M.issues + 1] = "cursor.patterns is not a list — using defaults"
     return
   end
@@ -200,7 +243,13 @@ end
 ---@return nil
 function M.setup(opts)
   M.issues = {}
-  M.options = lib_config.deep_merge(DEFAULTS, type(opts) == "table" and opts or {})
+  local clean = drop_pointless_empty_overrides(type(opts) == "table" and opts or {}, DEFAULTS)
+  -- Merged onto a copy of `DEFAULTS`, not `DEFAULTS` itself: `deep_merge`
+  -- only copies the top level and recurses into sections `clean` actually
+  -- mentions, so every section left untouched by the caller would otherwise
+  -- be taken by reference straight from `DEFAULTS` -- and `DEFAULTS.lua`'s
+  -- own header says "Never mutate it at runtime".
+  M.options = lib_config.deep_merge(vim.deepcopy(DEFAULTS), clean)
   normalize_palette(M.options, "colors")
   normalize_palette(M.options, "colors_light")
   normalize_cursor_patterns(M.options)

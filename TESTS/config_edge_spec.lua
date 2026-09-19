@@ -165,51 +165,43 @@ function M.run()
   t.eq("get: a section comes back as a table", type(config.get("match")), "table")
   t.eq("get: a top-level scalar", config.get("notify"), true)
 
-  -- ---------- BUG: the merged options share sub-tables with DEFAULTS ----------
+  -- ---------- merged options never alias DEFAULTS (ERR-51) ----------
   --
   -- `lib.lua.config.deep_merge` copies only the top level and recurses solely
-  -- into sections the *override* mentions. Every section a user did not mention
-  -- is therefore taken by reference, so `config.options.<section>` IS
-  -- `DEFAULTS.<section>` -- and `DEFAULTS.lua`'s own module doc says "Never
-  -- mutate it at runtime", which nothing here can enforce.
-  --
-  -- Nothing inside the plugin currently writes to one (asserted below, so a
-  -- future change that starts to is caught), but `config.options` is public,
-  -- `config.get("cursor")` hands the live list to any caller, and the
-  -- fallback branches in the normalizers hand out `DEFAULTS.<section>.<list>`
-  -- by reference too. A caller that edits what looks like its own snapshot
-  -- silently rewrites the defaults for the rest of the session -- including the
-  -- values the *next* `setup()` falls back to.
-  --
-  -- Fix: merge onto `vim.deepcopy(DEFAULTS)` (and/or deepcopy in the fallback
-  -- assignments). Pinned rather than fixed: it changes the identity of every
-  -- table `config.get` returns.
+  -- into sections the *override* mentions -- every section a user did not
+  -- mention would otherwise be taken by reference, so `config.options.<section>`
+  -- would BE `DEFAULTS.<section>`, and `DEFAULTS.lua`'s own module doc says
+  -- "Never mutate it at runtime". `M.setup` merges onto `vim.deepcopy(DEFAULTS)`
+  -- rather than `DEFAULTS` itself, and the normalizers' fallback branches
+  -- deep-copy the default they hand back, precisely so none of that holds.
   config.setup()
-  t.ok("BUG: options.match is the very DEFAULTS.match table", config.options.match == DEFAULTS.match)
-  t.ok("BUG: options.cursor too", config.options.cursor == DEFAULTS.cursor)
-  t.ok("BUG: and options.palette.colors", config.options.palette.colors == DEFAULTS.palette.colors)
-  t.ok("BUG: down to the individual colour entries", config.options.palette.colors[1] == DEFAULTS.palette.colors[1])
-  t.ok("BUG: get() hands the live list out as well", config.get("cursor.patterns") == DEFAULTS.cursor.patterns)
+  t.ok("options.match is not the DEFAULTS.match table", config.options.match ~= DEFAULTS.match)
+  t.ok("options.cursor is not DEFAULTS.cursor either", config.options.cursor ~= DEFAULTS.cursor)
+  t.ok("options.palette.colors is not DEFAULTS.palette.colors", config.options.palette.colors ~= DEFAULTS.palette.colors)
+  t.ok(
+    "...down to the individual colour entries -- not just the outer arrays",
+    config.options.palette.colors[1] ~= DEFAULTS.palette.colors[1]
+  )
+  t.ok("get() does not hand the live DEFAULTS list out either", config.get("cursor.patterns") ~= DEFAULTS.cursor.patterns)
+  t.ok("...though the content is identical", vim.deep_equal(config.get("cursor.patterns"), DEFAULTS.cursor.patterns))
 
   local saved_max = DEFAULTS.match.max
   config.options.match.max = 999
-  t.eq("BUG: writing to the snapshot rewrites the immutable defaults", DEFAULTS.match.max, 999)
-  DEFAULTS.match.max = saved_max
+  t.eq("writing to the snapshot no longer reaches the immutable defaults", DEFAULTS.match.max, saved_max)
   config.setup()
-  t.eq("restored: DEFAULTS.match.max is back", config.get("match.max"), 64)
+  t.eq("restored: a fresh setup() is back at the real default", config.get("match.max"), 64)
 
   -- The fallback branch is the same story one level down: a rejected list is
-  -- replaced by the DEFAULTS list *itself*, not by a copy of it.
+  -- replaced by a copy of the DEFAULTS list, not the list itself.
   config.setup({ cursor = { patterns = "nope" } })
-  t.ok("BUG: the patterns fallback aliases DEFAULTS.cursor.patterns", config.get("cursor.patterns") == DEFAULTS.cursor.patterns)
+  t.ok("the patterns fallback does not alias DEFAULTS.cursor.patterns", config.get("cursor.patterns") ~= DEFAULTS.cursor.patterns)
   config.setup({ palette = { colors = { "nope" } } })
-  t.ok("BUG: the palette fallback does the same", config.get("palette.colors") == DEFAULTS.palette.colors)
+  t.ok("the palette fallback does not alias it either", config.get("palette.colors") ~= DEFAULTS.palette.colors)
   config.setup()
 
-  -- The positive half of the pin: as things stand, a full `setup()` leaves
-  -- DEFAULTS pristine. This is what would break first if anything downstream
-  -- (the keymap registry, the palette, a binding) started writing into the
-  -- table it was handed.
+  -- A full `setup()` leaves DEFAULTS pristine -- this is what would break
+  -- first if anything downstream (the keymap registry, the palette, a
+  -- binding) started writing into the table it was handed.
   local before = vim.deepcopy(DEFAULTS)
   require("spotlight").setup()
   t.ok("DEFAULTS: a full setup() leaves the defaults untouched", vim.deep_equal(DEFAULTS, before))
@@ -217,6 +209,40 @@ function M.run()
   t.ok("DEFAULTS: ...and so does one with overrides", vim.deep_equal(DEFAULTS, before))
 
   require("spotlight").setup()
+  config.setup()
+
+  -- ---------- an empty nested section does not erase its own defaults (ERR-22) ----------
+  --
+  -- `deep_merge` treats `{}` as list-like (vacuously, via `tables.is_array`)
+  -- and replaces a whole section wholesale instead of recursing into it, so a
+  -- config like `opts = { keymaps = {} }` -- entirely plausible from a
+  -- lazy.nvim spec or a scaffolded config -- would otherwise discard every
+  -- default under that key, including the fields with no dedicated
+  -- normalizer to catch and report the loss (a plain boolean/string just
+  -- becomes `nil`).
+  config.setup({ keymaps = {} })
+  t.eq("empty section: keymaps.preset keeps its default", config.get("keymaps.preset"), true)
+  t.eq("empty section: ...and so does an unvalidated string field", config.get("keymaps.toggle_here"), "<leader>sk")
+  t.eq("empty section: and nothing is reported -- there was nothing wrong to report", #config.issues, 0)
+
+  config.setup({ match = {} })
+  t.eq(
+    "empty section: match.ignore_case (a bare boolean, no normalizer) keeps its default",
+    config.get("match.ignore_case"),
+    false
+  )
+  t.eq("empty section: match.word_boundaries too", config.get("match.word_boundaries"), true)
+  t.eq("empty section: and the validated numeric field is untouched as well", config.get("match.max"), 64)
+
+  config.setup({ palette = {} })
+  t.eq("empty section: palette.bold (unvalidated) keeps its default", config.get("palette.bold"), true)
+  t.eq("empty section: palette.colors is still the full 8-entry default", #config.get("palette.colors"), 8)
+
+  -- An explicit empty *array* override is a different thing entirely -- a
+  -- deliberate "no patterns" -- and must still take effect, not be treated as
+  -- "nothing to override" the way an empty record section now is.
+  config.setup({ cursor = { patterns = {} } })
+  t.eq("empty array override: an explicit empty list is still honoured", #config.get("cursor.patterns"), 0)
   config.setup()
 end
 

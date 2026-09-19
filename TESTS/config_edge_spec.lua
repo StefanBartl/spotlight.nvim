@@ -75,6 +75,21 @@ function M.run()
   t.eq("setup: a scalar override for a table section is rejected", config.get("match.max"), 64)
   t.contains("setup: and reported", table.concat(config.issues, " | "), "'match' must be a table")
 
+  -- `keymaps` is the one section BOOL_OVERRIDABLE lets take a non-table
+  -- value, but only its documented shorthand: the literal `false`. A junk
+  -- non-table value (a typo'd string, a stray number, `true`) must still be
+  -- rejected and degrade to the default, exactly like `match = 5` above --
+  -- not slip through to `lib.nvim.bindings.keymap.registry.register`, whose
+  -- own `vim.validate` throws on anything but table|boolean|nil.
+  local ok = pcall(config.setup, { keymaps = "oops" })
+  t.ok("setup: a junk keymaps value does not throw", ok)
+  t.eq("setup: ...and is rejected, not passed through", config.get("keymaps.toggle_here"), "<leader>sk")
+  t.contains("setup: ...and reported", table.concat(config.issues, " | "), "'keymaps' must be a table or false")
+
+  config.setup({ keymaps = true })
+  t.eq("setup: keymaps = true is not the documented shorthand either", config.get("keymaps.toggle_here"), "<leader>sk")
+  t.contains("setup: ...and is reported the same way", table.concat(config.issues, " | "), "'keymaps' must be a table or false")
+
   -- A section where every sub-key was rejected behaves like an explicit
   -- `{}` override: nothing survives to hand the merge, so the section's
   -- other defaults are untouched rather than wiped by an accidental

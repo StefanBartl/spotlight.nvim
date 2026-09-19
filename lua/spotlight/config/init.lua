@@ -83,6 +83,15 @@ local KNOWN = {
 -- distinct from `keymaps.preset = false` ("declare the actions, but do not
 -- bind them"). Without this, `sanitize()` would reject it as "must be a
 -- table" and silently put the full default keymap table back in its place.
+--
+-- Only the literal `false` is the shorthand -- `sanitize()` checks `value ==
+-- false`, not merely `type(value) ~= "table"`. Any other non-table junk
+-- (`keymaps = "oops"`, a stray number, even `true`) is not a documented value
+-- for this key and must still be rejected: it would otherwise reach
+-- `lib.nvim.bindings.keymap.registry.register`'s `vim.validate("user", user,
+-- { "table", "boolean", "nil" })` as a bare string/number and throw from
+-- there instead of degrading to the default with an issue reported, which is
+-- exactly the failure this module exists to prevent.
 ---@type table<string, true>
 local BOOL_OVERRIDABLE = { keymaps = true }
 
@@ -122,8 +131,10 @@ end
 --- gets caught. A non-table value for a record-shaped section (`match = 5`)
 --- is rejected the same way instead of reaching `drop_pointless_empty_overrides`/
 --- the merge, where it would either throw or silently replace the whole
---- section -- except for the sections in `BOOL_OVERRIDABLE`, whose
---- documented, tested shorthand a plain boolean genuinely is.
+--- section -- except for the literal `false` on the sections in
+--- `BOOL_OVERRIDABLE`, whose documented, tested shorthand that exact value
+--- is (see `BOOL_OVERRIDABLE`'s own doc comment for why not "any boolean" or
+--- "any non-table value").
 ---@param user_opts table
 ---@return table clean
 ---@return string[] issues
@@ -135,10 +146,11 @@ local function sanitize(user_opts)
       issues[#issues + 1] = describe_unknown(key, KNOWN, "")
     elseif type(known) == "table" then
       if type(value) ~= "table" then
-        if BOOL_OVERRIDABLE[key] then
+        if BOOL_OVERRIDABLE[key] and value == false then
           clean[key] = value
         else
-          issues[#issues + 1] = ("option '%s' must be a table, got %s -- using the default"):format(key, type(value))
+          local shape = BOOL_OVERRIDABLE[key] and "a table or false" or "a table"
+          issues[#issues + 1] = ("option '%s' must be %s, got %s -- using the default"):format(key, shape, type(value))
         end
       else
         local nested = {}

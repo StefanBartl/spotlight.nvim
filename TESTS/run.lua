@@ -1,7 +1,7 @@
 -- TESTS/run.lua
 -- Suite entry point. Run from the plugin root, with lib.nvim on the runtimepath:
 --
---   nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
+--   nvim -n -i NONE --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
 --
 -- Exits non-zero on the first failing expectation so CI notices, and prints
 -- every failure rather than only the first.

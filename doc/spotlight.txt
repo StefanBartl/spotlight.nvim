@@ -356,6 +356,9 @@ lua/spotlight/@types/), so lua_ls completes and checks the table.
       menu = {
         enable = true,            -- contribute entries to an nvzone/menu host
       },
+      integrations = {
+        ui_menu = true,           -- let ui.nvim's right-click menu show the fly-out
+      },
       notify = true,
       debug = false,              -- see |spotlight-debug|
     })

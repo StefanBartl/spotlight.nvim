@@ -97,6 +97,7 @@
 ---@field persist? Spotlight.PersistOpts
 ---@field keymaps? Spotlight.KeymapOpts
 ---@field menu? Spotlight.MenuOpts # `spotlight.integrations.menu` (nvzone/menu context-menu contribution) opt-out.
+---@field integrations? Spotlight.IntegrationsOpts # Which hosts may drive this plugin (`ui_menu`).
 ---@field notify? boolean # Report added/removed/cleared spotlights via `lib.nvim.notify`.
 ---@field debug? boolean # Structured debug logging at the decision points, via `lib.nvim.logger`.
 --- Register a position preview with hover.nvim (occurrence count for the
@@ -108,6 +109,10 @@
 --- `M.submenu()` return entries.
 ---@class Spotlight.MenuOpts
 ---@field enable boolean # default true
+
+--- Which hosts may drive spotlight.nvim.
+---@class Spotlight.IntegrationsOpts
+---@field ui_menu boolean # let ui.nvim's right-click menu (`ui.menu`) compose the Spotlight fly-out; default true
 
 --- Palette colors. Each entry sets **both** `bg` and `fg` so contrast is
 --- guaranteed in light and dark themes alike, rather than inheriting an

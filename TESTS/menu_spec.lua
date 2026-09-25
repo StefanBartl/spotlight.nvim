@@ -176,6 +176,21 @@ function M.run()
   end)
 
   -- ---------- the opt-out ----------
+  -- enabled(): what ui.nvim's ui.menu asks first.
+  config.setup()
+  with_menu(function(menu)
+    t.eq("enabled: true by default", menu.enabled(), true)
+  end)
+  config.setup({ integrations = { ui_menu = false } })
+  with_menu(function(menu)
+    t.eq("enabled: integrations.ui_menu = false", menu.enabled(), false)
+    t.ok("ui_menu = false leaves items() to other hosts", #menu.items() > 0)
+  end)
+  config.setup({ menu = { enable = false } })
+  with_menu(function(menu)
+    t.eq("enabled: menu.enable = false", menu.enabled(), false)
+  end)
+
   config.setup({ menu = { enable = false } })
   with_menu(function(menu)
     t.eq("items: menu.enable = false yields an empty list, safe to list_extend", #menu.items(), 0)

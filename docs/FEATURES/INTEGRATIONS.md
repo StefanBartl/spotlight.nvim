@@ -46,8 +46,11 @@ spotlight.nvim has no dependency on `menu` and never opens a context menu
 itself — a host (typically your own `<RightMouse>` dispatcher) composes
 the entries into its own menu.
 
-- **Module:** `integrations/menu.lua` (`M.items`, `M.submenu`)
-- **Config:** `menu.enable` (default `true`)
+- **Module:** `integrations/menu.lua` (`M.items`, `M.submenu`, `M.enabled`)
+- **Config:** `menu.enable` (default `true`); `integrations.ui_menu` (default
+  `true`) — `false` keeps ui.nvim's right-click menu (`ui.menu`) from showing
+  the fly-out while `items()`/`submenu()` keep working for other hosts.
+  `enabled()` is what `ui.menu` asks first.
 
 ## Scriptable facade
 

@@ -203,6 +203,13 @@ local DEFAULTS = {
     enable = true,
   },
 
+  -- Which hosts may drive this plugin. `ui_menu = false` keeps ui.nvim's
+  -- right-click menu (ui.menu) from composing the Spotlight fly-out; the
+  -- entries stay available to any other host through `menu`/`items()`.
+  integrations = {
+    ui_menu = true,
+  },
+
   notify = true,
 
   -- Structured debug logging at the plugin's decision points: which token the

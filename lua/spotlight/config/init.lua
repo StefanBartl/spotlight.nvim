@@ -72,6 +72,7 @@ local KNOWN = {
     prev = true,
   },
   menu = { enable = true },
+  integrations = { ui_menu = true },
   notify = true,
   debug = true,
 }

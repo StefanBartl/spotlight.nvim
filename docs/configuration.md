@@ -115,6 +115,10 @@ require("spotlight").setup({
     enable = true,            -- contribute entries to an nvzone/menu host
   },
 
+  integrations = {
+    ui_menu = true,           -- let ui.nvim's right-click menu (ui.menu) show the fly-out
+  },
+
   notify = true,              -- report added/removed/cleared spotlights
   debug = false,              -- structured logs at the decision points
 })

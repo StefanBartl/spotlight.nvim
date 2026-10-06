@@ -18,4 +18,17 @@ return {
   isolated = "file",
   -- Child editors start like the old CI line (-c luafile): vim_did_enter == 0, <cfile>/<cword> work.
   host = "c",
+  -- Guards (testing.nvim docs/GUARDS.md). The fleet measurement found nothing real here: with
+  -- isolated = "file" the plugin store (lib.nvim cache) lives in the child sandbox and setup() state
+  -- (autocmd groups, keymaps, mapleader) dies with the child, so every guard can be a hard error.
+  -- No guard_allow entries are needed: the specs spawn no executables, use no network and write
+  -- nothing outside the temp dir / child sandbox.
+  guards = {
+    fs = "error",
+    state = "error",
+    scheduled_error = "error",
+    prompt = "error",
+    deprecation = "error",
+    process_net = "error",
+  },
 }

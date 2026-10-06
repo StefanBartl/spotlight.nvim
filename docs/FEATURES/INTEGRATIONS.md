@@ -52,6 +52,34 @@ the entries into its own menu.
   the fly-out while `items()`/`submenu()` keep working for other hosts.
   `enabled()` is what `ui.menu` asks first.
 
+## mdview.nvim
+
+[mdview.nvim](https://github.com/StefanBartl/mdview.nvim) previews a Markdown
+file in the browser, and mirrors your spotlights into it: mark `SYSsystosca` or
+`400 (Bad Request)` here and every occurrence in the rendered document is
+marked there too, in the same color, within about a second. It is built on the
+[scriptable facade](#scriptable-facade) and nothing else — mdview listens for
+`User SpotlightChanged`, re-reads `spotlights({ whole_file = true })` and
+`colors()`, and paints the same tokens in the page. Neither plugin requires the
+other; without mdview nothing here changes.
+
+What carries over: whole-file spotlights only (a "this occurrence only"
+spotlight is pinned to a buffer position the rendered page has no counterpart
+for), the slot colors from the live `Spotlight1..8` groups (so a colorscheme or
+`&background` switch follows), line mode, and the matching semantics — the text
+literally, case-sensitive unless the spotlight ignores case, a substring match
+for a visual-selection spotlight and a between-word-boundaries match for a word.
+Removing a spotlight, `clear` and `sets switch` update the page.
+
+The mirror does not follow the persistence status: a spotlight that is not
+persisted for the file is mirrored too, because it is on screen. What leaves
+Neovim is the spotlight texts and colors, to mdview's loopback relay and its
+preview tabs. If a shared screen must not show what you marked, set mdview's
+`browser.spotlight_sync = false` (or run `:MDView spotlight off`).
+
+- **Module:** none here — mdview.nvim reads `init.lua`'s facade
+- **Config:** mdview's `browser.spotlight_sync` and `browser.spotlight_max_matches`
+
 ## Scriptable facade
 
 Every action is also a plain function on the `spotlight` module — no

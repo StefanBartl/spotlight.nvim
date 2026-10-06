@@ -781,6 +781,12 @@ The `colors` reason comes from the handler that redefines `Spotlight1..8`,
 which `palette.reapply_on_colorscheme = false` switches off; with that, a
 consumer that mirrors the groups listens to |ColorScheme| itself.
 
+mdview.nvim (the browser preview of a Markdown file) is such a consumer: it
+mirrors the whole-file spotlights into the rendered document, in the same
+colors, live. It needs nothing from here beyond this API, sends the spotlight
+texts only to its local preview, and does not follow the persistence status;
+its `browser.spotlight_sync = false` switches it off.
+
 ==============================================================================
 17. HEALTH                                                   *spotlight-health*
 >vim

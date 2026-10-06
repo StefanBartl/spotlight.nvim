@@ -51,6 +51,14 @@ scrolling, through a `:split`.
 > is the transient half of the same question. This plugin is the half you
 > pin: several tokens at once, and they stay through searches and splits.
 >
+> **[mdview.nvim](https://github.com/StefanBartl/mdview.nvim)** — the browser
+> preview of a Markdown file. It mirrors your whole-file spotlights into the
+> rendered document, in the same colors and live, through the read API and the
+> `User SpotlightChanged` event — see [docs/FEATURES/INTEGRATIONS.md](docs/FEATURES/INTEGRATIONS.md#mdviewnvim).
+> It sends the spotlight texts to its local preview tab, independent of
+> spotlight's persistence; `browser.spotlight_sync = false` (mdview's option)
+> switches that off.
+>
 > All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) and
 > [ui.nvim](https://github.com/StefanBartl/ui.nvim) are the two real

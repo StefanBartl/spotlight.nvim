@@ -15,6 +15,7 @@
 require("spotlight.@types")
 
 local config = require("spotlight.config")
+local events = require("spotlight.core.events")
 local match = require("spotlight.core.match")
 local palette = require("spotlight.core.palette")
 local pattern = require("spotlight.core.pattern")
@@ -41,13 +42,18 @@ function M.on_change(fn)
 end
 
 ---@internal
---- Fire the change listeners. Guarded individually: a failing persistence write
---- must not swallow the highlight the user just asked for.
+--- Fire the change listeners, then announce the change as the coalesced
+--- `User SpotlightChanged` event (`core/events.lua`). Guarded individually: a
+--- failing persistence write must not swallow the highlight the user just asked
+--- for.
+---@param reason string # What happened, for the event payload ("add", "remove", ...).
+---@param whole_file boolean|nil # False when only a "this occurrence only" spotlight is concerned.
 ---@return nil
-local function notify_change()
+local function notify_change(reason, whole_file)
   for _, fn in ipairs(listeners) do
     pcall(fn)
   end
+  events.changed(reason, whole_file)
 end
 
 --- The active spotlights, in insertion order. The returned table is the live
@@ -61,6 +67,58 @@ end
 ---@return integer
 function M.count()
   return #items
+end
+
+---@internal
+--- One registry item as the stable, documented read shape: a plain copy that
+--- carries the names consumers are told about (`hl_group`, `line_mode`,
+--- `whole_file`) next to the item's own fields, so it never aliases live state.
+---@param item Spotlight.Item
+---@return Spotlight.PublicItem
+local function public(item)
+  local pat = item.pattern
+  return {
+    id = item.id,
+    text = item.text,
+    slot = item.slot,
+    hl = item.hl,
+    hl_group = item.hl,
+    origin = item.origin,
+    scope = item.scope or "global",
+    whole_file = item.scope ~= "buffer",
+    line = item.line == true,
+    line_mode = item.line == true,
+    locked = item.locked == true,
+    -- Recovered from the pattern, as `M.snapshot` does: the pattern is the one
+    -- thing that already reflects `match.word_boundaries` and `match.ignore_case`.
+    kind = pat:find("\\<", 1, true) and "word" or "literal",
+    ignore_case = pat:sub(1, 2) == "\\c",
+    pattern = pat,
+    buf = item.buf,
+    row1 = item.row1,
+    col1 = item.col1,
+  }
+end
+
+--- The active spotlights as plain, detached copies in the stable read shape
+--- (`Spotlight.PublicItem`), in insertion order. This is what
+--- `require("spotlight").spotlights()` returns; unlike `M.all()` nothing in it
+--- aliases the live list, so a caller may sort, prune or mutate it freely.
+---
+--- `opts.whole_file` filters by scope: `true` keeps only whole-file spotlights
+--- (`toggle`, every occurrence), `false` only the "this occurrence only" ones
+--- (`toggle_here`), `nil` keeps both.
+---@param opts? { whole_file?: boolean }
+---@return Spotlight.PublicItem[]
+function M.list(opts)
+  local want = opts and opts.whole_file
+  local out = {}
+  for _, item in ipairs(items) do
+    if want == nil or want == (item.scope ~= "buffer") then
+      out[#out + 1] = public(item)
+    end
+  end
+  return out
 end
 
 --- Find the spotlight with the given id.
@@ -188,7 +246,7 @@ function M.add(token, opts)
   }
   items[#items + 1] = item
   match.apply_all({ item }, config.get("match.priority"))
-  notify_change()
+  notify_change("add", true)
   return item, nil
 end
 
@@ -250,7 +308,7 @@ function M.add_at(token, pos, opts)
   }
   items[#items + 1] = item
   match.apply_all({ item }, config.get("match.priority"))
-  notify_change()
+  notify_change("add", false)
   return item, nil
 end
 
@@ -264,7 +322,7 @@ function M.remove(id)
   end
   match.remove(id)
   table.remove(items, index)
-  notify_change()
+  notify_change("remove", item.scope ~= "buffer")
   return item
 end
 
@@ -281,7 +339,7 @@ function M.set_locked(id, value)
     return false
   end
   item.locked = value or nil
-  notify_change()
+  notify_change("lock", item.scope ~= "buffer")
   return true
 end
 
@@ -306,7 +364,7 @@ function M.set_line(id, value)
   item.line = value or nil
   match.remove(id)
   match.apply_all({ item }, config.get("match.priority"))
-  notify_change()
+  notify_change("line", item.scope ~= "buffer")
   return true
 end
 
@@ -367,7 +425,7 @@ function M.remove_for_buffer(buf)
     end
   end
   if n > 0 then
-    notify_change()
+    notify_change("buffer_wiped", false)
   end
   return n
 end
@@ -380,15 +438,17 @@ function M.clear()
   items = {}
   palette.reset()
   if n > 0 then
-    notify_change()
+    notify_change("clear", true)
   end
   return n
 end
 
---- Replace the whole list from a restored snapshot, without firing a change
---- notification — a load is not a user edit, and re-saving what was just read
+--- Replace the whole list from a restored snapshot, without firing the change
+--- *listeners* — a load is not a user edit, and re-saving what was just read
 --- would be pure churn (and would write back a snapshot filtered by exception
---- rules that were themselves only just loaded).
+--- rules that were themselves only just loaded). The `SpotlightChanged` event
+--- is a different audience and does fire: whoever mirrors the spotlights
+--- elsewhere has to learn that a set switch or a session restore replaced them.
 ---@param stored Spotlight.StoredItem[]
 ---@return integer restored
 function M.restore(stored)
@@ -435,6 +495,7 @@ function M.restore(stored)
     end
   end
   match.apply_all(items, config.get("match.priority"))
+  events.changed("restore", true)
   return #items
 end
 
@@ -491,6 +552,9 @@ function M.rebuild()
     item.hl = palette.group(item.slot)
   end
   match.refresh(items, config.get("match.priority"))
+  -- No persistence listener (nothing was added or removed), but a slot may have
+  -- been clamped into a smaller palette, which a mirror must hear about.
+  events.changed("rebuild", true)
 end
 
 return M

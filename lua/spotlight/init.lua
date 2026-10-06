@@ -602,16 +602,35 @@ function M.refresh()
   registry.rebuild()
 end
 
---- Read access to the registry, for users scripting against the plugin. A
---- snapshot, not the live list `registry.all()` itself holds: `registry.lua`
---- documents that array as "read-only by contract", a contract only its own
---- module's callers can be expected to know about -- a script that sorts or
---- prunes what looks like its own copy (e.g. `table.sort(spotlights(), ...)`
---- for a statusline) would otherwise reorder or corrupt the registry itself
---- for the rest of the session.
----@return Spotlight.Item[]
-function M.spotlights()
-  return vim.list_slice(registry.all())
+--- Read access to the registry, for users scripting against the plugin and for
+--- plugins that mirror the spotlights elsewhere (mdview.nvim's browser preview).
+---
+--- A detached snapshot in the stable shape `Spotlight.PublicItem`, not the live
+--- list `registry.all()` holds: that array is "read-only by contract", a
+--- contract only its own module's callers can be expected to know about -- a
+--- script that sorts or prunes what looks like its own copy (e.g.
+--- `table.sort(spotlights(), ...)` for a statusline) would otherwise reorder or
+--- corrupt the registry itself for the rest of the session.
+---
+--- `opts.whole_file` filters by scope: `true` keeps only the spotlights that
+--- mark every occurrence in the file (`toggle`, `add`), `false` only the
+--- "this occurrence only" ones (`toggle_here`), `nil` (the default) both. A
+--- mirror that has no position to pin a single occurrence to wants `true`.
+---
+--- Pair it with the `User SpotlightChanged` event, which says when to re-read.
+---@param opts? { whole_file?: boolean }
+---@return Spotlight.PublicItem[]
+function M.spotlights(opts)
+  return registry.list(opts)
+end
+
+--- The palette as the editor currently renders it: one `{ slot, group, fg, bg,
+--- bold }` entry per slot (`Spotlight1..8` by default), `fg`/`bg` resolved from
+--- the live highlight groups as `#rrggbb`. Follows `&background` and a
+--- colorscheme change; re-read it on `User SpotlightChanged` (reason `colors`).
+---@return Spotlight.SlotColor[]
+function M.colors()
+  return palette.colors()
 end
 
 -- ---------- setup ----------

@@ -17,6 +17,7 @@
 --- `palette.colors` / `palette.colors_light` in `setup()`.
 
 local config = require("spotlight.config")
+local events = require("spotlight.core.events")
 local lib = require("spotlight.util.lib")
 
 local M = {}
@@ -47,7 +48,8 @@ function M.size()
 end
 
 --- (Re-)define every `SpotlightN` group from the active color list.
---- Idempotent; safe to call on every `ColorScheme`.
+--- Idempotent; safe to call on every `ColorScheme`. Announces itself as a
+--- `colors` change (`core/events.lua`), the one place the group colors are set.
 ---@return nil
 function M.apply()
   local p = config.get("palette")
@@ -55,6 +57,58 @@ function M.apply()
   for i, c in ipairs(colors) do
     lib.hl(M.group(i), { bg = c.bg, fg = c.fg, bold = p.bold == true })
   end
+  events.changed("colors", true)
+end
+
+---@internal
+--- A resolved `#rrggbb` channel of a highlight group, or nil when it has none.
+---@param n any
+---@return string|nil
+local function hex(n)
+  if type(n) ~= "number" then
+    return nil
+  end
+  return ("#%06x"):format(n)
+end
+
+---@internal
+--- What the editor currently has for highlight group `group`, links resolved.
+--- `link = false` is Neovim 0.10; on 0.9 the plain call is the best available,
+--- and a group that is only a link then reports no channels (the caller falls
+--- back to the configured color).
+---@param group string
+---@return table|nil
+local function get_hl(group)
+  local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
+  if not ok then
+    ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group })
+  end
+  if ok and type(hl) == "table" then
+    return hl
+  end
+  return nil
+end
+
+--- The palette as the editor currently renders it: one entry per slot, with
+--- `fg`/`bg` resolved from the live `SpotlightN` group (so a user override or
+--- a colorscheme that redefined it is what is reported). A channel the group
+--- does not carry falls back to the configured color for that slot, so an entry
+--- always has both. Read-only; for a consumer that mirrors the colors elsewhere.
+---@return Spotlight.SlotColor[]
+function M.colors()
+  local out = {}
+  for slot, c in ipairs(active_colors()) do
+    local group = M.group(slot)
+    local hl = get_hl(group) or {}
+    out[slot] = {
+      slot = slot,
+      group = group,
+      fg = hex(hl.fg) or c.fg,
+      bg = hex(hl.bg) or c.bg,
+      bold = hl.bold == true,
+    }
+  end
+  return out
 end
 
 --- Round-robin cursor: the slot handed out last.

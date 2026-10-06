@@ -16,7 +16,11 @@
 ---     meaning anything the moment the buffer did.
 ---   - `ColorScheme` / `OptionSet background` — redefine the `SpotlightN` groups.
 ---     A colorscheme clears highlight groups it does not know about, and the
----     background is what selects between the dark and light palettes.
+---     background is what selects between the dark and light palettes. Both end
+---     in `User SpotlightChanged` (reason `colors`, see `core/events.lua`) --
+---     through `palette.apply()`, so with `palette.reapply_on_colorscheme =
+---     false` (the user owns the groups) a colorscheme change is not announced
+---     and a consumer that cares listens to `ColorScheme` itself.
 ---   - `VimEnter` — load the persisted snapshot, once.
 ---   - `VimLeavePre` — flush a pending debounced save, so the last toggle before
 ---     `:qa` is not the one that gets lost.

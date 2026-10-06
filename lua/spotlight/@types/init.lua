@@ -50,6 +50,35 @@
 --- hands to `matchadd()` (`core.pattern.line`), one priority below the rest.
 ---@field line boolean|nil
 
+--- One spotlight as `require("spotlight").spotlights()` reports it: a detached
+--- copy, never the live registry item. The stable, documented read shape.
+---@class Spotlight.PublicItem
+---@field id integer              # Session id; unique for the session, never reused.
+---@field text string             # The raw token.
+---@field slot integer            # Palette slot, 1..#palette.
+---@field hl_group string         # Highlight group it renders in, e.g. "Spotlight3".
+---@field hl string               # Same as `hl_group` (the registry's own name for it).
+---@field line_mode boolean       # Rendered across the whole line, not just the token.
+---@field line boolean            # Same as `line_mode`.
+---@field origin string|nil       # Project-relative file it was created in.
+---@field whole_file boolean      # true: every occurrence (`toggle`); false: one position (`toggle_here`).
+---@field scope Spotlight.ItemScope # "global" for whole-file, "buffer" for position-pinned.
+---@field locked boolean          # Its slot is never handed to another spotlight.
+---@field kind Spotlight.TokenKind # "word": matched between word boundaries; "literal": anywhere.
+---@field ignore_case boolean     # false (the default): case-sensitive match.
+---@field pattern string          # The complete Vim regex (see `Spotlight.Item.pattern`).
+---@field buf integer|nil         # `whole_file == false` only: the pinned buffer.
+---@field row1 integer|nil        # `whole_file == false` only: 1-based line.
+---@field col1 integer|nil        # `whole_file == false` only: 1-based byte column.
+
+--- One palette slot as `require("spotlight").colors()` reports it.
+---@class Spotlight.SlotColor
+---@field slot integer
+---@field group string  # "Spotlight1".
+---@field fg string     # "#rrggbb"
+---@field bg string     # "#rrggbb"
+---@field bold boolean
+
 --- The on-disk snapshot under the `spotlight/state` project key.
 ---@class Spotlight.Snapshot
 ---@field version integer

@@ -177,12 +177,46 @@ function M.run()
   t.eq("line: whole-file", log[1].whole_file_changed, true)
 
   -- ---------- rebuild (refresh) ----------
+  -- A refresh that changes nothing is silent, like every other no-op.
   reset()
   api.refresh()
   settle()
-  t.eq("refresh: one event", #log, 1)
-  t.ok("refresh: carrying the rebuild", vim.tbl_contains(log[1].reasons, "rebuild"))
-  t.ok("refresh: and the redefined colors", vim.tbl_contains(log[1].reasons, "colors"))
+  t.eq("refresh: nothing changed, nothing fires", #log, 0)
+
+  -- A group the editor has differently (a colorscheme or another plugin got at
+  -- it) is redefined, and that is announced as a color change -- only that.
+  vim.api.nvim_set_hl(0, "Spotlight1", { bg = "#123456", fg = "#654321" })
+  reset()
+  api.refresh()
+  settle()
+  t.eq("refresh: a redefined group is one event", #log, 1)
+  t.eq("refresh: ... for the colors", vim.inspect(log[1].reasons), vim.inspect({ "colors" }))
+  reset()
+  api.refresh()
+  settle()
+  t.eq("refresh: and the next one, with the group in place again, is silent", #log, 0)
+
+  -- A pattern that comes out different (a word token once the boundaries are
+  -- switched off) is announced as a rebuild; going back is one again.
+  registry.add({ text = "wordy", kind = "word" })
+  config.setup({ match = { word_boundaries = false } })
+  reset()
+  api.refresh()
+  settle()
+  t.eq("refresh: a rebuilt pattern is one event", #log, 1)
+  t.eq("refresh: ... for the rebuild", vim.inspect(log[1].reasons), vim.inspect({ "rebuild" }))
+  t.eq("refresh: ... carrying the new count", log[1].count, registry.count())
+  config.setup()
+  reset()
+  api.refresh()
+  settle()
+  t.ok("refresh: switching the boundaries back is a rebuild again", vim.tbl_contains(log[1] and log[1].reasons or {}, "rebuild"))
+  reset()
+  api.refresh()
+  settle()
+  t.eq("refresh: settled, silent again", #log, 0)
+  registry.remove(registry.find_by_text("wordy").id)
+  reset()
 
   -- ---------- a wiped buffer drops its pinned spotlights ----------
   registry.clear()

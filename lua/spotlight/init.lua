@@ -596,9 +596,13 @@ end
 --- Re-apply every spotlight to every window from scratch. The escape hatch for
 --- the one thing `matchadd()` cannot do: update in place. Also the fix if some
 --- other plugin has cleared the current window's matches with `:call clearmatches()`.
+---
+--- Announces (`User SpotlightChanged`) only what actually came out different:
+--- a redefined palette group, a rebuilt pattern or a clamped slot. A refresh
+--- that changed nothing is silent.
 ---@return nil
 function M.refresh()
-  palette.apply()
+  palette.apply({ only_if_changed = true })
   registry.rebuild()
 end
 

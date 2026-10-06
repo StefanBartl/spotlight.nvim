@@ -47,19 +47,6 @@ function M.size()
   return #active_colors()
 end
 
---- (Re-)define every `SpotlightN` group from the active color list.
---- Idempotent; safe to call on every `ColorScheme`. Announces itself as a
---- `colors` change (`core/events.lua`), the one place the group colors are set.
----@return nil
-function M.apply()
-  local p = config.get("palette")
-  local colors = active_colors()
-  for i, c in ipairs(colors) do
-    lib.hl(M.group(i), { bg = c.bg, fg = c.fg, bold = p.bold == true })
-  end
-  events.changed("colors", true)
-end
-
 ---@internal
 --- A resolved `#rrggbb` channel of a highlight group, or nil when it has none.
 ---@param n any
@@ -87,6 +74,44 @@ local function get_hl(group)
     return hl
   end
   return nil
+end
+
+---@internal
+--- What the editor has for the first `n` palette groups, as one comparable
+--- string. Only for telling whether `M.apply` actually changed anything.
+---@param n integer
+---@return string
+local function signature(n)
+  local parts = {}
+  for i = 1, n do
+    parts[i] = vim.inspect(get_hl(M.group(i)))
+  end
+  return table.concat(parts, "\n")
+end
+
+--- (Re-)define every `SpotlightN` group from the active color list.
+--- Idempotent; safe to call on every `ColorScheme`. Announces itself as a
+--- `colors` change (`core/events.lua`), the one place the group colors are set.
+---
+--- `opts.only_if_changed` announces only when a group came out different from
+--- what the editor had, for a caller (`refresh`) that re-runs this on demand
+--- rather than because the colors are known to have moved. The `ColorScheme` and
+--- `background` handlers keep the plain form: whoever mirrors the colors wants
+--- to hear that, even if the groups happen to read the same afterwards.
+---@param opts? { only_if_changed?: boolean }
+---@return boolean announced
+function M.apply(opts)
+  local p = config.get("palette")
+  local colors = active_colors()
+  local before = opts and opts.only_if_changed and signature(#colors) or nil
+  for i, c in ipairs(colors) do
+    lib.hl(M.group(i), { bg = c.bg, fg = c.fg, bold = p.bold == true })
+  end
+  if before and signature(#colors) == before then
+    return false
+  end
+  events.changed("colors", true)
+  return true
 end
 
 --- The palette as the editor currently renders it: one entry per slot, with

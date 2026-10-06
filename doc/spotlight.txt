@@ -765,6 +765,15 @@ came back. Pinned ("this occurrence only") spotlights and those created in a
 file with `persist off` are not exported. casedesk.nvim keeps one such list per
 case.
 
+                                                       *spotlight-api-origin_path*
+Origin path ~
+
+`spotlight.origin_path(origin)` turns the `origin` of an exported item
+(project-relative inside the project, absolute outside) into an absolute path
+with forward slashes, resolved against the current project root; nil for a
+missing or empty origin. Nothing is read from disk. casedesk.nvim uses it to
+tell markings from files of a case folder from those of other files.
+
                                                              *spotlight-events*
 Events ~
 

@@ -659,6 +659,18 @@ function M.import(items)
   return sets.import(items)
 end
 
+--- The absolute, slash-normalized path an `origin` of an exported item points
+--- at (`origin` is project-relative inside the project, absolute outside of
+--- it), resolved against the CURRENT project root. For a host that must decide
+--- whether a marking came from a file in some folder (casedesk.nvim: "is this
+--- file part of the case?"). Nothing is touched on disk. nil for a missing or
+--- empty origin.
+---@param origin string|nil
+---@return string|nil
+function M.origin_path(origin)
+  return path.origin_path(origin)
+end
+
 -- ---------- setup ----------
 
 --- Configure spotlight.nvim, define the highlight groups, and wire every

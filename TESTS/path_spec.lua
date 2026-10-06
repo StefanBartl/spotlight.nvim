@@ -228,6 +228,23 @@ function M.run()
     t.eq("buffer_key(0): the same", path.buffer_key(0), "logs/app.log")
   end)
 
+  -- ---------- origin_path ----------
+  t.with_modules({ [STORE] = {
+    root = function()
+      return root
+    end,
+  } }, function()
+    t.eq("origin_path: a relative origin is joined to the root", path.origin_path("logs/app.log"), root .. "/logs/app.log")
+    t.eq("origin_path: an absolute origin stays", path.origin_path("/elsewhere/other.log"), "/elsewhere/other.log")
+    t.eq("origin_path: a Windows drive path stays, slashes folded", path.origin_path("C:\\x\\y.log"), "C:/x/y.log")
+    t.eq("origin_path: nil in, nil out", path.origin_path(nil), nil)
+    t.eq("origin_path: empty is nil", path.origin_path(""), nil)
+    t.eq("origin_path: a non-string is nil", path.origin_path(5), nil)
+    t.eq("origin_path: round trip with buffer_key (inside)", path.origin_path(path.buffer_key(inside)), root .. "/logs/app.log")
+    t.eq("origin_path: round trip with buffer_key (outside)", path.origin_path(path.buffer_key(outside)), "/elsewhere/other.log")
+    t.eq("origin_path: the facade forwards", require("spotlight").origin_path("logs/app.log"), root .. "/logs/app.log")
+  end)
+
   local back = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_current_buf(back)
   for _, b in ipairs({ scratch, term_like, inside, nested, outside, sibling }) do

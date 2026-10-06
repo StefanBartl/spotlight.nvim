@@ -87,4 +87,24 @@ function M.buffer_key(bufnr)
   return abs
 end
 
+--- The absolute, slash-normalized path an `origin` (as `buffer_key` produced
+--- and `export()` reports it) points at: the project root joined with a
+--- relative origin, or the absolute origin itself. Pure string work: the file
+--- need not exist. nil for anything that is not a non-empty string.
+---@param origin any
+---@return string|nil
+function M.origin_path(origin)
+  if type(origin) ~= "string" or origin == "" then
+    return nil
+  end
+  local p = slashes(origin)
+  if p == "" then
+    return nil
+  end
+  if p:sub(1, 1) == "/" or p:match("^%a:/") or p:match("^%a:$") then
+    return p
+  end
+  return slashes(M.root()) .. "/" .. p
+end
+
 return M

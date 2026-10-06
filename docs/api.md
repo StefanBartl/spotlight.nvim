@@ -100,6 +100,7 @@ extra wiring.
 | `spotlight.colors()` | any | `Spotlight.SlotColor[]` | The palette as the editor renders it, one entry per slot |
 | `spotlight.export()` | any | `Spotlight.StoredItem[]` | The active spotlights as plain, JSON-able data — what a set holds — for a host that stores them itself |
 | `spotlight.import(items)` | any | `integer` | Clear the active spotlights and restore `items` (exclusive, re-validated); returns how many came back |
+| `spotlight.origin_path(origin)` | any | `string\|nil` | The absolute, slash-normalized path an exported item's `origin` points at (resolved against the current project root); nil for a missing/empty origin |
 
 Both are read-only and stable: the field names below are part of the contract.
 
@@ -168,6 +169,16 @@ cap, dedup, count cap, the regex rebuilt from `text`), so a hand-edited file
 cannot inject a pattern. It announces itself like a set switch (one
 `User SpotlightChanged`, reasons `clear` + `restore`) and updates the project's
 own persisted snapshot. `import({})` clears.
+
+### `spotlight.origin_path(origin)`
+
+An item's `origin` is project-relative inside the project and absolute outside
+of it, so on its own it cannot be compared with a folder. `origin_path` turns it
+into an absolute path with forward slashes: a relative origin is joined to the
+project root (the one `export()` used, resolved now), an absolute one is only
+slash-normalized. It is pure string work, the file need not exist, and a nil or
+empty origin gives nil. casedesk.nvim uses it to tell markings from files of a
+case folder from those of other files.
 
 ## Events
 

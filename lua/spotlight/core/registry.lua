@@ -70,16 +70,34 @@ function M.count()
 end
 
 ---@internal
---- The token kind a built pattern was made for. `pattern.build` emits the case
---- flag and `\V` first (`\C\V` / `\c\V`, 4 bytes), so a word boundary is
---- exactly a `\<` right behind them. Searching the whole string instead would
---- also hit a literal body that merely contains `\<` (the escaped backslash of
---- a Windows path such as `C:\<dir>`), report it as "word", and have the next
---- snapshot restore it with boundaries that can never match.
+--- The token kind a built pattern was made for, read back from its text. This is
+--- only the *fallback* for an item that carries no `kind` of its own (see
+--- `item_kind`), and it can only ever see boundaries that were actually emitted:
+--- with `match.word_boundaries = false` a word token has none, so this reports
+--- "literal" for it.
+---
+--- `pattern.build` emits the case flag and `\V` first (`\C\V` / `\c\V`, 4
+--- bytes), so a word boundary is exactly a `\<` right behind them. Searching the
+--- whole string instead would also hit a literal body that merely contains `\<`
+--- (the escaped backslash of a Windows path such as `C:\<dir>`), report it as
+--- "word", and have the next snapshot restore it with boundaries that can never
+--- match.
 ---@param pat string
 ---@return Spotlight.TokenKind
 local function kind_of(pat)
   return pat:sub(5, 6) == "\\<" and "word" or "literal"
+end
+
+---@internal
+--- The kind of token `item` was made for: the item's own `kind` field, which
+--- survives `rebuild()` and the snapshot round trip whatever
+--- `match.word_boundaries` is, and only for an item without one (built by hand
+--- in a script, or by a version of this plugin that did not record it) the
+--- pattern-derived `kind_of` guess.
+---@param item Spotlight.Item
+---@return Spotlight.TokenKind
+local function item_kind(item)
+  return item.kind or kind_of(item.pattern)
 end
 
 ---@internal
@@ -102,9 +120,12 @@ local function public(item)
     line = item.line == true,
     line_mode = item.line == true,
     locked = item.locked == true,
-    -- Recovered from the pattern, as `M.snapshot` does: the pattern is the one
-    -- thing that already reflects `match.word_boundaries` and `match.ignore_case`.
-    kind = kind_of(pat),
+    -- How the highlight matches *now*, not what the token was made as: a word
+    -- token only counts as "word" while its pattern really carries the boundary
+    -- (`match.word_boundaries` on). A mirror reproduces the rendering from this
+    -- field, so with boundaries off it must see "literal". `M.snapshot` and
+    -- `M.export` carry the item's own kind instead.
+    kind = item_kind(item) == "word" and kind_of(pat) or "literal",
     ignore_case = pat:sub(1, 2) == "\\c",
     pattern = pat,
     buf = item.buf,
@@ -252,6 +273,7 @@ function M.add(token, opts)
   local item = {
     id = next_id,
     text = token.text,
+    kind = token.kind == "word" and "word" or "literal",
     pattern = pattern.build(token, config.get("match")),
     slot = slot,
     hl = palette.group(slot),
@@ -310,6 +332,8 @@ function M.add_at(token, pos, opts)
   local item = {
     id = next_id,
     text = token.text,
+    -- A position-pinned pattern never carries boundaries, whatever the token was.
+    kind = "literal",
     pattern = pattern.build_at(token.text, pos.row1, pos.col1, config.get("match")),
     slot = slot,
     hl = palette.group(slot),
@@ -493,6 +517,9 @@ function M.restore(stored)
       items[#items + 1] = {
         id = next_id,
         text = s.text,
+        -- A snapshot written before `kind` was recorded (or a hand-edited one)
+        -- has none, or something else: that restores as literal, as it always did.
+        kind = s.kind == "word" and "word" or "literal",
         -- Rebuilt rather than stored: a later change to the escaping or
         -- boundary policy then applies to restored spotlights too, instead of
         -- resurrecting a regex built by an older version of this plugin.
@@ -512,9 +539,10 @@ function M.restore(stored)
   return #items
 end
 
---- Serialize the current list for persistence. `kind` is recovered from the
---- pattern's own boundary markers, so the round-trip does not need a separate
---- field on the runtime item that could drift out of sync with the regex.
+--- Serialize the current list for persistence. `kind` is the item's own, not
+--- read back from the pattern: with `match.word_boundaries = false` a word
+--- token has no boundary in its pattern, and writing "literal" for it would
+--- make it a literal for good, even after the option is switched back on.
 ---
 --- Buffer-scoped items (`M.add_at`) are left out entirely — see `M.add_at`'s
 --- doc comment for why a line/column pin is session-only rather than
@@ -527,7 +555,7 @@ function M.snapshot()
       out[#out + 1] = {
         text = item.text,
         slot = item.slot,
-        kind = kind_of(item.pattern),
+        kind = item_kind(item),
         origin = item.origin,
         locked = item.locked,
         line = item.line,
@@ -551,22 +579,36 @@ end
 --- Re-apply everything from scratch. Used after a config change that is baked
 --- into the `matchadd()` call itself (priority, case flag, boundaries), which
 --- has no in-place update form.
----@return nil
+---
+--- The matches are always re-added (that is the point: it also repairs windows
+--- another plugin cleared). The `rebuild` event is announced only when an item's
+--- pattern, slot or group actually came out different, so a `refresh` that
+--- changed nothing stays silent. Returns whether it did.
+---@return boolean changed
 function M.rebuild()
   local match_opts = config.get("match")
+  local changed = false
   for _, item in ipairs(items) do
+    local pat, slot, hl = item.pattern, item.slot, item.hl
     if item.scope == "buffer" then
       item.pattern = pattern.build_at(item.text, item.row1, item.col1, match_opts)
     else
-      item.pattern = pattern.build({ text = item.text, kind = kind_of(item.pattern) }, match_opts)
+      item.pattern = pattern.build({ text = item.text, kind = item_kind(item) }, match_opts)
     end
     item.slot = palette.clamp(item.slot)
     item.hl = palette.group(item.slot)
+    if item.pattern ~= pat or item.slot ~= slot or item.hl ~= hl then
+      changed = true
+    end
   end
   match.refresh(items, config.get("match.priority"))
   -- No persistence listener (nothing was added or removed), but a slot may have
-  -- been clamped into a smaller palette, which a mirror must hear about.
-  events.changed("rebuild", true)
+  -- been clamped into a smaller palette, or a pattern rebuilt under a changed
+  -- `match` option, which a mirror must hear about.
+  if changed then
+    events.changed("rebuild", true)
+  end
+  return changed
 end
 
 return M

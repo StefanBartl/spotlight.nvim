@@ -37,6 +37,11 @@
 ---@field id integer            # Stable session id; also the bookkeeping key in `core.match`.
 ---@field text string           # Raw token the spotlight was created from (display only).
 ---@field pattern string        # Complete Vim regex handed to `matchadd()`.
+--- The kind of token it was made for. Kept on the item because the pattern
+--- cannot tell: with `match.word_boundaries = false` a word token carries no
+--- `\<`, and a kind read back from the pattern would turn it literal for good.
+--- nil (an item built without it) falls back to what the pattern shows.
+---@field kind Spotlight.TokenKind|nil
 ---@field slot integer          # Palette slot, 1..#palette.colors.
 ---@field hl string             # Highlight group name, e.g. "Spotlight3".
 ---@field origin string|nil     # Project-relative path of the file it was created in (persist scoping).
@@ -64,7 +69,7 @@
 ---@field whole_file boolean      # true: every occurrence (`toggle`); false: one position (`toggle_here`).
 ---@field scope Spotlight.ItemScope # "global" for whole-file, "buffer" for position-pinned.
 ---@field locked boolean          # Its slot is never handed to another spotlight.
----@field kind Spotlight.TokenKind # "word": matched between word boundaries; "literal": anywhere.
+---@field kind Spotlight.TokenKind # How it matches now: "word" only while the pattern has word boundaries, else "literal".
 ---@field ignore_case boolean     # false (the default): case-sensitive match.
 ---@field pattern string          # The complete Vim regex (see `Spotlight.Item.pattern`).
 ---@field buf integer|nil         # `whole_file == false` only: the pinned buffer.
@@ -92,7 +97,9 @@
 ---@class Spotlight.StoredItem
 ---@field text string
 ---@field slot integer
----@field kind Spotlight.TokenKind
+--- The kind of token it was made for, whether or not `match.word_boundaries`
+--- is on right now. Absent in a snapshot older than the field: restores as literal.
+---@field kind Spotlight.TokenKind|nil
 ---@field origin string|nil
 ---@field locked boolean|nil
 --- Whole-line rendering. Persisted because it is a property of the spotlight,

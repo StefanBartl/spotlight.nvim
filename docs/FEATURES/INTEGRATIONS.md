@@ -80,6 +80,22 @@ preview tabs. If a shared screen must not show what you marked, set mdview's
 - **Module:** none here — mdview.nvim reads `init.lua`'s facade
 - **Config:** mdview's `browser.spotlight_sync` and `browser.spotlight_max_matches`
 
+## casedesk.nvim
+
+[casedesk.nvim](https://github.com/StefanBartl/casedesk.nvim) keeps the
+spotlights **per case**: it saves what you marked into the case folder and puts
+it back when you open that case, so "these markings are from case X, those from
+case Y" survives switching and restarting. It is built on `spotlight.export()` /
+`spotlight.import(items)` and the `User SpotlightChanged` event, nothing else;
+neither plugin requires the other.
+
+The spotlights are written as plain text into the case folder, so they can
+contain customer data — the same as the persisted snapshot in the cache
+directory. A file with `persist off` keeps its tokens out of that export too.
+
+- **Module:** none here — casedesk.nvim reads `init.lua`'s facade
+- **Config:** casedesk's `spotlight.*`
+
 ## Scriptable facade
 
 Every action is also a plain function on the `spotlight` module — no

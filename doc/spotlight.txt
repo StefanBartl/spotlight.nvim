@@ -708,6 +708,8 @@ to any key or called from your own code:
     spotlight.refresh()            -- redefine palette, re-apply everything
     spotlight.spotlights(opts|nil) -- detached snapshot, see |spotlight-api-read|
     spotlight.colors()             -- the eight slot colors, see |spotlight-api-read|
+    spotlight.export()             -- the spotlights as plain data, see |spotlight-api-export|
+    spotlight.import(items)        -- clear + restore such data (exclusive)
 <
 Each action returns a boolean saying whether anything happened, and reports its
 own outcome (suppress those messages with `notify = false`).
@@ -745,6 +747,18 @@ slot, `fg`/`bg` as "#rrggbb" resolved from the live `Spotlight1..8` groups
 (so a colorscheme or user override is what is reported, and 'background' picks
 the dark or light set). A channel a group lacks falls back to the configured
 color.
+
+                                                           *spotlight-api-export*
+Export and import ~
+
+`spotlight.export()` returns the active spotlights as plain data (`text`,
+`slot`, `kind`, `origin`, `locked`, `line` -- what a set holds), for a plugin
+that stores them itself; `spotlight.import(items)` clears the active spotlights
+and restores such a list (exclusive, every field re-validated, one
+`SpotlightChanged` with the reasons `clear` + `restore`), returning how many
+came back. Pinned ("this occurrence only") spotlights and those created in a
+file with `persist off` are not exported. casedesk.nvim keeps one such list per
+case.
 
                                                              *spotlight-events*
 Events ~

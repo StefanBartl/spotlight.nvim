@@ -98,6 +98,8 @@ extra wiring.
 | --- | --- | --- | --- |
 | `spotlight.spotlights(opts?)` | any | `Spotlight.PublicItem[]` | A detached snapshot of the registry — for a status line, a scripted check, or a plugin that mirrors the spotlights elsewhere |
 | `spotlight.colors()` | any | `Spotlight.SlotColor[]` | The palette as the editor renders it, one entry per slot |
+| `spotlight.export()` | any | `Spotlight.StoredItem[]` | The active spotlights as plain, JSON-able data — what a set holds — for a host that stores them itself |
+| `spotlight.import(items)` | any | `integer` | Clear the active spotlights and restore `items` (exclusive, re-validated); returns how many came back |
 
 Both are read-only and stable: the field names below are part of the contract.
 
@@ -140,6 +142,24 @@ as `#rrggbb` resolved from the live `Spotlight1..8` groups — so a colorscheme 
 a user override is what is reported, and `&background` selects the dark or light
 set. A channel a group does not carry falls back to the configured palette
 color, so an entry always has both.
+
+### `spotlight.export()` and `spotlight.import(items)`
+
+The registry as data and back, for a plugin that keeps spotlights in its own
+storage (casedesk.nvim writes them into each case folder, so a case brings its
+own markings back). `export()` returns `Spotlight.StoredItem[]` — `text`,
+`slot`, `kind`, `origin`, `locked`, `line` — and nothing else: no ids, no regex.
+Left out: position-pinned ("this occurrence only") spotlights, and those created
+in a file with an explicit `persist off` (that decision means "do not write
+tokens from this file to disk", and the host is about to). The global
+`persist.default` is not consulted: an export is an explicit request.
+
+`import(items)` is exclusive — the active spotlights are cleared, not merged —
+and every field is re-validated like a persisted snapshot (type checks, length
+cap, dedup, count cap, the regex rebuilt from `text`), so a hand-edited file
+cannot inject a pattern. It announces itself like a set switch (one
+`User SpotlightChanged`, reasons `clear` + `restore`) and updates the project's
+own persisted snapshot. `import({})` clears.
 
 ## Events
 

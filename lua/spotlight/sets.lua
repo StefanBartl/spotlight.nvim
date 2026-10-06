@@ -159,6 +159,49 @@ function M.save(name)
   return save_cache()
 end
 
+--- The active spotlights as plain, serializable data: the shape the sets and the
+--- persisted snapshot store (`Spotlight.StoredItem[]`), for a host that keeps
+--- them somewhere of its own (casedesk.nvim writes them into the case folder).
+---
+--- Same exclusions as `M.save`: buffer-scoped ("this occurrence only")
+--- spotlights are left out, and so are the ones created in a file with an
+--- explicit `persist off` override -- that decision is "do not write tokens
+--- from this file to disk", and handing them to a host that writes them to
+--- disk would defeat it. The global `persist.default` is deliberately NOT
+--- consulted: it governs the automatic snapshot, while an export is an
+--- explicit request, so a user with `persist.default = false` still gets
+--- their spotlights out.
+---@return Spotlight.StoredItem[]
+function M.export()
+  local out = {}
+  for _, item in ipairs(registry.snapshot()) do
+    if not (persist.has_override(item.origin) and not persist.persists(item.origin)) then
+      out[#out + 1] = item
+    end
+  end
+  return out
+end
+
+--- Clear the active registry and restore `items` (as `M.export` produced
+--- them): exclusive, never a merge. Every field is re-validated by
+--- `registry.restore` -- the data may come from a hand-editable file -- so a
+--- crafted list cannot inject a pattern or exceed the caps. A non-list value
+--- clears and restores nothing.
+---
+--- Writes the main persisted snapshot afterwards: `registry.restore`
+--- deliberately does not fire the change listeners ("a load is not a user
+--- edit"), so without this save the imported state would only reach it on some
+--- later, unrelated registry change -- a reopen right after could resurrect the
+--- pre-import state instead.
+---@param items Spotlight.StoredItem[]|nil
+---@return integer restored
+function M.import(items)
+  registry.clear()
+  local restored = registry.restore(type(items) == "table" and items or {})
+  persist.save_now()
+  return restored
+end
+
 --- Clear the active registry and restore the named set.
 ---
 --- Refuses — without touching the active registry — if `name` does not
@@ -171,18 +214,10 @@ function M.switch(name)
   if not items then
     return 0, ("no such set: %s"):format(tostring(name))
   end
-  registry.clear()
-  -- Re-validated as untrusted input by registry.restore, exactly like
-  -- persist.load's own snapshot — this file is the same class of
+  -- Re-validated as untrusted input by registry.restore (inside `import`),
+  -- exactly like persist.load's own snapshot — this file is the same class of
   -- hand-editable on-disk JSON.
-  local restored = registry.restore(items)
-  -- registry.restore deliberately does not fire notify_change() ("a load is
-  -- not a user edit"), so without this explicit save the switched-to state
-  -- would only reach the main persisted snapshot on some later, unrelated
-  -- registry change — a reopen right after switching could otherwise
-  -- resurrect the pre-switch state instead of the one just restored.
-  persist.save_now()
-  return restored, nil
+  return M.import(items), nil
 end
 
 --- Delete the named set. Never touches the active registry.

@@ -633,6 +633,28 @@ function M.colors()
   return palette.colors()
 end
 
+-- ---------- export / import ----------
+
+--- The active spotlights as plain, serializable data, for a host that stores
+--- them itself (casedesk.nvim keeps them per case): `Spotlight.StoredItem[]`,
+--- exactly what a set holds. Position-pinned ("this occurrence only")
+--- spotlights and those created in a file with `persist off` are not included.
+--- See `import` for the way back.
+---@return Spotlight.StoredItem[]
+function M.export()
+  return sets.export()
+end
+
+--- Replace the active spotlights with `items` (from `export`, possibly after a
+--- round trip through JSON). Exclusive: the current ones are cleared, not
+--- merged, and every field is re-validated. Announced like a set switch (one
+--- `User SpotlightChanged`, reasons `clear` + `restore`).
+---@param items Spotlight.StoredItem[]
+---@return integer restored
+function M.import(items)
+  return sets.import(items)
+end
+
 -- ---------- setup ----------
 
 --- Configure spotlight.nvim, define the highlight groups, and wire every

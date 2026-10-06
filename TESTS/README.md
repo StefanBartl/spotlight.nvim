@@ -62,7 +62,7 @@ once per editor because `lock_spec`, `map_spec` and `line_spec` drive
 | `kind_spec.lua`            | The token kind on the item: a word token survives `match.word_boundaries = false` through `rebuild()`, snapshot and export; old snapshots; the pattern fallback. |
 | `ui_list_spec.lua`         | The chooser's input: rows, labels, counts, titles, the filter, and each mode's handler. |
 | `menu_spec.lua`            | The nvzone/menu entry list the plugin *provides*, against ui.contextmenu's contract. |
-| `path_spec.lua`            | The project-relative key and `origin_path`, both platform branches.                       |
+| `path_spec.lua`            | The project-relative key and `origin_path`, both platform branches.                  |
 | `util_lib_spec.lua`        | Both arms of every `lib.nvim` accessor — the bridge and the native fallback.          |
 | `health_spec.lua`          | `:checkhealth spotlight`, including the machine it exists for: one with nothing installed. |
 

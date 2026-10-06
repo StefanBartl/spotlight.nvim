@@ -245,6 +245,25 @@ function M.run()
     t.eq("origin_path: the facade forwards", require("spotlight").origin_path("logs/app.log"), root .. "/logs/app.log")
   end)
 
+  -- The root is asked for on every call (nothing is cached), so a project root
+  -- that changes mid-session -- `:cd` into another repository -- moves what a
+  -- relative origin resolves to; an absolute origin does not move. A host that
+  -- keeps origins (casedesk.nvim) must not assume a relative one is stable.
+  local moving = root
+  t.with_modules({ [STORE] = {
+    root = function()
+      return moving
+    end,
+  } }, function()
+    local rel = "logs/app.log"
+    t.eq("root change: a relative origin resolves against the first root", path.origin_path(rel), root .. "/logs/app.log")
+    moving = "/srv/other"
+    vim.api.nvim_exec_autocmds("DirChanged", { pattern = "global" })
+    t.eq("root change: the same origin follows the new root", path.origin_path(rel), "/srv/other/logs/app.log")
+    t.eq("root change: an absolute origin does not move", path.origin_path("/elsewhere/other.log"), "/elsewhere/other.log")
+    t.eq("root change: the key of the same file is now absolute", path.buffer_key(inside), root .. "/logs/app.log")
+  end)
+
   local back = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_current_buf(back)
   for _, b in ipairs({ scratch, term_like, inside, nested, outside, sibling }) do

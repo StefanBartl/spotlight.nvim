@@ -177,7 +177,10 @@ of it, so on its own it cannot be compared with a folder. `origin_path` turns it
 into an absolute path with forward slashes: a relative origin is joined to the
 project root (the one `export()` used, resolved now), an absolute one is only
 slash-normalized. It is pure string work, the file need not exist, and a nil or
-empty origin gives nil. casedesk.nvim uses it to tell markings from files of a
+empty origin gives nil. The root is asked for on every call: after a `:cd` into
+another repository the same relative origin resolves somewhere else (an absolute
+one does not), so a host that keeps origins should not treat a relative one as
+stable. casedesk.nvim uses it to tell markings from files of a
 case folder from those of other files.
 
 ## Events

@@ -715,7 +715,8 @@ Each action returns a boolean saying whether anything happened, and reports its
 own outcome (suppress those messages with `notify = false`).
 
 `spotlight.refresh()` is also the escape hatch if another plugin has cleared the
-current window's matches with `clearmatches()`.
+current window's matches with `clearmatches()`. It re-adds every match, but
+fires `SpotlightChanged` only when something came out different.
 
                                                            *spotlight-api-read*
 Reading the spotlights ~
@@ -733,14 +734,17 @@ Each entry:
     origin       project-relative file it was created in, or nil
     whole_file   true: every occurrence; false: one pinned position
     scope        "global" (whole-file) or "buffer" (pinned)
-    kind         "word": between word boundaries; "literal": anywhere
+    kind         how it matches now: "word" between word boundaries,
+                 "literal" anywhere (a word token reads "literal" while
+                 `match.word_boundaries` is off)
     ignore_case  false (default): case-sensitive
     locked       its slot is never handed to another spotlight
     id, pattern  session id; the complete Vim regex
     buf, row1, col1   pinned spotlights only
 <
 `text` is always matched literally; a mirror reproduces the highlight with
-`kind` and `ignore_case`.
+`kind` and `ignore_case`. The spotlight itself remembers what the token was made
+as: `refresh()` restores the boundaries once `match.word_boundaries` is on again.
 
 `spotlight.colors()` returns one `{ slot, group, fg, bg, bold }` per palette
 slot, `fg`/`bg` as "#rrggbb" resolved from the live `Spotlight1..8` groups
@@ -752,7 +756,8 @@ color.
 Export and import ~
 
 `spotlight.export()` returns the active spotlights as plain data (`text`,
-`slot`, `kind`, `origin`, `locked`, `line` -- what a set holds), for a plugin
+`slot`, `kind`, `origin`, `locked`, `line` -- what a set holds; `kind` is what
+the token was made as, even while `match.word_boundaries` is off), for a plugin
 that stores them itself; `spotlight.import(items)` clears the active spotlights
 and restores such a list (exclusive, every field re-validated, one
 `SpotlightChanged` with the reasons `clear` + `restore`), returning how many
@@ -777,7 +782,9 @@ Every change to the spotlights is announced as a |User| autocommand:
 It fires after a toggle, add or remove, `clear`, a `sets switch`, a restore of
 the persisted spotlights, a lock or whole-line change, `refresh`, a pinned
 spotlight dropped with its wiped buffer, and a color change (|:colorscheme|,
-'background'). Nothing fires for an action that changed nothing.
+'background'). Nothing fires for an action that changed nothing; a `refresh`
+announces only a redefined group (`colors`) or a rebuilt pattern or slot
+(`rebuild`).
 
 The event is coalesced: any number of changes within one editor tick (a
 `sets switch` is a clear plus a restore) arrive as one event, scheduled with

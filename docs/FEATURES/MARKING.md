@@ -137,5 +137,11 @@ shape, not from which resolver branch produced it, which is what keeps this
 setting meaningful regardless of pattern ordering. An explicit selection or
 `:Spotlight add` is always literal, boundaries or not.
 
+The spotlight remembers the kind it was made as (`kind` on the registry item),
+rather than deriving it from its pattern: with `match.word_boundaries = false`
+a word token has no `\<` to read it back from, and would otherwise turn literal
+for good on the next `refresh` or restart. A snapshot without the field restores
+as literal.
+
 - **Module:** `cursor.lua` (`kind_of`), `core/pattern.lua`
 - **Config:** `match.word_boundaries` (default `true`)

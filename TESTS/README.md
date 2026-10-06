@@ -58,7 +58,8 @@ once per editor because `lock_spec`, `map_spec` and `line_spec` drive
 | `hover_spec.lua`           | The hover.nvim preview: the spotlighted-only gate, and `nil` rather than `0` above the count ceiling. |
 | `read_api_spec.lua`        | The stable read API: `spotlights()` shape and `whole_file` filter, detached copies, `colors()`. |
 | `export_import_spec.lua`   | `export()` / `import()`: shape, pinned and `persist off` exclusions, exclusive re-validated import, one event. |
-| `events_spec.lua`          | `User SpotlightChanged`: toggle, clear, set switch, restore, lock/line, wipe, colors; coalescing and payload. |
+| `events_spec.lua`          | `User SpotlightChanged`: toggle, clear, set switch, restore, lock/line, wipe, colors, `refresh` (silent unless something changed); coalescing and payload. |
+| `kind_spec.lua`            | The token kind on the item: a word token survives `match.word_boundaries = false` through `rebuild()`, snapshot and export; old snapshots; the pattern fallback. |
 | `ui_list_spec.lua`         | The chooser's input: rows, labels, counts, titles, the filter, and each mode's handler. |
 | `menu_spec.lua`            | The nvzone/menu entry list the plugin *provides*, against ui.contextmenu's contract. |
 | `path_spec.lua`            | The project-relative exception key, on both platform branches.                        |

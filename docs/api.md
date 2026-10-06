@@ -123,7 +123,7 @@ for `{ whole_file = true }`.
 | `origin` | `string\|nil` | Project-relative path of the file it was created in |
 | `whole_file` | `boolean` | `true` for every-occurrence spotlights, `false` for position-pinned ones |
 | `scope` | `"global"\|"buffer"` | The same distinction as a word: `"global"` is whole-file |
-| `kind` | `"word"\|"literal"` | `"word"`: matched between word boundaries (`\<`...`\>`); `"literal"`: matched anywhere, also inside longer words |
+| `kind` | `"word"\|"literal"` | How the highlight matches *now*: `"word"` only while it is matched between word boundaries (`\<`...`\>`); `"literal"`: matched anywhere, also inside longer words. A word token reads `"literal"` while `match.word_boundaries` is off |
 | `ignore_case` | `boolean` | `false` (the default): matching is case-sensitive, like the highlight |
 | `locked` | `boolean` | Its slot is never handed to another spotlight |
 | `id` | `integer` | Session id, never reused |
@@ -133,7 +133,11 @@ for `{ whole_file = true }`.
 `kind` and `ignore_case` are what a mirror needs to reproduce the highlight's
 matching rules: `text` is always matched literally (it is not a pattern), case
 exactly as written unless `ignore_case`, and only as a whole word when `kind` is
-`"word"`.
+`"word"`. That is why `kind` follows the rendering: with
+`match.word_boundaries = false` a word token carries no boundary and is reported
+as `"literal"`. The token's own kind is not lost meanwhile — the spotlight
+remembers it, so `refresh()` gives the boundaries back once the option is on
+again, and `export()` / the persisted snapshot carry it (see below).
 
 ### `spotlight.colors()`
 
@@ -149,6 +153,10 @@ The registry as data and back, for a plugin that keeps spotlights in its own
 storage (casedesk.nvim writes them into each case folder, so a case brings its
 own markings back). `export()` returns `Spotlight.StoredItem[]` — `text`,
 `slot`, `kind`, `origin`, `locked`, `line` — and nothing else: no ids, no regex.
+Here `kind` is what the token was made as, independent of
+`match.word_boundaries`: a word token stays a word through an export, an import
+and a persisted snapshot even while the option is off. An entry without `kind`
+(written before the field was recorded) imports as `"literal"`.
 Left out: position-pinned ("this occurrence only") spotlights, and those created
 in a file with an explicit `persist off` (that decision means "do not write
 tokens from this file to disk", and the host is about to). The global
@@ -180,7 +188,8 @@ It fires after a toggle, an add or remove, `clear`, a `sets switch`, a restore
 of the persisted spotlights, a lock or whole-line change, `refresh`, a pinned
 spotlight dropped because its buffer was wiped, and a color change
 (`:colorscheme`, `&background`). Nothing fires for an action that changed
-nothing (clearing an empty list, adding a duplicate).
+nothing (clearing an empty list, adding a duplicate, a `refresh` that found every
+group and pattern as it was).
 
 The event is **coalesced**: any number of changes within one editor tick — a
 `sets switch` is a clear plus a restore, a session restore adds dozens — arrive
@@ -196,6 +205,11 @@ change it was.
 | `count` | `integer` | Spotlights in the registry afterwards, of every scope |
 | `whole_file_count` | `integer` | Of those, the whole-file ones |
 | `whole_file_changed` | `boolean` | `false` only when every merged change concerned a position-pinned spotlight — a mirror that shows whole-file spotlights only can skip the event |
+
+`refresh()` re-adds every match whatever happened, but announces only what came
+out different: `colors` when a `Spotlight1..8` group was redefined to other
+values, `rebuild` when a pattern or slot changed (a word token once
+`match.word_boundaries` was switched, a slot clamped into a smaller palette).
 
 A `colors` reason is a color change: re-read `colors()`. It comes from the
 spotlight.nvim handler that redefines `Spotlight1..8`, which

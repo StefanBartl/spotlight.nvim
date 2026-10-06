@@ -56,9 +56,13 @@ the entries into its own menu.
 
 Every action is also a plain function on the `spotlight` module — no
 `<Plug>` indirection, no action that exists only as a keymap.
-`spotlight.spotlights()` gives read access to a snapshot of the registry for a
-status line or a scripted check. The full list of signatures is in
-[api.md](../api.md).
+`spotlight.spotlights(opts?)` gives read access to a detached snapshot of the
+registry (a status line, a scripted check, a mirror in another plugin) and
+`spotlight.colors()` to the eight slot colors as the editor renders them. The
+`User SpotlightChanged` autocommand tells such a consumer when to re-read: it
+fires, coalesced to one event per tick, after every toggle, clear, set switch,
+restore and color change. The full list of signatures, the entry shape and the
+event payload are in [api.md](../api.md).
 
 - **Module:** `init.lua`
 - **Usercmds:** none — this is the underlying API every keymap and command

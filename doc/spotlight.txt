@@ -706,13 +706,80 @@ to any key or called from your own code:
     spotlight.winopt_toggle(win|nil)     -- toggle it
     spotlight.winopt_status(win|nil)     -- report it
     spotlight.refresh()            -- redefine palette, re-apply everything
-    spotlight.spotlights()         -- a snapshot of the Spotlight.Item[] list
+    spotlight.spotlights(opts|nil) -- detached snapshot, see |spotlight-api-read|
+    spotlight.colors()             -- the eight slot colors, see |spotlight-api-read|
 <
-Each returns a boolean saying whether anything happened, and reports its own
-outcome (suppress those messages with `notify = false`).
+Each action returns a boolean saying whether anything happened, and reports its
+own outcome (suppress those messages with `notify = false`).
 
 `spotlight.refresh()` is also the escape hatch if another plugin has cleared the
 current window's matches with `clearmatches()`.
+
+                                                           *spotlight-api-read*
+Reading the spotlights ~
+
+`spotlight.spotlights(opts)` returns a detached snapshot (copies -- sorting or
+editing it never touches the registry), in insertion order. `opts.whole_file =
+true` keeps only the spotlights that mark every occurrence (`toggle`, `add`),
+`false` only the "this occurrence only" ones (`toggle_here`), omitted both.
+Each entry:
+>
+    text         the raw token
+    slot         palette slot, 1..8
+    hl_group     highlight group, e.g. "Spotlight3"  (`hl` is the same value)
+    line_mode    rendered across the whole line      (`line` is an alias)
+    origin       project-relative file it was created in, or nil
+    whole_file   true: every occurrence; false: one pinned position
+    scope        "global" (whole-file) or "buffer" (pinned)
+    kind         "word": between word boundaries; "literal": anywhere
+    ignore_case  false (default): case-sensitive
+    locked       its slot is never handed to another spotlight
+    id, pattern  session id; the complete Vim regex
+    buf, row1, col1   pinned spotlights only
+<
+`text` is always matched literally; a mirror reproduces the highlight with
+`kind` and `ignore_case`.
+
+`spotlight.colors()` returns one `{ slot, group, fg, bg, bold }` per palette
+slot, `fg`/`bg` as "#rrggbb" resolved from the live `Spotlight1..8` groups
+(so a colorscheme or user override is what is reported, and 'background' picks
+the dark or light set). A channel a group lacks falls back to the configured
+color.
+
+                                                             *spotlight-events*
+Events ~
+
+Every change to the spotlights is announced as a |User| autocommand:
+>lua
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "SpotlightChanged",
+      callback = function(args)
+        local items = require("spotlight").spotlights({ whole_file = true })
+        local colors = require("spotlight").colors()
+        -- args.data = { reasons, count, whole_file_count, whole_file_changed }
+      end,
+    })
+<
+It fires after a toggle, add or remove, `clear`, a `sets switch`, a restore of
+the persisted spotlights, a lock or whole-line change, `refresh`, a pinned
+spotlight dropped with its wiped buffer, and a color change (|:colorscheme|,
+'background'). Nothing fires for an action that changed nothing.
+
+The event is coalesced: any number of changes within one editor tick (a
+`sets switch` is a clear plus a restore) arrive as one event, scheduled with
+|vim.schedule()|. Read the state with `spotlights()` / `colors()` in the
+callback; the payload only classifies the change:
+
+    reasons             string[]: "add" "remove" "clear" "restore" "rebuild"
+                        "lock" "line" "buffer_wiped" "colors", each once
+    count               spotlights afterwards, every scope
+    whole_file_count    of those, the whole-file ones
+    whole_file_changed  false only when every merged change concerned a pinned
+                        spotlight -- a whole-file-only mirror can skip it
+
+The `colors` reason comes from the handler that redefines `Spotlight1..8`,
+which `palette.reapply_on_colorscheme = false` switches off; with that, a
+consumer that mirrors the groups listens to |ColorScheme| itself.
 
 ==============================================================================
 17. HEALTH                                                   *spotlight-health*

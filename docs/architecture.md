@@ -63,6 +63,7 @@ lua/spotlight/
     palette.lua          Spotlight1..8, dark/light sets, round-robin slots
     match.lua            the matchadd() ledger: window -> { id -> match id }
     registry.lua         the authoritative spotlight list; the one change event
+    events.lua           the coalesced `User SpotlightChanged` autocommand
     count.lua            on-demand counting + the shared line scan
   cursor.lua             token resolver (patterns -> <cword>) and selection reader
   nav.lua                next/prev, "auto" scope narrowing
@@ -97,7 +98,10 @@ validated and defaulted.
 **Every change to the spotlight list funnels through `core/registry.lua`** and
 ends in one change event. Persistence subscribes to that event, so no caller
 has to remember to trigger a save — which is also why adding a route never
-comes with a "and don't forget to persist" step.
+comes with a "and don't forget to persist" step. The same point also feeds
+`core/events.lua`, which turns it into the `User SpotlightChanged` autocommand
+for plugins that mirror the spotlights elsewhere (one event per editor tick, so
+a `sets switch` is not two).
 
 ## Cross-platform
 

@@ -138,6 +138,12 @@ the whole reason `matchadd()` was chosen over extmarks.
 | `spotlight_persist` | `VimEnter` | `*` | Load the persisted snapshot, once. Not called directly from `setup()`: a session or `:cd` plugin may not have settled the project root yet, and the store is keyed by it. Gated by `persist.enable`. |
 | `spotlight_persist` | `VimLeavePre` | `*` | Flush a pending debounced save, so the last toggle before `:qa` is not the one lost. Gated by `persist.enable`. |
 
+### Events spotlight.nvim fires
+
+| Event | Pattern | When | `args.data` |
+| --- | --- | --- | --- |
+| `User` | `SpotlightChanged` | After any change to the spotlights or their colors, coalesced to one per editor tick | `{ reasons, count, whole_file_count, whole_file_changed }` — see [api.md](api.md#events) |
+
 ## Highlight groups
 
 Defined by `setup()` and re-defined on `ColorScheme` / `OptionSet background`.

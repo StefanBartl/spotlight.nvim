@@ -56,6 +56,8 @@ once per editor because `lock_spec`, `map_spec` and `line_spec` drive
 | `multibyte_spec.lua`       | Byte offsets in real umlaut/CJK/emoji buffers, against handcounted byte columns.     |
 | `qf_buffer_scope_spec.lua` | `:Spotlight qf` against a buffer-scoped ("this occurrence only") spotlight.          |
 | `hover_spec.lua`           | The hover.nvim preview: the spotlighted-only gate, and `nil` rather than `0` above the count ceiling. |
+| `read_api_spec.lua`        | The stable read API: `spotlights()` shape and `whole_file` filter, detached copies, `colors()`. |
+| `events_spec.lua`          | `User SpotlightChanged`: toggle, clear, set switch, restore, lock/line, wipe, colors; coalescing and payload. |
 | `ui_list_spec.lua`         | The chooser's input: rows, labels, counts, titles, the filter, and each mode's handler. |
 | `menu_spec.lua`            | The nvzone/menu entry list the plugin *provides*, against ui.contextmenu's contract. |
 | `path_spec.lua`            | The project-relative exception key, on both platform branches.                        |

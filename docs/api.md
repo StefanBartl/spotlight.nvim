@@ -96,11 +96,91 @@ extra wiring.
 
 | Function | Mode | Returns | Description |
 | --- | --- | --- | --- |
-| `spotlight.spotlights()` | any | `Spotlight.Item[]` | A snapshot of the registry — for a status line or a scripted check |
+| `spotlight.spotlights(opts?)` | any | `Spotlight.PublicItem[]` | A detached snapshot of the registry — for a status line, a scripted check, or a plugin that mirrors the spotlights elsewhere |
+| `spotlight.colors()` | any | `Spotlight.SlotColor[]` | The palette as the editor renders it, one entry per slot |
 
-Each `Spotlight.Item` carries at least `text`, `pattern`, `slot`, `hl`,
-`locked` and `line`; the authoritative shape is
-`lua/spotlight/@types/init.lua`.
+Both are read-only and stable: the field names below are part of the contract.
+
+### `spotlight.spotlights(opts?)`
+
+Returns a fresh table of plain copies in insertion order. Sorting, pruning or
+editing the result never touches the registry.
+
+`opts.whole_file` filters by scope: `true` keeps only the spotlights that mark
+every occurrence (`toggle`, `toggle_selection`, `add`), `false` only the "this
+occurrence only" ones (`toggle_here`...), omitted keeps both. A consumer with
+no position to pin a single occurrence to — a browser preview of the file — asks
+for `{ whole_file = true }`.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `text` | `string` | The raw token |
+| `slot` | `integer` | Palette slot, `1..8` by default |
+| `hl_group` | `string` | Highlight group it renders in, e.g. `"Spotlight3"` (`hl` is the same value under the registry's own name) |
+| `line_mode` | `boolean` | Rendered across the whole line instead of the token (`line` is an alias) |
+| `origin` | `string\|nil` | Project-relative path of the file it was created in |
+| `whole_file` | `boolean` | `true` for every-occurrence spotlights, `false` for position-pinned ones |
+| `scope` | `"global"\|"buffer"` | The same distinction as a word: `"global"` is whole-file |
+| `kind` | `"word"\|"literal"` | `"word"`: matched between word boundaries (`\<`...`\>`); `"literal"`: matched anywhere, also inside longer words |
+| `ignore_case` | `boolean` | `false` (the default): matching is case-sensitive, like the highlight |
+| `locked` | `boolean` | Its slot is never handed to another spotlight |
+| `id` | `integer` | Session id, never reused |
+| `pattern` | `string` | The complete Vim regex the highlight uses |
+| `buf`, `row1`, `col1` | `integer\|nil` | Only for `whole_file = false`: the pinned position |
+
+`kind` and `ignore_case` are what a mirror needs to reproduce the highlight's
+matching rules: `text` is always matched literally (it is not a pattern), case
+exactly as written unless `ignore_case`, and only as a whole word when `kind` is
+`"word"`.
+
+### `spotlight.colors()`
+
+One `{ slot, group, fg, bg, bold }` entry per palette slot, with `fg` and `bg`
+as `#rrggbb` resolved from the live `Spotlight1..8` groups — so a colorscheme or
+a user override is what is reported, and `&background` selects the dark or light
+set. A channel a group does not carry falls back to the configured palette
+color, so an entry always has both.
+
+## Events
+
+spotlight.nvim announces every change to the spotlights as a `User` autocommand:
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "SpotlightChanged",
+  callback = function(args)
+    local items = require("spotlight").spotlights({ whole_file = true })
+    local colors = require("spotlight").colors()
+    -- args.data: see below
+  end,
+})
+```
+
+It fires after a toggle, an add or remove, `clear`, a `sets switch`, a restore
+of the persisted spotlights, a lock or whole-line change, `refresh`, a pinned
+spotlight dropped because its buffer was wiped, and a color change
+(`:colorscheme`, `&background`). Nothing fires for an action that changed
+nothing (clearing an empty list, adding a duplicate).
+
+The event is **coalesced**: any number of changes within one editor tick — a
+`sets switch` is a clear plus a restore, a session restore adds dozens — arrive
+as a single event, scheduled with `vim.schedule`. Read the state with
+`spotlights()` / `colors()` in the callback; the payload only says what kind of
+change it was.
+
+`args.data`:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `reasons` | `string[]` | Why, each once, in first-occurrence order: `"add"`, `"remove"`, `"clear"`, `"restore"`, `"rebuild"`, `"lock"`, `"line"`, `"buffer_wiped"`, `"colors"` |
+| `count` | `integer` | Spotlights in the registry afterwards, of every scope |
+| `whole_file_count` | `integer` | Of those, the whole-file ones |
+| `whole_file_changed` | `boolean` | `false` only when every merged change concerned a position-pinned spotlight — a mirror that shows whole-file spotlights only can skip the event |
+
+A `colors` reason is a color change: re-read `colors()`. It comes from the
+spotlight.nvim handler that redefines `Spotlight1..8`, which
+`palette.reapply_on_colorscheme = false` switches off — with that, you own the
+groups and a consumer that mirrors them listens to `ColorScheme` itself.
 
 ## What is not here
 

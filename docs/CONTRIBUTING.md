@@ -47,7 +47,9 @@ a 200-line sample.
 - **Every change to the spotlight list funnels through `core/registry.lua`**
   and ends in one change event. Persistence subscribes to that event, which is
   why adding a route never comes with a "and do not forget to persist" step.
-  A route that saves state itself has broken that.
+  A route that saves state itself has broken that. The same point announces the
+  change as `User SpotlightChanged` (`core/events.lua`); a route that fires its
+  own autocommand has broken that.
 - **Unbounded input gets a bound, and the truncation is reported.**
   `match.max_text_len`, `cursor.max_line_len`, `quickfix.max_entries` and
   `map.max_entries` each exist because the size is not this plugin's to
@@ -67,6 +69,7 @@ a 200-line sample.
 | Path | Contains |
 | --- | --- |
 | `lua/spotlight/core/registry.lua` | The spotlight list and the single change event everything funnels through |
+| `lua/spotlight/core/events.lua` | The coalesced `User SpotlightChanged` autocommand, fed by the registry's change point and `palette.apply()` |
 | `lua/spotlight/core/match.lua` | The `matchadd()` bookkeeping: window → spotlight id → match id |
 | `lua/spotlight/core/pattern.lua` | Token resolution — the ordered pattern list that sees what `<cword>` cannot |
 | `lua/spotlight/core/palette.lua` | The eight colors, the round-robin, the locks, dark and light |

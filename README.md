@@ -75,7 +75,7 @@ and which question each page answers.
 - [All options](docs/configuration.md) — every `setup()` key with its default, plus the four topics worth reading before changing one.
 - [Command reference](docs/commands.md) — every `:Spotlight` route: arguments, ranges, and what the non-obvious ones actually do.
 - [Bindings](docs/BINDINGS.md) — the cheatsheet: keymaps, commands, autocommands and highlight groups at a glance.
-- [Lua API](docs/api.md) — every action as a plain function, with signatures and return values.
+- [Lua API](docs/api.md) — every action as a plain function, with signatures and return values; plus the read API (`spotlights()`, `colors()`) and the `User SpotlightChanged` event for plugins that mirror the spotlights.
 
 **The Rest**
 

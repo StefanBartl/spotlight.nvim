@@ -102,21 +102,25 @@ selection left by then.
 
 ## Tests
 
-`TESTS/` is a headless spec suite.
+`TESTS/` is a headless spec suite, run by
+[testing.nvim](https://github.com/StefanBartl/testing.nvim).
 
 ```
-nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" \
-  -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh
 ```
 
-Exit 0 is a pass; lib.nvim is expected as a sibling checkout.
+Exit 0 is a pass. testing.nvim and lib.nvim are expected as sibling checkouts
+(or in `.deps/`, or via `$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR`; the script names
+every place it searched when one is missing). `scripts/test.sh --file config`
+runs only the matching spec files.
 [GitHub Actions](../.github/workflows/ci.yml) runs it plus stylua and luacheck
 on every push and pull request to `main`.
 
-A new spec file has to be listed in `run.lua`'s `SPECS` table, or CI will never
-run it. Specs are expected to be independent of one another — the suite is
-checked in the listed order and in reverse — so each one sets the config and
-clears the registry itself instead of inheriting a predecessor's state.
+Every `*_spec.lua` under `TESTS/` is discovered, so there is no list to extend.
+Each spec file runs in an editor of its own and must therefore be independent of
+the others: each one sets the config and clears the registry itself instead of
+inheriting a predecessor's state. `TESTS/minimal_init.lua` runs `setup()` once
+per editor, because a few specs drive `:Spotlight ...` without calling it.
 
 `hardening_spec.lua` covers the bounded inputs. If you add a bound, add a case
 there rather than trusting the default to hold.

@@ -1,24 +1,31 @@
 # spotlight.nvim — test suite
 
-Plain headless Neovim, no plenary and no busted. The only dependencies are
-Neovim itself and `lib.nvim`, so CI does not have to install a test framework to
-check one plugin.
+Headless Neovim, run by [testing.nvim](https://github.com/StefanBartl/testing.nvim).
+The specs use the small `harness.lua` of this directory for their assertions.
+The dependencies are testing.nvim and `lib.nvim`, checked out as siblings of the
+plugin (or in `.deps/`, or named by `$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR`).
 
 ## Running
 
-From the plugin root, with `lib.nvim` checked out as a sibling directory:
+From the plugin root:
 
 ```bash
-nvim --headless -u NONE -c "set rtp+=.,../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh                  # every spec
+bash scripts/test.sh --file config    # spec files whose name contains "config"
+bash scripts/test.sh --json ir.json   # also write the machine-readable result
 ```
 
-`run.lua` prints `N passed, M failed`, lists every failure, and exits non-zero
-when anything failed. Failures do not abort the run — one broken expectation must
-not hide the state of every check after it.
+The script prints one `ok` / `FAIL` line per spec file with the failing
+expectations, and exits non-zero when anything failed or a dependency is
+missing. Failures do not abort the run — one broken expectation must not hide
+the state of every check after it.
 
-Specs are listed explicitly in `run.lua`'s `SPECS` table; a new file has to be
-added there or CI will never run it. They are nonetheless written to be
-independent of one another: the suite passes in the listed order and in reverse.
+Every `*_spec.lua` here is discovered; there is no list to extend
+(`.testing.lua` holds the configuration). Each file runs in a Neovim of its
+own, started like the old CI line (`-c`, so `vim.v.vim_did_enter` is `0`), and
+is written to be independent of the others. `minimal_init.lua` runs `setup()`
+once per editor because `lock_spec`, `map_spec` and `line_spec` drive
+`:Spotlight ...` without calling it themselves.
 
 ## Layout
 

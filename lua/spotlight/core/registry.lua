@@ -70,6 +70,19 @@ function M.count()
 end
 
 ---@internal
+--- The token kind a built pattern was made for. `pattern.build` emits the case
+--- flag and `\V` first (`\C\V` / `\c\V`, 4 bytes), so a word boundary is
+--- exactly a `\<` right behind them. Searching the whole string instead would
+--- also hit a literal body that merely contains `\<` (the escaped backslash of
+--- a Windows path such as `C:\<dir>`), report it as "word", and have the next
+--- snapshot restore it with boundaries that can never match.
+---@param pat string
+---@return Spotlight.TokenKind
+local function kind_of(pat)
+  return pat:sub(5, 6) == "\\<" and "word" or "literal"
+end
+
+---@internal
 --- One registry item as the stable, documented read shape: a plain copy that
 --- carries the names consumers are told about (`hl_group`, `line_mode`,
 --- `whole_file`) next to the item's own fields, so it never aliases live state.
@@ -91,7 +104,7 @@ local function public(item)
     locked = item.locked == true,
     -- Recovered from the pattern, as `M.snapshot` does: the pattern is the one
     -- thing that already reflects `match.word_boundaries` and `match.ignore_case`.
-    kind = pat:find("\\<", 1, true) and "word" or "literal",
+    kind = kind_of(pat),
     ignore_case = pat:sub(1, 2) == "\\c",
     pattern = pat,
     buf = item.buf,
@@ -514,7 +527,7 @@ function M.snapshot()
       out[#out + 1] = {
         text = item.text,
         slot = item.slot,
-        kind = item.pattern:find("\\<", 1, true) and "word" or "literal",
+        kind = kind_of(item.pattern),
         origin = item.origin,
         locked = item.locked,
         line = item.line,
@@ -545,8 +558,7 @@ function M.rebuild()
     if item.scope == "buffer" then
       item.pattern = pattern.build_at(item.text, item.row1, item.col1, match_opts)
     else
-      local kind = item.pattern:find("\\<", 1, true) and "word" or "literal"
-      item.pattern = pattern.build({ text = item.text, kind = kind }, match_opts)
+      item.pattern = pattern.build({ text = item.text, kind = kind_of(item.pattern) }, match_opts)
     end
     item.slot = palette.clamp(item.slot)
     item.hl = palette.group(item.slot)

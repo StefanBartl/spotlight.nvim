@@ -144,6 +144,17 @@ function M.run()
   t.eq("colors: an empty group falls back to the configured bg", emptied.bg, config.get("palette").colors[3].bg)
   t.eq("colors: ... and the configured fg", emptied.fg, config.get("palette").colors[3].fg)
 
+  -- ---------- kind survives a literal token that contains a backslash ----------
+  -- The escaped backslash of a Windows path (`C:\<dir>`) puts a `\<` into the
+  -- pattern body; only a boundary right behind the `\C\V` prefix makes a word.
+  registry.clear()
+  registry.add({ text = [[C:\<dir>\x]], kind = "literal" })
+  registry.add({ text = "plain", kind = "word" })
+  local kinds = api.spotlights()
+  t.eq("kind: a literal with a backslash-angle body stays literal", kinds[1].kind, "literal")
+  t.eq("kind: a word token is still a word", kinds[2].kind, "word")
+  t.eq("kind: the snapshot agrees (no boundaries added on restore)", registry.snapshot()[1].kind, "literal")
+
   require("spotlight.core.palette").apply()
   registry.clear()
 end

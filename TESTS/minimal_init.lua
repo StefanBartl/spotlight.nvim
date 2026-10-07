@@ -80,9 +80,4 @@ for _, name in ipairs(DEPS) do
   vim.opt.rtp:append(found[name])
 end
 
--- Bootstrap carried over from the old single-process runner: lock_spec, map_spec and line_spec drive
--- `:Spotlight ...` without calling setup() themselves; in the old run commands_spec had registered the
--- command before them. Every child (one editor per spec file) starts with it defined instead.
-require("spotlight").setup()
-
 return { root = root, deps = found }

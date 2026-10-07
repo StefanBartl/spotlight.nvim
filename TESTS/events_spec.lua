@@ -20,8 +20,15 @@ function M.run()
   local sets = require("spotlight.sets")
   local api = require("spotlight")
 
-  config.setup()
-  api.setup()
+  -- This spec counts spotlights, so nothing may put some there behind its back. An earlier spec in
+  -- the same editor (isolated = "none") can leave a scheduled `persist.load()` behind, and with
+  -- persistence on a later setup() schedules another one; each restores the on-disk snapshot of an
+  -- unrelated spec into the registry. Persistence is not what is under test here: switch it off,
+  -- and let whatever an earlier spec scheduled run before the counting starts.
+  local opts = { persist = { enable = false } }
+  config.setup(opts)
+  api.setup(opts)
+  vim.wait(40)
   t.fixture({ "req=aaa ip=10.0.0.1", "req=bbb", "req=aaa" })
 
   ---@type table[]
@@ -206,7 +213,7 @@ function M.run()
   t.eq("refresh: a rebuilt pattern is one event", #log, 1)
   t.eq("refresh: ... for the rebuild", vim.inspect(log[1].reasons), vim.inspect({ "rebuild" }))
   t.eq("refresh: ... carrying the new count", log[1].count, registry.count())
-  config.setup()
+  config.setup(opts)
   reset()
   api.refresh()
   settle()
@@ -254,17 +261,17 @@ function M.run()
   -- With the groups left to the user (`palette.reapply_on_colorscheme = false`)
   -- no handler redefines them, so a colorscheme change is not announced: such a
   -- consumer listens to ColorScheme itself (documented in docs/api.md).
-  api.setup({ palette = { reapply_on_colorscheme = false } })
+  api.setup(vim.tbl_deep_extend("force", opts, { palette = { reapply_on_colorscheme = false } }))
   reset()
   vim.api.nvim_exec_autocmds("ColorScheme", {})
   settle()
   t.eq("ColorScheme (no reapply): no handler, so no event", #log, 0)
-  api.setup()
+  api.setup(opts)
   reset()
 
   -- ---------- setup() twice does not multiply it ----------
-  api.setup()
-  api.setup()
+  api.setup(opts)
+  api.setup(opts)
   reset()
   registry.add({ text = "once", kind = "literal" })
   settle()

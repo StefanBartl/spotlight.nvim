@@ -23,9 +23,8 @@ the state of every check after it.
 Every `*_spec.lua` here is discovered; there is no list to extend
 (`.testing.lua` holds the configuration). Each file runs in a Neovim of its
 own, started like the old CI line (`-c`, so `vim.v.vim_did_enter` is `0`), and
-is written to be independent of the others. `minimal_init.lua` runs `setup()`
-once per editor because `lock_spec`, `map_spec` and `line_spec` drive
-`:Spotlight ...` without calling it themselves.
+is written to be independent of the others: a spec that drives `:Spotlight ...` calls
+`setup()` itself, `minimal_init.lua` only puts the dependencies on the runtimepath.
 
 ## Layout
 

@@ -19,6 +19,8 @@ function M.run()
   local api = require("spotlight")
 
   config.setup()
+  -- :Spotlight is registered by setup(); this spec drives it, so it must not rely on another spec or the init.
+  api.setup()
   registry.clear()
   t.fixture({ "aaa bbb ccc" })
 

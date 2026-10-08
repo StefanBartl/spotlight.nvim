@@ -20,6 +20,10 @@ local composer = require("lib.nvim.bindings.usercmd.composer")
 
 local M = {}
 
+-- Help-float lines (`composer.help`) for the optional TEXT argument that several routes share.
+local TEXT_OF_ONE = "Text of one spotlight (default: all spotlights)"
+local TEXT_OF_CURSOR = "Text of a spotlight (default: the cursor token's)"
+
 ---@internal
 --- The literal text of a single-line range, from composer's `ctx.range`.
 ---
@@ -71,6 +75,7 @@ function M.setup()
   -- `sets.names()` is cheap (session-cached) and this is the composer's own
   -- documented pattern for a dynamic completion source.
   composer.register_type("SPOTLIGHT_SET_NAME", {
+    desc = "Name of a saved spotlight set",
     validate = function(raw)
       return true, raw, nil
     end,
@@ -98,7 +103,9 @@ function M.setup()
         -- selection carries usable geometry: linewise has no columns to read
         -- and blockwise spans several lines by definition.
         visual = { "charwise" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = {
+          { name = "text", type = "STRING", optional = true, desc = "Text to toggle (default: selection or cursor token)" },
+        },
         desc = "Toggle a spotlight (cursor token, range selection, or explicit TEXT)",
         run = function(ctx)
           if type(ctx.args.text) == "string" and ctx.args.text ~= "" then
@@ -152,7 +159,7 @@ function M.setup()
 
       {
         path = { "add" },
-        args = { { name = "text", type = "STRING" } },
+        args = { { name = "text", type = "STRING", desc = "Literal text to highlight" } },
         desc = "Add a spotlight for the literal TEXT",
         run = function(ctx)
           api.add(ctx.args.text)
@@ -161,7 +168,7 @@ function M.setup()
 
       {
         path = { "remove" },
-        args = { { name = "text", type = "STRING" } },
+        args = { { name = "text", type = "STRING", desc = "Text of the spotlight to remove (exact match)" } },
         desc = "Remove the spotlight matching TEXT exactly",
         run = function(ctx)
           api.remove(ctx.args.text)
@@ -179,8 +186,20 @@ function M.setup()
       {
         path = { "list" },
         args = {
-          { name = "action", type = "STRING", enum = { "jump", "remove", "lock", "line" }, optional = true },
-          { name = "filter", type = "STRING", optional = true },
+          {
+            name = "action",
+            type = "STRING",
+            enum = { "jump", "remove", "lock", "line" },
+            optional = true,
+            desc = "What choosing an entry does (default: jump)",
+            enum_desc = {
+              jump = "Jump to its first occurrence",
+              remove = "Remove the spotlight",
+              lock = "Toggle whether it keeps its palette slot",
+              line = "Toggle whole-line rendering",
+            },
+          },
+          { name = "filter", type = "STRING", optional = true, desc = "Narrow by slot, highlight group, origin path or text" },
         },
         desc = "Open the spotlight list (swatch + pattern + match count)  [filter]",
         run = function(ctx)
@@ -219,7 +238,7 @@ function M.setup()
 
       {
         path = { "qf" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_ONE } },
         desc = "Matching lines to the quickfix list (all spotlights, or just TEXT's)",
         run = function(ctx)
           api.quickfix(ctx.args.text)
@@ -228,7 +247,7 @@ function M.setup()
 
       {
         path = { "qf", "all" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_ONE } },
         desc = "Matching lines across every loaded buffer to the quickfix list",
         run = function(ctx)
           api.quickfix_all(ctx.args.text)
@@ -237,7 +256,19 @@ function M.setup()
 
       {
         path = { "persist" },
-        args = { { name = "state", type = "STRING", enum = { "on", "off", "default", "status" }, optional = true } },
+        args = {
+          {
+            name = "state",
+            type = "STRING",
+            enum = { "on", "off", "default", "status" },
+            optional = true,
+            desc = "Persistence of this file (default: status)",
+            enum_desc = {
+              default = "Drop the override, follow persist.default",
+              status = "Show whether this file persists",
+            },
+          },
+        },
         desc = "Per-file persistence: on / off / default (clear override) / status",
         run = function(ctx)
           local state = ctx.args.state or "status"
@@ -255,7 +286,20 @@ function M.setup()
 
       {
         path = { "winopt" },
-        args = { { name = "state", type = "STRING", enum = { "on", "off", "toggle", "status" }, optional = true } },
+        args = {
+          {
+            name = "state",
+            type = "STRING",
+            enum = { "on", "off", "toggle", "status" },
+            optional = true,
+            desc = "Spotlights in this window (default: toggle)",
+            enum_desc = {
+              on = "Show spotlights in this window",
+              off = "Hide spotlights in this window",
+              status = "Show whether they are shown here",
+            },
+          },
+        },
         desc = "Per-window opt-out: on / off / toggle (default) / status",
         run = function(ctx)
           local state = ctx.args.state or "toggle"
@@ -273,7 +317,7 @@ function M.setup()
 
       {
         path = { "yank" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_ONE } },
         desc = "Yank matching lines to the unnamed register (all spotlights, or just TEXT's)",
         run = function(ctx)
           api.yank(ctx.args.text)
@@ -282,7 +326,7 @@ function M.setup()
 
       {
         path = { "lock" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_CURSOR } },
         desc = "Toggle whether a spotlight keeps its palette slot permanently (TEXT, or the cursor token)",
         run = function(ctx)
           api.lock_toggle(ctx.args.text)
@@ -291,7 +335,7 @@ function M.setup()
 
       {
         path = { "line" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_CURSOR } },
         desc = "Toggle whole-line rendering for a spotlight (TEXT, or the cursor token)",
         run = function(ctx)
           api.line_toggle(ctx.args.text)
@@ -300,7 +344,7 @@ function M.setup()
 
       {
         path = { "map" },
-        args = { { name = "text", type = "STRING", optional = true } },
+        args = { { name = "text", type = "STRING", optional = true, desc = TEXT_OF_ONE } },
         desc = "Mark every matching line in the sign column (all spotlights, or just TEXT's)",
         run = function(ctx)
           api.map(ctx.args.text)
@@ -317,7 +361,7 @@ function M.setup()
 
       {
         path = { "sets", "save" },
-        args = { { name = "name", type = "STRING" } },
+        args = { { name = "name", type = "STRING", desc = "Name for the set (an existing one is overwritten)" } },
         desc = "Save the active spotlights as a named set (overwrites if it already exists)",
         run = function(ctx)
           api.sets_save(ctx.args.name)

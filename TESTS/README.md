@@ -64,6 +64,7 @@ is written to be independent of the others: a spec that drives `:Spotlight ...` 
 | `path_spec.lua`            | The project-relative key and `origin_path`, both platform branches.                  |
 | `util_lib_spec.lua`        | Both arms of every `lib.nvim` accessor — the bridge and the native fallback.          |
 | `health_spec.lua`          | `:checkhealth spotlight`, including the machine it exists for: one with nothing installed. |
+| `usrcmds_help_spec.lua`    | The option float: every `:Spotlight` positional argument has a one-line text (own, type's or per-value), no trailing full stop. |
 
 ## Byte offsets
 

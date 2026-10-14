@@ -31,4 +31,16 @@ return {
     deprecation = "error",
     process_net = "error",
   },
+  -- Findings the minimal conformance editor cannot avoid (docs/CONFORMANCE.md of testing.nvim); reviewed 2026-10-14.
+  conformance = {
+    waivers = {
+      {
+        check = "K6",
+        level = "error",
+        text = "ui.kit.select",
+        reason = "ui.nvim is deliberately not on the runtimepath: health_spec.lua asserts the required-and-missing arm of :checkhealth",
+        expires = "2027-04-14",
+      },
+    },
+  },
 }

@@ -227,6 +227,22 @@ function M.run()
   end)
   config.setup()
 
+  -- ---------- ui.nvim absent: the module loads, and offers nothing ----------
+  local saved_subject, saved_cm = package.loaded[SUBJECT], package.loaded[CONTEXTMENU]
+  local saved_preload = package.preload[CONTEXTMENU]
+  package.loaded[SUBJECT], package.loaded[CONTEXTMENU] = nil, nil
+  package.preload[CONTEXTMENU] = function()
+    error("module 'ui.contextmenu' not found")
+  end
+  local loaded, bare = pcall(require, SUBJECT)
+  package.loaded[SUBJECT], package.loaded[CONTEXTMENU] = saved_subject, saved_cm
+  package.preload[CONTEXTMENU] = saved_preload
+  t.ok("absent ui.contextmenu: the module still loads", loaded)
+  if loaded then
+    t.eq("absent ui.contextmenu: no entries", #bare.items(), 0)
+    t.eq("absent ui.contextmenu: no submenu", bare.submenu(), nil)
+  end
+
   registry.clear()
 end
 

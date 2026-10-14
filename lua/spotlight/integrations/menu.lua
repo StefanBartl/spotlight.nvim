@@ -17,7 +17,8 @@
 --- reason, same as they have no Ex-command equivalent either. Opt-out via
 --- `config.menu.enable`.
 
-local contextmenu = require("ui.contextmenu")
+-- soft: without ui.nvim there is nothing to build entries with (the module still loads; `items()` is empty)
+local has_contextmenu, contextmenu = pcall(require, "ui.contextmenu")
 
 local M = {}
 
@@ -38,12 +39,12 @@ function M.enabled()
 end
 
 --- Build the spotlight.nvim menu entries.
---- Returns an empty list when the integration is disabled, so a host can
+--- Returns an empty list when the integration is disabled (or ui.nvim is absent), so a host can
 --- safely `vim.list_extend` it unconditionally.
 ---@return Ui.ContextMenu.Item[]
 function M.items()
   local mcfg = require("spotlight.config").get("menu")
-  if mcfg and mcfg.enable == false then
+  if not has_contextmenu or (mcfg and mcfg.enable == false) then
     return {}
   end
 
@@ -84,6 +85,9 @@ end
 ---@param label? string submenu label (default "  Spotlight")
 ---@return Ui.ContextMenu.Item|nil
 function M.submenu(label)
+  if not has_contextmenu then
+    return nil
+  end
   return contextmenu.submenu(label or "  Spotlight", M.items())
 end
 
